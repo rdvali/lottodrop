@@ -1,0 +1,187 @@
+# Production Docker Compose Configuration for LottoDrop
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: lottodrop-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:-lottodrop}
+      POSTGRES_USER: ${DB_USER:-lottodrop_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
+    networks:
+      - lottodrop-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-lottodrop_user} -d ${DB_NAME:-lottodrop}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Redis Cache & Session Store
+  redis:
+    image: redis:7-alpine
+    container_name: lottodrop-redis
+    restart: always
+    command: >
+      redis-server 
+      --appendonly yes 
+      --maxmemory 512mb 
+      --maxmemory-policy allkeys-lru
+      ${REDIS_PASSWORD:+--requirepass ${REDIS_PASSWORD}}
+    volumes:
+      - redis_data:/data
+    networks:
+      - lottodrop-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "${REDIS_PASSWORD:+-a ${REDIS_PASSWORD}}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Backend API Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: lottodrop-backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Database
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-lottodrop}
+      DB_USER: ${DB_USER:-lottodrop_user}
+      DB_PASSWORD: ${DB_PASSWORD}
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_DB: ${REDIS_DB:-0}
+      # JWT & Security
+      JWT_SECRET: ${JWT_SECRET}
+      SESSION_SECRET: ${SESSION_SECRET}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
+      # Server
+      PORT: 3001
+      # CORS
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      # Admin
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      # Platform
+      PLATFORM_COMMISSION: ${PLATFORM_COMMISSION:-0.05}
+    ports:
+      - "127.0.0.1:3001:3001"
+    networks:
+      - lottodrop-network
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/.env:/app/.env:ro
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  # Frontend Application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_SOCKET_URL: ${VITE_SOCKET_URL}
+        VITE_APP_NAME: ${VITE_APP_NAME:-LottoDrop}
+        VITE_APP_VERSION: ${VITE_APP_VERSION:-2.0.0}
+    container_name: lottodrop-frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:8080:8080"
+    networks:
+      - lottodrop-network
+    environment:
+      - NODE_ENV=production
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Admin Panel
+  frontend-admin:
+    build:
+      context: ./frontend-admin
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL}
+    container_name: lottodrop-admin
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:8081:80"
+    networks:
+      - lottodrop-network
+    environment:
+      - NODE_ENV=production
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Networks
+networks:
+  lottodrop-network:
+    driver: bridge
+    name: lottodrop-network
+
+# Volumes
+volumes:
+  postgres_data:
+    name: lottodrop-postgres-data
+  redis_data:
+    name: lottodrop-redis-data

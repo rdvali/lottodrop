@@ -1,0 +1,366 @@
+# Dependencies
+node_modules/
+*/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+out/
+*/dist/
+*/build/
+*.tsbuildinfo
+.next/
+.nuxt/
+.cache/
+.parcel-cache/
+.vuepress/dist/
+.docusaurus/
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env*.local
+*.env
+!.env.example
+!.env.sample
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.iml
+.history/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+.coverage
+*.cover
+.hypothesis/
+.pytest_cache/
+htmlcov/
+*.spec.js.map
+*.spec.ts.map
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+database/*.db
+postgres-data/
+mysql-data/
+mongodb-data/
+
+# Uploads and user content
+uploads/
+backend/uploads/
+public/uploads/
+temp/
+tmp/
+*.tmp
+
+# Cache
+.cache/
+.temp/
+.tmp/
+*.cache
+.eslintcache
+.stylelintcache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Package manager files
+.npm/
+.yarn/
+.pnp.*
+.yarn-integrity
+
+# Mac OS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# TypeScript
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+*.d.ts.map
+
+# Webpack
+.webpack/
+
+# Serverless
+.serverless/
+.architect
+.arc
+
+# Docker volumes (local development)
+docker-volumes/
+postgres-data/
+redis-data/
+pgadmin-data/
+
+# Backup files
+*.backup
+*.bak
+*.old
+backup/
+backups/
+
+# SSL certificates (local)
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+localhost.crt
+localhost.key
+ssl/
+
+# Production files that shouldn't be in repo
+*.pid
+*.seed
+*.pid.lock
+
+# Bundle analysis
+bundle-stats.json
+webpack-stats.json
+stats.json
+
+# Lock files (optional - uncomment if you don't want to commit them)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Misc
+.grunt
+.lock-wscript
+.node_repl_history
+*.tgz
+.yarn-integrity
+.env.test
+
+# Project specific
+lottodrop.log
+error.log
+access.log
+combined.log
+exceptions.log
+rejections.log
+
+# Generated documentation
+docs/generated/
+api-docs/
+
+# Build artifacts
+*.map
+!*.config.map
+
+# Binary files
+*.exe
+*.dll
+*.so
+*.dylib
+*.bin
+
+# Compressed files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Local database dumps
+*.sql
+!backend/migrations/*.sql
+!database/migrations/*.sql
+!database/schema/*.sql
+dumps/
+db_dumps/
+
+# Session data
+sessions/
+session-store/
+
+# PM2
+.pm2/
+pm2.json
+ecosystem.config.js
+
+# Python (if any scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+.Python
+venv/
+ENV/
+env/
+
+# JetBrains
+.idea/
+*.iws
+out/
+.idea_modules/
+
+# VS Code specific
+.vscode/*
+!.vscode/settings.json.example
+!.vscode/tasks.json.example
+!.vscode/launch.json.example
+!.vscode/extensions.json.example
+*.code-workspace
+.history/
+
+# Local environment overrides
+docker-compose.override.yml
+.dockerignore.local
+
+# Generated files
+generated/
+auto-generated/
+
+# Temporary files
+*.tmp
+*.temp
+.temp/
+.tmp/
+tmp/
+temp/
+
+# OS generated files
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# npm/yarn debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Ignore everything in backup directory except README
+/var/backups/
+backups/*
+!backups/README.md
+
+# Monitoring and metrics
+metrics/
+monitoring/
+grafana-storage/
+prometheus-data/
+
+# Terraform (if used for infrastructure)
+*.tfstate
+*.tfstate.backup
+.terraform/
+terraform.tfvars
+
+# Ansible (if used for deployment)
+*.retry
+ansible/*.retry

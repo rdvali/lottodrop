@@ -1,0 +1,562 @@
+/* ========================================
+   SPECIALIZED GAMING COMPONENTS
+   For Gumball.fun Inspired Platform
+   ======================================== */
+
+/* ========================================
+   LOTTERY/GAMING SPECIFIC COMPONENTS
+   ======================================== */
+
+/* Prize Pool Display */
+.prize-pool {
+  background: linear-gradient(135deg, 
+    rgba(255, 51, 102, 0.1) 0%, 
+    rgba(139, 92, 246, 0.1) 50%,
+    rgba(0, 255, 136, 0.1) 100%);
+  border: 2px solid rgba(255, 51, 102, 0.3);
+  border-radius: 20px;
+  padding: 32px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.prize-pool::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 51, 102, 0.1) 0%, transparent 70%);
+  animation: rotate 10s linear infinite;
+}
+
+.prize-pool-amount {
+  font-size: 4rem;
+  font-weight: 800;
+  line-height: 1;
+  background: linear-gradient(135deg, #fff 0%, var(--accent-primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+  z-index: 2;
+}
+
+.prize-pool-label {
+  font-size: 1.125rem;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  position: relative;
+  z-index: 2;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Game Status Indicators */
+.status-live {
+  background: linear-gradient(135deg, var(--success) 0%, #34d399 100%);
+  color: white;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+  animation: pulse-success 2s infinite;
+}
+
+.status-ending {
+  background: linear-gradient(135deg, var(--warning) 0%, #fbbf24 100%);
+  color: white;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+  animation: pulse-warning 1.5s infinite;
+}
+
+.status-upcoming {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-secondary);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+@keyframes pulse-success {
+  0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); }
+  50% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.6); }
+}
+
+@keyframes pulse-warning {
+  0%, 100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.4); }
+  50% { box-shadow: 0 0 30px rgba(245, 158, 11, 0.6); }
+}
+
+/* Countdown Timer */
+.countdown {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  align-items: center;
+}
+
+.countdown-segment {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px 12px;
+  text-align: center;
+  min-width: 80px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.countdown-number {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent-primary);
+  line-height: 1;
+  display: block;
+}
+
+.countdown-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 4px;
+}
+
+/* Player Count Display */
+.player-count {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.player-avatars {
+  display: flex;
+  margin-right: 8px;
+}
+
+.player-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-primary);
+  margin-left: -8px;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-purple));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+}
+
+.player-avatar:first-child {
+  margin-left: 0;
+}
+
+.player-count-text {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.player-count-label {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+/* Entry Fee Display */
+.entry-fee {
+  background: linear-gradient(135deg, 
+    rgba(0, 255, 136, 0.1) 0%, 
+    rgba(6, 182, 212, 0.1) 100%);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+
+.entry-fee-amount {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent-secondary);
+  line-height: 1;
+}
+
+.entry-fee-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* Ticket/Entry Card */
+.ticket-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ticket-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 51, 102, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 51, 102, 0.1);
+  transform: translateY(-2px);
+}
+
+.ticket-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    var(--accent-primary), 
+    var(--accent-purple), 
+    var(--accent-secondary));
+}
+
+.ticket-number {
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--accent-primary);
+  letter-spacing: 0.1em;
+}
+
+.ticket-game {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin: 8px 0;
+}
+
+.ticket-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ticket-status-active {
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.ticket-status-won {
+  background: rgba(0, 255, 136, 0.2);
+  color: var(--accent-secondary);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+}
+
+.ticket-status-lost {
+  background: rgba(113, 113, 122, 0.2);
+  color: var(--text-tertiary);
+  border: 1px solid rgba(113, 113, 122, 0.3);
+}
+
+/* Winner Announcement */
+.winner-announcement {
+  background: linear-gradient(135deg, 
+    rgba(0, 255, 136, 0.1) 0%, 
+    rgba(16, 185, 129, 0.1) 100%);
+  border: 2px solid rgba(0, 255, 136, 0.3);
+  border-radius: 20px;
+  padding: 32px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.winner-announcement::before {
+  content: '🎉';
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  font-size: 2rem;
+  animation: bounce 2s infinite;
+}
+
+.winner-announcement::after {
+  content: '🎉';
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 2rem;
+  animation: bounce 2s infinite 0.5s;
+}
+
+.winner-name {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent-secondary);
+  margin-bottom: 8px;
+}
+
+.winner-amount {
+  font-size: 3rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent-secondary) 0%, #34d399 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 16px;
+}
+
+.winner-game {
+  color: var(--text-secondary);
+  font-size: 1.125rem;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-10px); }
+  60% { transform: translateY(-5px); }
+}
+
+/* Progress Bar for Game Filling */
+.game-progress {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  height: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+.game-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+  border-radius: 10px;
+  transition: width 0.5s ease;
+  position: relative;
+}
+
+.game-progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer-progress 2s infinite;
+}
+
+@keyframes shimmer-progress {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+.game-progress-text {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* Notification/Toast */
+.notification {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  max-width: 400px;
+  padding: 20px;
+  border-radius: 16px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 1000;
+  transform: translateX(420px);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.notification.show {
+  transform: translateX(0);
+}
+
+.notification-success {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 20px rgba(16, 185, 129, 0.2);
+}
+
+.notification-error {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 20px rgba(239, 68, 68, 0.2);
+}
+
+.notification-warning {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 20px rgba(245, 158, 11, 0.2);
+}
+
+.notification-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.notification-message {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+/* Balance Display */
+.balance-card {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.1) 0%, 
+    rgba(255, 255, 255, 0.05) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 24px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  position: relative;
+  overflow: hidden;
+}
+
+.balance-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.5), 
+    transparent);
+}
+
+.balance-amount {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.balance-currency {
+  color: var(--accent-primary);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.balance-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.balance-actions .btn-primary,
+.balance-actions .btn-secondary {
+  flex: 1;
+  padding: 12px;
+  font-size: 0.875rem;
+}
+
+/* Loading States */
+.loading-skeleton {
+  background: linear-gradient(90deg, 
+    rgba(255, 255, 255, 0.05) 25%, 
+    rgba(255, 255, 255, 0.1) 50%, 
+    rgba(255, 255, 255, 0.05) 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes loading {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.loading-text {
+  height: 20px;
+  margin: 8px 0;
+}
+
+.loading-title {
+  height: 32px;
+  margin: 12px 0;
+}
+
+.loading-card {
+  height: 200px;
+  margin: 16px 0;
+}
+
+/* Responsive Adjustments for Gaming Components */
+@media (max-width: 640px) {
+  .prize-pool-amount {
+    font-size: 2.5rem;
+  }
+  
+  .countdown {
+    gap: 8px;
+  }
+  
+  .countdown-segment {
+    min-width: 60px;
+    padding: 12px 8px;
+  }
+  
+  .countdown-number {
+    font-size: 1.5rem;
+  }
+  
+  .notification {
+    top: 16px;
+    right: 16px;
+    left: 16px;
+    max-width: none;
+    transform: translateY(-100px);
+  }
+  
+  .notification.show {
+    transform: translateY(0);
+  }
+  
+  .winner-amount {
+    font-size: 2rem;
+  }
+  
+  .winner-name {
+    font-size: 1.5rem;
+  }
+  
+  .balance-amount {
+    font-size: 2rem;
+  }
+}

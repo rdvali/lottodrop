@@ -1,0 +1,11 @@
+{
+  "moderate": true,
+  "allowlist": [
+  ],
+  "report-type": "summary",
+  "package-manager": "npm",
+  "path-whitelist": [],
+  "show-found": true,
+  "show-not-found": false,
+  "registry": "https://registry.npmjs.org"
+}

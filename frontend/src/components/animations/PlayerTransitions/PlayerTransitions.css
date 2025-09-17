@@ -1,0 +1,345 @@
+.player-transitions-container {
+  position: relative;
+  width: 100%;
+  padding: 20px;
+  background: rgba(45, 45, 68, 0.5);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+/* Room Capacity Indicator */
+.room-capacity {
+  margin-bottom: 24px;
+}
+
+.capacity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.capacity-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.capacity-count {
+  font-size: 16px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.capacity-bar {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.capacity-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  border-radius: 4px;
+  transition: all 0.5s ease-out;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.capacity-warning {
+  position: absolute;
+  right: 8px;
+  top: -24px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #FF4444;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Participants Grid */
+.participants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+/* Participant Card */
+.participant-card {
+  position: relative;
+  background: linear-gradient(135deg, rgba(157, 78, 221, 0.2), rgba(106, 76, 147, 0.2));
+  border: 1px solid rgba(157, 78, 221, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s ease;
+  overflow: visible;
+}
+
+.participant-card:hover {
+  background: linear-gradient(135deg, rgba(157, 78, 221, 0.3), rgba(106, 76, 147, 0.3));
+  border-color: rgba(157, 78, 221, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(157, 78, 221, 0.3);
+}
+
+.participant-card.highlighted {
+  background: linear-gradient(135deg, rgba(157, 78, 221, 0.4), rgba(106, 76, 147, 0.4));
+  border-color: #9D4EDD;
+  box-shadow: 0 0 20px rgba(157, 78, 221, 0.6);
+}
+
+.participant-card.entering {
+  animation: slideInLeft 0.5s ease-out;
+}
+
+.participant-card.leaving {
+  animation: slideOutRight 0.4s ease-in;
+  opacity: 0.5;
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(50px);
+    opacity: 0;
+  }
+}
+
+/* Avatar */
+.participant-avatar {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  margin-right: 12px;
+}
+
+/* Avatar component styles itself, so we don't need avatar-inner anymore */
+
+.new-player-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #4CAF50;
+  color: #FFFFFF;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 2px 4px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Participant Info */
+.participant-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.participant-username {
+  font-size: 14px;
+  font-weight: 600;
+  color: #FFFFFF;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.participant-status {
+  font-size: 16px;
+}
+
+/* Action Indicator */
+.action-indicator {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.action-indicator.join {
+  background: rgba(76, 175, 80, 0.9);
+  color: #FFFFFF;
+  box-shadow: 0 2px 4px rgba(76, 175, 80, 0.4);
+}
+
+.action-indicator.leave {
+  background: rgba(244, 67, 54, 0.9);
+  color: #FFFFFF;
+  box-shadow: 0 2px 4px rgba(244, 67, 54, 0.4);
+}
+
+/* Sparkle Effects */
+.sparkle-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.sparkle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  background: #FFD700;
+  border-radius: 50%;
+  box-shadow: 0 0 4px #FFD700;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  display: block;
+  opacity: 0.5;
+}
+
+.empty-state p {
+  font-size: 16px;
+  margin: 0;
+}
+
+/* Filling Prompt */
+.filling-prompt {
+  text-align: center;
+  margin-top: 20px;
+  padding: 12px;
+  background: rgba(157, 78, 221, 0.1);
+  border-radius: 8px;
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.filling-prompt.ready {
+  background: rgba(76, 175, 80, 0.2);
+  border: 1px solid rgba(76, 175, 80, 0.4);
+  color: #4CAF50;
+  font-weight: 600;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .player-transitions-container {
+    padding: 16px;
+  }
+
+  .participants-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+  }
+
+  .participant-card {
+    padding: 12px;
+  }
+
+  .participant-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .avatar-inner {
+    font-size: 16px;
+  }
+
+  .participant-username {
+    font-size: 12px;
+    max-width: 100px;
+  }
+}
+
+@media (max-width: 480px) {
+  .participants-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+  }
+
+  .participant-card {
+    padding: 10px;
+  }
+
+  .participant-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .avatar-inner {
+    font-size: 14px;
+  }
+
+  .action-indicator {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+}
+
+/* Accessibility - Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .participant-card,
+  .participant-card * {
+    animation: none !important;
+    transition: opacity 200ms ease-out !important;
+  }
+
+  .sparkle {
+    display: none;
+  }
+
+  .capacity-fill {
+    transition: width 200ms ease-out !important;
+  }
+
+  .participant-card.entering {
+    opacity: 1;
+    transform: none;
+  }
+
+  .participant-card.leaving {
+    opacity: 0.5;
+    transform: none;
+  }
+}

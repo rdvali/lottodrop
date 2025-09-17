@@ -1,0 +1,214 @@
+.exportContainer {
+  background: var(--card-bg, #ffffff);
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #e5e7eb);
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.exportTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary, #111827);
+  margin-bottom: 1.25rem;
+}
+
+.exportButtons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.exportButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--button-bg, #ffffff);
+  border: 2px solid var(--border-color, #e5e7eb);
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary, #111827);
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 100px;
+}
+
+.exportButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.exportButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.exportButton.csv {
+  border-color: var(--success-color, #10b981);
+}
+
+.exportButton.csv:hover:not(:disabled) {
+  background: var(--success-light, #ecfdf5);
+  border-color: var(--success-color, #10b981);
+}
+
+.exportButton.json {
+  border-color: var(--primary-color, #3b82f6);
+}
+
+.exportButton.json:hover:not(:disabled) {
+  background: var(--primary-light, #eff6ff);
+  border-color: var(--primary-color, #3b82f6);
+}
+
+.exportButton.excel {
+  border-color: var(--warning-color, #f59e0b);
+}
+
+.exportButton.excel:hover:not(:disabled) {
+  background: var(--warning-light, #fef3c7);
+  border-color: var(--warning-color, #f59e0b);
+}
+
+.icon {
+  width: 32px;
+  height: 32px;
+  color: inherit;
+}
+
+.progressContainer {
+  margin-bottom: 1rem;
+}
+
+.progressBar {
+  width: 100%;
+  height: 8px;
+  background: var(--progress-bg, #f3f4f6);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--primary-color, #3b82f6);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  position: relative;
+}
+
+.progressFill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.progressText {
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #6b7280);
+  font-weight: 500;
+}
+
+.emptyMessage {
+  text-align: center;
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.875rem;
+  padding: 2rem 0;
+}
+
+.exportInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color, #e5e7eb);
+}
+
+.infoText {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #6b7280);
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .exportButtons {
+    grid-template-columns: 1fr;
+  }
+  
+  .exportButton {
+    min-height: 80px;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 1rem;
+  }
+  
+  .icon {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .exportInfo {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .exportContainer {
+    background: var(--card-bg-dark, #1f2937);
+    border-color: var(--border-color-dark, #374151);
+  }
+  
+  .exportTitle {
+    color: var(--text-primary-dark, #f9fafb);
+  }
+  
+  .exportButton {
+    background: var(--button-bg-dark, #374151);
+    border-color: var(--border-color-dark, #4b5563);
+    color: var(--text-primary-dark, #f9fafb);
+  }
+  
+  .exportButton:hover:not(:disabled) {
+    background: var(--hover-bg-dark, #4b5563);
+  }
+  
+  .progressBar {
+    background: var(--progress-bg-dark, #374151);
+  }
+  
+  .progressText,
+  .emptyMessage,
+  .infoText {
+    color: var(--text-secondary-dark, #9ca3af);
+  }
+}

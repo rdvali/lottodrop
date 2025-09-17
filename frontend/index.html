@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Viewport and Mobile Optimization -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <meta name="description" content="Join exciting lottery games with instant payouts and provably fair results. Experience real-time gaming with LottoDrop." />
+    <meta name="keywords" content="lottery, gaming, real-time, instant payout, provably fair, online gaming" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#1A1A2E" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="LottoDrop" />
+    <meta name="application-name" content="LottoDrop" />
+    <meta name="msapplication-TileColor" content="#9D4EDD" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    
+    <!-- Performance Optimization -->
+    <link rel="dns-prefetch" href="https://api.lottodrop.com" />
+    <link rel="preconnect" href="https://api.lottodrop.com" crossorigin />
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="LottoDrop - Real-Time Lottery Gaming Platform" />
+    <meta property="og:description" content="Join exciting lottery games with instant payouts and provably fair results" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://lottodrop.com" />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:site_name" content="LottoDrop" />
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="LottoDrop - Real-Time Lottery Gaming" />
+    <meta name="twitter:description" content="Join exciting lottery games with instant payouts" />
+    <meta name="twitter:image" content="/twitter-card.png" />
+    
+    <title>LottoDrop - Real-Time Lottery Gaming Platform</title>
+    
+    <!-- Inline Critical CSS for faster initial paint -->
+    <style>
+      body {
+        margin: 0;
+        background-color: #1A1A2E;
+        color: #F1F1F1;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      }
+      #root {
+        min-height: 100vh;
+      }
+      .initial-loader {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+      }
+      .spinner {
+        width: 50px;
+        height: 50px;
+        border: 3px solid rgba(157, 78, 221, 0.2);
+        border-top-color: #9D4EDD;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <!-- Initial loading state -->
+      <div class="initial-loader">
+        <div class="spinner"></div>
+        <p style="margin-top: 20px; color: #9D4EDD;">Loading LottoDrop...</p>
+      </div>
+    </div>
+    
+    <!-- Noscript fallback -->
+    <noscript>
+      <div style="padding: 20px; text-align: center; background: #2D2D44; color: #F1F1F1;">
+        <h1>JavaScript Required</h1>
+        <p>Please enable JavaScript to use LottoDrop.</p>
+      </div>
+    </noscript>
+    
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

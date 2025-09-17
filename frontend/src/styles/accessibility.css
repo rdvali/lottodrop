@@ -1,0 +1,433 @@
+/**
+ * Accessibility Styles for LottoDrop
+ * WCAG 2.1 AA compliant styles
+ */
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Screen reader only content that becomes visible on focus */
+.sr-only-focusable:focus {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  padding: inherit !important;
+  margin: inherit !important;
+  overflow: visible !important;
+  clip: auto !important;
+  white-space: normal !important;
+}
+
+/* Focus indicators */
+.focus-visible {
+  outline: 2px solid #0066cc !important;
+  outline-offset: 2px !important;
+}
+
+/* High contrast focus indicators */
+@media (prefers-contrast: high) {
+  .focus-visible {
+    outline: 3px solid currentColor !important;
+    outline-offset: 3px !important;
+  }
+}
+
+/* Custom focus styles for interactive elements */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Gaming-specific focus styles */
+.game-button:focus-visible {
+  outline: 3px solid #ffd700;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px rgba(255, 215, 0, 0.3);
+}
+
+.bet-button:focus-visible {
+  outline: 3px solid #00ff00;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px rgba(0, 255, 0, 0.3);
+}
+
+/* Skip links */
+.skip-navigation {
+  position: absolute;
+  top: -9999px;
+  left: -9999px;
+  z-index: 9999;
+}
+
+.skip-link {
+  position: absolute;
+  top: -9999px;
+  left: -9999px;
+  padding: 12px 16px;
+  background: #000;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 2px solid #fff;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.skip-link:focus {
+  position: fixed !important;
+  top: 16px !important;
+  left: 16px !important;
+  z-index: 10000 !important;
+  outline: none;
+  transform: translateY(0);
+}
+
+.skip-link:hover,
+.skip-link:focus {
+  background: #333;
+  color: #fff;
+  text-decoration: underline;
+}
+
+/* Touch target sizing */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.touch-target-large {
+  min-height: 48px;
+  min-width: 48px;
+}
+
+/* Keyboard navigation indicators */
+.keyboard-nav-active {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+  background-color: rgba(0, 102, 204, 0.1);
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .skip-link {
+    transition: none;
+  }
+}
+
+/* High contrast mode adjustments */
+@media (prefers-contrast: high) {
+  /* Ensure sufficient contrast for all text */
+  .text-primary {
+    color: #000 !important;
+  }
+  
+  .text-secondary {
+    color: #333 !important;
+  }
+  
+  .bg-primary {
+    background-color: #fff !important;
+    border: 2px solid #000 !important;
+  }
+  
+  /* Button contrast improvements */
+  button,
+  .btn {
+    border: 2px solid currentColor !important;
+    background-color: transparent !important;
+    color: #000 !important;
+  }
+  
+  button:hover,
+  .btn:hover {
+    background-color: #000 !important;
+    color: #fff !important;
+  }
+}
+
+/* Color blindness considerations */
+.color-blind-friendly {
+  /* Use patterns and shapes in addition to color */
+}
+
+.status-success::before {
+  content: "✓ ";
+  color: inherit;
+}
+
+.status-error::before {
+  content: "✗ ";
+  color: inherit;
+}
+
+.status-warning::before {
+  content: "⚠ ";
+  color: inherit;
+}
+
+.status-info::before {
+  content: "ℹ ";
+  color: inherit;
+}
+
+/* Card/Game area focus management */
+.game-area:focus {
+  outline: 3px solid #ffd700;
+  outline-offset: 4px;
+}
+
+.card:focus {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+  transform: scale(1.02);
+}
+
+/* Loading states with accessibility */
+.loading-accessible {
+  position: relative;
+}
+
+.loading-accessible::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Error states */
+.error-state {
+  border: 2px solid #dc3545;
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 12px;
+  border-radius: 4px;
+}
+
+.error-state::before {
+  content: "Error: ";
+  font-weight: bold;
+}
+
+/* Success states */
+.success-state {
+  border: 2px solid #28a745;
+  background-color: #d4edda;
+  color: #155724;
+  padding: 12px;
+  border-radius: 4px;
+}
+
+.success-state::before {
+  content: "Success: ";
+  font-weight: bold;
+}
+
+/* Form accessibility */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+  color: #333;
+}
+
+.form-label.required::after {
+  content: " *";
+  color: #dc3545;
+}
+
+.form-control {
+  width: 100%;
+  padding: 8px 12px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px; /* Prevents zoom on iOS */
+}
+
+.form-control:focus {
+  border-color: #0066cc;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.25);
+}
+
+.form-control[aria-invalid="true"] {
+  border-color: #dc3545;
+}
+
+.form-control[aria-invalid="true"]:focus {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.25);
+}
+
+.form-error {
+  color: #dc3545;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.form-help {
+  color: #666;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+/* Tooltip accessibility */
+.tooltip {
+  position: relative;
+}
+
+.tooltip-content {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+  z-index: 1000;
+}
+
+.tooltip:hover .tooltip-content,
+.tooltip:focus .tooltip-content {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Modal accessibility */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 8px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 24px;
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.modal-close:focus {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
+/* Tables accessibility */
+.table-responsive {
+  overflow-x: auto;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th,
+td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+}
+
+/* Gaming specific accessibility */
+.game-status {
+  font-weight: bold;
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: 2px solid transparent;
+}
+
+.game-status.waiting {
+  background-color: #fff3cd;
+  border-color: #ffeaa7;
+  color: #856404;
+}
+
+.game-status.playing {
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+
+.game-status.ended {
+  background-color: #d1ecf1;
+  border-color: #bee5eb;
+  color: #0c5460;
+}

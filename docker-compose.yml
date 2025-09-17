@@ -1,0 +1,160 @@
+# Docker Compose Configuration for LottoDrop with Redis
+# Full-stack multi-service orchestration
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: lottodrop-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-lottodrop}
+      POSTGRES_USER: ${DB_USER:-lottodrop_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secure_password_123}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    networks:
+      - lottodrop-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-lottodrop_user} -d ${DB_NAME:-lottodrop}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Redis Cache & Session Store
+  redis:
+    image: redis:7-alpine
+    container_name: lottodrop-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    networks:
+      - lottodrop-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: lottodrop-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Database
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-lottodrop}
+      DB_USER: ${DB_USER:-lottodrop_user}
+      DB_PASSWORD: ${DB_PASSWORD:-secure_password_123}
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_DB: ${REDIS_DB:-0}
+      # JWT & Security
+      JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_here_change_in_production}
+      SESSION_SECRET: ${SESSION_SECRET:-your_session_secret_here}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
+      # Server
+      PORT: 3001
+      NODE_ENV: ${NODE_ENV:-production}
+      # CORS
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost,http://localhost:80,http://localhost:81,http://localhost:3000,http://localhost:3001}
+      # Admin
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@lottodrop.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin123!@#}
+    ports:
+      - "${BACKEND_PORT:-3001}:3001"
+    networks:
+      - lottodrop-network
+    volumes:
+      - ./backend/uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend Application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
+        VITE_SOCKET_URL: ${VITE_SOCKET_URL:-}
+        VITE_APP_NAME: ${VITE_APP_NAME:-LottoDrop}
+        VITE_APP_VERSION: ${VITE_APP_VERSION:-2.0.0}
+    container_name: lottodrop-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-80}:8080"
+    networks:
+      - lottodrop-network
+    environment:
+      - NODE_ENV=production
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Admin Panel
+  frontend-admin:
+    build:
+      context: ./frontend-admin
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:3001}
+    container_name: lottodrop-admin
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${ADMIN_PORT:-81}:80"
+    networks:
+      - lottodrop-network
+    environment:
+      - NODE_ENV=production
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# Networks
+networks:
+  lottodrop-network:
+    driver: bridge
+    name: lottodrop-network
+
+# Volumes
+volumes:
+  postgres_data:
+    name: lottodrop-postgres-data
+  redis_data:
+    name: lottodrop-redis-data

@@ -1,0 +1,268 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      deploy_type:
+        description: 'Deployment type'
+        required: true
+        default: 'update'
+        type: choice
+        options:
+          - update
+          - rollback
+          - full
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Security scanning before deployment
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Trivy security scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+          
+      - name: Check for secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+
+  # Build and test
+  build-and-test:
+    runs-on: ubuntu-latest
+    needs: security-scan
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+            frontend-admin/package-lock.json
+      
+      - name: Install and test backend
+        working-directory: ./backend
+        run: |
+          npm ci
+          npm run build
+          # npm test
+      
+      - name: Install and build frontend
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npm run build
+      
+      - name: Install and build admin panel
+        working-directory: ./frontend-admin
+        run: |
+          npm ci
+          npm run build
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            backend/dist
+            frontend/dist
+            frontend-admin/build
+
+  # Deploy to production
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    environment:
+      name: production
+      url: https://lottodrop.net
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Create deployment package
+        run: |
+          # Create deployment directory
+          mkdir -p deployment
+          
+          # Copy necessary files (excluding sensitive data)
+          cp -r backend deployment/
+          cp -r frontend deployment/
+          cp -r frontend-admin deployment/
+          cp docker-compose.prod.yml deployment/
+          cp deploy.sh deployment/
+          cp monitor.sh deployment/
+          cp backup.sh deployment/
+          cp restore.sh deployment/
+          
+          # Create deployment info
+          echo "{
+            \"version\": \"${{ github.sha }}\",
+            \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+            \"branch\": \"${{ github.ref_name }}\",
+            \"commit_message\": \"${{ github.event.head_commit.message }}\",
+            \"author\": \"${{ github.actor }}\"
+          }" > deployment/deployment.json
+          
+          # Create tarball
+          tar -czf deployment.tar.gz deployment/
+      
+      - name: Backup current production
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          port: ${{ secrets.PRODUCTION_PORT || 22 }}
+          script: |
+            cd /var/www/lottodrop
+            # Create backup before deployment
+            ./backup.sh || echo "Backup script not found, skipping..."
+            
+            # Save current version for rollback
+            if [ -f deployment.json ]; then
+              cp deployment.json deployment.prev.json
+            fi
+      
+      - name: Transfer deployment package
+        uses: appleboy/scp-action@v0.1.5
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          port: ${{ secrets.PRODUCTION_PORT || 22 }}
+          source: "deployment.tar.gz"
+          target: "/tmp/"
+      
+      - name: Deploy to production
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          port: ${{ secrets.PRODUCTION_PORT || 22 }}
+          script: |
+            set -e
+            
+            # Extract deployment package
+            cd /tmp
+            tar -xzf deployment.tar.gz
+            
+            # Preserve important files
+            cd /var/www/lottodrop
+            
+            # Save configs and data that shouldn't be overwritten
+            cp .env /tmp/deployment/.env 2>/dev/null || true
+            cp backend/.env /tmp/deployment/backend/.env 2>/dev/null || true
+            
+            # Preserve uploads directory
+            if [ -d backend/uploads ]; then
+              cp -r backend/uploads /tmp/deployment/backend/uploads
+            fi
+            
+            # Update code (excluding configs and data)
+            rsync -av --delete \
+              --exclude='.env' \
+              --exclude='backend/.env' \
+              --exclude='backend/uploads' \
+              --exclude='postgres_data' \
+              --exclude='redis_data' \
+              --exclude='backups' \
+              --exclude='*.log' \
+              --exclude='node_modules' \
+              /tmp/deployment/ /var/www/lottodrop/
+            
+            # Make scripts executable
+            chmod +x *.sh
+            
+            # Deploy with zero downtime
+            ./deploy.sh
+            
+            # Clean up
+            rm -rf /tmp/deployment /tmp/deployment.tar.gz
+      
+      - name: Health check
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          port: ${{ secrets.PRODUCTION_PORT || 22 }}
+          script: |
+            cd /var/www/lottodrop
+            
+            # Wait for services to be healthy
+            sleep 30
+            
+            # Check health
+            curl -f https://lottodrop.net/api/health || exit 1
+            
+            # Run monitoring script
+            ./monitor.sh
+      
+      - name: Notify deployment status
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: |
+            Deployment ${{ job.status == 'success' && 'successful' || 'failed' }}!
+            Version: ${{ github.sha }}
+            Author: ${{ github.actor }}
+            Message: ${{ github.event.head_commit.message }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        continue-on-error: true
+
+  # Rollback job (manual trigger)
+  rollback:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_type == 'rollback'
+    environment:
+      name: production
+      url: https://lottodrop.net
+    
+    steps:
+      - name: Rollback to previous version
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          port: ${{ secrets.PRODUCTION_PORT || 22 }}
+          script: |
+            cd /var/www/lottodrop
+            
+            # Check if restore script exists
+            if [ -f restore.sh ]; then
+              # Get latest backup
+              LATEST_BACKUP=$(ls -t /var/backups/lottodrop/db_backup_*.sql.gz | head -1 | xargs basename | sed 's/db_backup_//g' | sed 's/.sql.gz//g')
+              
+              if [ -n "$LATEST_BACKUP" ]; then
+                echo "Restoring from backup: $LATEST_BACKUP"
+                ./restore.sh $LATEST_BACKUP
+              else
+                echo "No backup found for rollback"
+                exit 1
+              fi
+            else
+              echo "Rollback script not found"
+              exit 1
+            fi
