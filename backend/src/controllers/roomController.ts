@@ -411,7 +411,7 @@ export const joinRoom = async (req: Request, res: Response) => {
     
     // Start countdown if needed (after commit)
     if (shouldStartCountdown) {
-      const countdownSeconds = 30; // 30 seconds for players to join
+      const countdownSeconds = roomResult.rows[0].countdown_seconds || 5; // Use room's countdown setting, default 5s
       console.log(`Triggering countdown for room ${roomId} with ${countdownSeconds} seconds`);
       // Use socketManager to start the game
       socketManager.startGameForRoom(roomId, countdownSeconds);

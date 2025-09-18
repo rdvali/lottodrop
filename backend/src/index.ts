@@ -7,6 +7,7 @@ import balanceRoutes from './routes/balanceRoutes';
 import roomRoutes from './routes/roomRoutes';
 import adminRoutes from './routes/adminRoutes';
 import healthRoutes from './routes/health';
+import resultsRoutes from './routes/resultsRoutes';
 import { SocketManager } from './socket/socketManager';
 import pool from './config/database';
 import { existsSync } from 'fs';
@@ -74,6 +75,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api', balanceRoutes);
 app.use('/api', roomRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/results', resultsRoutes);
 
 // Health check routes
 app.use('/', healthRoutes);

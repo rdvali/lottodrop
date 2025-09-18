@@ -539,7 +539,7 @@ export class SocketManager {
   }
 
   private startGameCountdown(roomId: string, seconds: number) {
-    let countdown = seconds;
+    let countdown = seconds; // 5 seconds default
 
     // Clear existing timer if any
     if (this.roomTimers.has(roomId)) {
@@ -551,73 +551,90 @@ export class SocketManager {
 
     const timer = setInterval(async () => {
       countdown--;
-      
-      if (countdown >= 0) {
+
+      if (countdown > 0) {
+        // Only emit countdown for values > 0
         this.io.to(roomId).emit('countdown', { roomId, countdown });
+      } else if (countdown === 0) {
+        // Send 0 to trigger "GO!" display
+        this.io.to(roomId).emit('countdown', { roomId, countdown: 0 });
+
+        // Wait 1 second for "GO!" to display before starting animation
+        setTimeout(() => {
+          clearInterval(timer);
+          this.roomTimers.delete(roomId);
+
+          // Signal to frontend to start animation
+          console.log(`[Animation] Countdown ended for room ${roomId}, signaling animation start`);
+          this.io.to(roomId).emit('animation-start', {
+            roomId,
+            message: 'Countdown completed, starting winner selection animation'
+          });
+        }, 1000);
+        return; // Exit to prevent further countdown decrements
       }
-      
+
       if (countdown < 0) {
+        // Safety check - should not reach here
         clearInterval(timer);
         this.roomTimers.delete(roomId);
-        
-        // Signal to frontend to start animation - DO NOT process winner yet
-        console.log(`[Animation] Countdown ended for room ${roomId}, signaling animation start`);
-        this.io.to(roomId).emit('animation-start', {
-          roomId,
-          message: 'Countdown completed, starting winner selection animation'
-        });
-        
-        // NEW: Set server-side fallback timer to ensure winner processing
-        const ANIMATION_DURATION = 30000; // 30 seconds for animation - matches frontend exactly
-        const processingTimer = setTimeout(async () => {
-          try {
-            // Get current round for server fallback processing
-            const fallbackRoundResult = await pool.query(
-              'SELECT id FROM game_rounds WHERE room_id = $1 AND completed_at IS NULL AND archived_at IS NULL',
-              [roomId]
-            );
-            
-            if (fallbackRoundResult.rows.length > 0) {
-              const fallbackRoundId = fallbackRoundResult.rows[0].id;
-              
-              // Check if this specific round has already been processed
-              if (!this.processedRounds.has(fallbackRoundId)) {
-                console.log(`[Server-Fallback] Auto-processing round ${fallbackRoundId} for room ${roomId} after animation timeout`);
-                this.processedRounds.add(fallbackRoundId);
-                await winnerProcessingQueue.add(roomId);
-                
-                // Emit fallback processing notification to room
-                this.io.to(roomId).emit('processing-status', {
-                  roomId,
-                  roundId: fallbackRoundId,
-                  status: 'fallback-processing',
-                  message: 'Server is processing winner selection due to client timeout'
-                });
-              } else {
-                console.log(`[Server-Fallback] Round ${fallbackRoundId} in room ${roomId} already processed, skipping fallback`);
-              }
-            } else {
-              console.log(`[Server-Fallback] No active round found for room ${roomId}, skipping fallback`);
-            }
-          } catch (fallbackError) {
-            console.error(`[Server-Fallback] Error in fallback processing for room ${roomId}:`, fallbackError);
-            // Emit error to room
-            this.io.to(roomId).emit('error', {
-              message: 'Server fallback processing failed - please refresh',
-              roomId: roomId
-            });
-          }
-          // Clean up the timer reference
-          this.roomProcessingTimers.delete(roomId);
-        }, ANIMATION_DURATION);
-        
-        // Store the processing timer
-        this.roomProcessingTimers.set(roomId, processingTimer);
-        console.log(`[Server-Fallback] Set fallback timer for room ${roomId} (will trigger in ${ANIMATION_DURATION / 1000} seconds)`);
+        return;
       }
-    }, 1000);
+    }, 1000); // Interval runs every second
 
+    // Store timer reference
     this.roomTimers.set(roomId, timer);
+
+    // Set server-side fallback timer to ensure winner processing
+    // This runs after the full countdown + GO! + animation time
+    const ANIMATION_DURATION = 7000; // 7 seconds for VRF animation
+    const totalWaitTime = (seconds + 1) * 1000 + ANIMATION_DURATION; // countdown + 1s for "GO!" + 7s animation
+
+    const fallbackTimer = setTimeout(async () => {
+      try {
+        // Get current round for server fallback processing
+        const fallbackRoundResult = await pool.query(
+          'SELECT id FROM game_rounds WHERE room_id = $1 AND completed_at IS NULL AND archived_at IS NULL',
+          [roomId]
+        );
+
+        if (fallbackRoundResult.rows.length > 0) {
+          const fallbackRoundId = fallbackRoundResult.rows[0].id;
+
+          // Check if this specific round has already been processed
+          if (!this.processedRounds.has(fallbackRoundId)) {
+            console.log(`[Server-Fallback] Auto-processing round ${fallbackRoundId} for room ${roomId} after animation timeout`);
+            this.processedRounds.add(fallbackRoundId);
+            await winnerProcessingQueue.add(roomId);
+
+            // Emit fallback processing notification to room
+            this.io.to(roomId).emit('processing-status', {
+              roomId,
+              roundId: fallbackRoundId,
+              status: 'fallback-processing',
+              message: 'Server is processing winner selection due to client timeout'
+            });
+          } else {
+            console.log(`[Server-Fallback] Round ${fallbackRoundId} in room ${roomId} already processed, skipping fallback`);
+          }
+        } else {
+          console.log(`[Server-Fallback] No active round found for room ${roomId}, skipping fallback`);
+        }
+      } catch (fallbackError) {
+        console.error(`[Server-Fallback] Error in fallback processing for room ${roomId}:`, fallbackError);
+        // Emit error to room
+        this.io.to(roomId).emit('error', {
+          message: 'Server fallback processing failed - please refresh',
+          roomId: roomId
+        });
+      }
+      // Clean up the timer reference
+      this.roomProcessingTimers.delete(roomId);
+    }, totalWaitTime);
+
+    // Store the fallback processing timer
+    this.roomProcessingTimers.set(roomId, fallbackTimer);
+    console.log(`[Server-Fallback] Set fallback timer for room ${roomId} (will trigger in ${totalWaitTime / 1000} seconds)`);
   }
 
   /**

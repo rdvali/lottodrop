@@ -806,7 +806,7 @@ const GameRoom = () => {
               participants={participants}
               winners={winners}
               isAnimating={animating}
-              duration={30}
+              duration={7}
               onAnimationComplete={() => {
                 setAnimating(false)
                 // Notify backend that animation is complete to trigger winner processing
@@ -868,7 +868,7 @@ const GameRoom = () => {
           type="confetti"
           message="Congratulations!"
           prize={userWinner?.prize}
-          duration={5000}
+          duration={2500}
         />
 
         {/* Winner Announcement Modal */}
@@ -907,7 +907,7 @@ const GameRoom = () => {
           const userWon = user && activeModalData?.winners?.some(w => w.userId === user.id)
           if (userWon && !showCelebration) {
             setShowCelebration(true)
-            setTimeout(() => setShowCelebration(false), 5000)
+            setTimeout(() => setShowCelebration(false), 2500)
           }
 
           return (
@@ -935,17 +935,18 @@ const GameRoom = () => {
               }}
           title="Round Result"
           size="lg"
+          className="text-center"
         >
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Handle case where data is missing */}
             {!activeModalData ? (
-              <div className="text-center py-8">
-                <p className="text-gray-400 text-lg mb-4">Loading game results...</p>
-                <p className="text-sm text-gray-500">If this persists, please refresh the page.</p>
+              <div className="text-center py-6 sm:py-8">
+                <p className="text-gray-400 text-base sm:text-lg mb-3 sm:mb-4">Loading game results...</p>
+                <p className="text-xs sm:text-sm text-gray-500">If this persists, please refresh the page.</p>
               </div>
             ) : (
               <>
-            {/* YOUR RESULT - MOST PROMINENT */}
+            {/* YOUR RESULT - MOST PROMINENT - Mobile optimized */}
             {/* Use persisted wasParticipant flag instead of current participants array */}
             {user && activeModalData && activeModalData.wasParticipant && (
               <motion.div
@@ -953,7 +954,7 @@ const GameRoom = () => {
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: "spring", duration: 0.5 }}
                 className={clsx(
-                  "rounded-xl p-6 text-center",
+                  "rounded-xl p-4 sm:p-6 text-center",
                   activeModalData.winners && activeModalData.winners.some(w => w.userId === user.id)
                     ? "bg-gradient-to-br from-green-500/20 to-green-600/20 border-2 border-green-500"
                     : "bg-gradient-to-br from-red-500/20 to-red-600/20 border-2 border-red-500"
@@ -961,32 +962,32 @@ const GameRoom = () => {
               >
                 {activeModalData.winners && activeModalData.winners.some(w => w.userId === user.id) ? (
                   <>
-                    <div className="flex justify-center mb-3">
-                      <div className="text-6xl animate-bounce">
+                    <div className="flex justify-center mb-2 sm:mb-3">
+                      <div className="text-5xl sm:text-6xl animate-bounce">
                         🏆
                       </div>
                     </div>
-                    <h2 className="text-4xl font-bold text-green-400 mb-3">
+                    <h2 className="text-2xl sm:text-4xl font-bold text-green-400 mb-2 sm:mb-3">
                       YOU WON!
                     </h2>
-                    <p className="text-3xl font-bold text-white mb-2">
+                    <p className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">
                       +${activeModalData.winners.find(w => w.userId === user.id)?.prize || 0}
                     </p>
-                    <p className="text-sm text-gray-300">
+                    <p className="text-xs sm:text-sm text-gray-300">
                       Added to your balance
                     </p>
                   </>
                 ) : (
                   <>
-                    <div className="flex justify-center mb-3">
-                      <div className="text-6xl">
+                    <div className="flex justify-center mb-2 sm:mb-3">
+                      <div className="text-5xl sm:text-6xl">
                         😔
                       </div>
                     </div>
-                    <h2 className="text-4xl font-bold text-red-400 mb-3">
+                    <h2 className="text-2xl sm:text-4xl font-bold text-red-400 mb-2 sm:mb-3">
                       YOU LOST
                     </h2>
-                    <p className="text-lg text-gray-300">
+                    <p className="text-base sm:text-lg text-gray-300">
                       Better luck next time!
                     </p>
                   </>
@@ -994,16 +995,17 @@ const GameRoom = () => {
               </motion.div>
             )}
 
-            {/* Game Summary */}
-            <div className="bg-secondary-bg/50 rounded-lg p-4 space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400">Prize Pool</span>
-                <span className="text-xl font-bold text-text-primary">
+            {/* Game Summary - Mobile optimized single column */}
+            <div className="bg-secondary-bg/50 rounded-lg p-3 sm:p-4 space-y-3">
+              <div className="flex flex-col items-center space-y-2">
+                <span className="text-xs sm:text-sm text-gray-400">Prize Pool</span>
+                <span className="text-lg sm:text-xl font-bold text-text-primary">
                   ${activeModalData?.prizePool || 0}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400">
+
+              <div className="flex flex-col items-center space-y-2">
+                <span className="text-xs sm:text-sm text-gray-400 text-center">
                   Platform Fee
                   <span className="text-xs text-gray-500 ml-1">
                     ({activeModalData?.platformFeeAmount && activeModalData?.prizePool
@@ -1011,25 +1013,28 @@ const GameRoom = () => {
                       : 10}%)
                   </span>
                 </span>
-                <span className="text-lg text-yellow-400">
+                <span className="text-base sm:text-lg text-yellow-400">
                   -${(activeModalData?.platformFeeAmount || ((activeModalData?.prizePool || 0) * 0.1)).toFixed(2)}
                 </span>
               </div>
-              <div className="flex justify-between items-center pt-3 border-t border-gray-700">
-                <span className="text-sm text-gray-400 font-semibold">Total Distributed</span>
-                <span className="text-xl font-bold text-green-400">
+
+              <div className="flex flex-col items-center space-y-2 pt-3 border-t border-gray-700">
+                <span className="text-xs sm:text-sm text-gray-400 font-semibold">Total Distributed</span>
+                <span className="text-lg sm:text-xl font-bold text-green-400">
                   ${((activeModalData?.prizePool || 0) - (activeModalData?.platformFeeAmount || ((activeModalData?.prizePool || 0) * 0.1))).toFixed(2)}
                 </span>
               </div>
-              <div className="flex justify-between items-center pt-3">
-                <span className="text-sm text-gray-400">Total Winners</span>
-                <span className="text-lg font-semibold text-text-primary">
+
+              <div className="flex flex-col items-center space-y-2 pt-3">
+                <span className="text-xs sm:text-sm text-gray-400">Total Winners</span>
+                <span className="text-base sm:text-lg font-semibold text-text-primary">
                   {activeModalData?.winners?.length || 0} player{activeModalData?.winners?.length !== 1 ? 's' : ''}
                 </span>
               </div>
+
               {/* Platform fee explanation */}
               <div className="mt-3 pt-3 border-t border-gray-700">
-                <p className="text-xs text-gray-500 text-center italic">
+                <p className="text-xs text-gray-500 text-center italic px-2">
                   * A {activeModalData?.platformFeeAmount && activeModalData?.prizePool
                     ? Math.round((activeModalData.platformFeeAmount / activeModalData.prizePool) * 100)
                     : 10}% platform fee is deducted from the prize pool to maintain the service
@@ -1037,42 +1042,45 @@ const GameRoom = () => {
               </div>
             </div>
 
-            {/* Winners List - Simplified */}
+            {/* Winners List - Mobile optimized */}
             <div className="space-y-2">
-              <p className="text-sm text-gray-400 uppercase tracking-wider">All Winners</p>
+              <p className="text-xs sm:text-sm text-gray-400 uppercase tracking-wider text-center">All Winners</p>
               {activeModalData?.winners && activeModalData.winners.length > 0 ? (
-                activeModalData.winners.map((winner, index) => (
-                  <div
-                    key={winner.userId}
-                    className={clsx(
-                      "flex justify-between items-center p-3 rounded-lg",
-                      winner.userId === user?.id
-                        ? "bg-green-500/10 border border-green-500/30"
-                        : "bg-secondary-bg border border-gray-700"
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-gray-400">#{index + 1}</span>
-                      <span className="font-medium text-text-primary">
-                        {winner.username}
-                        {winner.userId === user?.id && (
-                          <span className="text-green-400 ml-2">(You)</span>
-                        )}
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {activeModalData.winners.map((winner, index) => (
+                    <div
+                      key={winner.userId}
+                      className={clsx(
+                        "flex flex-col sm:flex-row sm:justify-between items-center p-3 rounded-lg text-center sm:text-left",
+                        winner.userId === user?.id
+                          ? "bg-green-500/10 border border-green-500/30"
+                          : "bg-secondary-bg border border-gray-700"
+                      )}
+                    >
+                      <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 mb-1 sm:mb-0">
+                        <span className="text-xs sm:text-sm text-gray-400">#{index + 1}</span>
+                        <span className="font-medium text-sm sm:text-base text-text-primary">
+                          {winner.username}
+                          {winner.userId === user?.id && (
+                            <span className="text-green-400 ml-1 sm:ml-2 text-xs sm:text-sm">(You)</span>
+                          )}
+                        </span>
+                      </div>
+                      <span className="font-bold text-green-400 text-base sm:text-lg">
+                        +${winner.prize}
                       </span>
                     </div>
-                    <span className="font-bold text-green-400">
-                      +${winner.prize}
-                    </span>
-                  </div>
-                ))
+                  ))}
+                </div>
               ) : (
-                <p className="text-center text-gray-400 py-4">No winners data</p>
+                <p className="text-center text-gray-400 py-4 text-sm">No winners data</p>
               )}
             </div>
 
-            {/* Close button instruction */}
-            <div className="text-center text-sm text-gray-500">
-              Click the close button or press ESC to close this window
+            {/* Close button instruction - mobile optimized */}
+            <div className="text-center text-xs sm:text-sm text-gray-500 px-2">
+              <span className="hidden sm:inline">Click the close button or press ESC to close</span>
+              <span className="sm:hidden">Tap the X to close</span>
             </div>
               </>
             )}

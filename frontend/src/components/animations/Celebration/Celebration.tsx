@@ -14,7 +14,7 @@ export interface CelebrationProps {
 const Celebration = ({
   trigger,
   type = 'confetti',
-  duration = 5000,
+  duration = 2500,
   message = 'Congratulations!',
   prize,
   onComplete,
@@ -51,7 +51,7 @@ const Celebration = ({
   }, [trigger, type, duration, onComplete])
 
   const triggerConfetti = () => {
-    const count = 200
+    const count = 100 // Reduced from 200
     const defaults = {
       origin: { y: 0.7 },
       colors: ['#9D4EDD', '#A855F7', '#C084FC', '#6A4C93', '#F1F1F1'],
@@ -66,34 +66,28 @@ const Celebration = ({
       })
     }
 
-    fire(0.25, {
-      spread: 26,
-      startVelocity: 55,
-    })
-    fire(0.2, {
+    // Quick burst pattern for faster celebration
+    fire(0.4, {
       spread: 60,
+      startVelocity: 60,
     })
-    fire(0.35, {
+    fire(0.3, {
       spread: 100,
-      decay: 0.91,
-      scalar: 0.8,
-    })
-    fire(0.1, {
-      spread: 120,
-      startVelocity: 25,
       decay: 0.92,
-      scalar: 1.2,
+      scalar: 0.9,
     })
-    fire(0.1, {
+    fire(0.3, {
       spread: 120,
-      startVelocity: 45,
+      startVelocity: 40,
+      decay: 0.94,
+      scalar: 1.1,
     })
   }
 
   const triggerFireworks = () => {
-    const duration = 5 * 1000
-    const animationEnd = Date.now() + duration
-    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 10001 }
+    const fireworkDuration = 2 * 1000 // Reduced from 5s to 2s
+    const animationEnd = Date.now() + fireworkDuration
+    const defaults = { startVelocity: 35, spread: 360, ticks: 50, zIndex: 10001 } // Faster, fewer ticks
 
     function randomInRange(min: number, max: number) {
       return Math.random() * (max - min) + min
@@ -106,30 +100,30 @@ const Celebration = ({
         return clearInterval(interval)
       }
 
-      const particleCount = 50 * (timeLeft / duration)
-      
+      const particleCount = 30 * (timeLeft / fireworkDuration) // Reduced particle count
+
       confetti({
         ...defaults,
         particleCount,
-        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+        origin: { x: randomInRange(0.2, 0.4), y: Math.random() - 0.1 },
         colors: ['#9D4EDD', '#A855F7', '#C084FC'],
       })
       confetti({
         ...defaults,
         particleCount,
-        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+        origin: { x: randomInRange(0.6, 0.8), y: Math.random() - 0.1 },
         colors: ['#6A4C93', '#F1F1F1', '#A855F7'],
       })
-    }, 250)
+    }, 150) // Faster interval
   }
 
   const triggerStars = () => {
     const defaults = {
       spread: 360,
-      ticks: 100,
+      ticks: 60, // Reduced from 100
       gravity: 0,
-      decay: 0.94,
-      startVelocity: 30,
+      decay: 0.96, // Faster decay
+      startVelocity: 35,
       shapes: ['star'],
       colors: ['#FFE400', '#FFBD00', '#E89400', '#FFCA6C', '#FDFFB8'],
       zIndex: 10001,
@@ -138,31 +132,32 @@ const Celebration = ({
     function shoot() {
       confetti({
         ...defaults,
-        particleCount: 40,
-        scalar: 1.2,
+        particleCount: 25, // Reduced from 40
+        scalar: 1.1,
         shapes: ['star'] as Shape[],
       })
 
       confetti({
         ...defaults,
-        particleCount: 10,
-        scalar: 0.75,
+        particleCount: 8, // Reduced from 10
+        scalar: 0.8,
         shapes: ['circle'] as Shape[],
       })
     }
 
+    // Quick succession for fast impact
     setTimeout(shoot, 0)
+    setTimeout(shoot, 50)
     setTimeout(shoot, 100)
-    setTimeout(shoot, 200)
   }
 
   const triggerCoins = () => {
     const defaults = {
       spread: 360,
-      ticks: 200,
-      gravity: 1,
-      decay: 0.94,
-      startVelocity: 30,
+      ticks: 80, // Reduced from 200
+      gravity: 1.2, // Faster fall
+      decay: 0.96, // Faster decay
+      startVelocity: 35,
       shapes: ['circle'] as Shape[],
       colors: ['#FFD700', '#FFA500', '#FFD700', '#FFA500'],
       zIndex: 10001,
@@ -170,7 +165,7 @@ const Celebration = ({
 
     confetti({
       ...defaults,
-      particleCount: 100,
+      particleCount: 60, // Reduced from 100
       scalar: 1,
       origin: { y: -0.1 },
     })
@@ -198,11 +193,11 @@ const Celebration = ({
               <motion.h1
                 className="text-6xl font-bold gradient-text mb-4"
                 animate={{
-                  scale: [1, 1.1, 1],
+                  scale: [1, 1.05, 1],
                 }}
                 transition={{
-                  duration: 2,
-                  repeat: Infinity,
+                  duration: 1,
+                  repeat: 2, // Only repeat twice instead of infinite
                 }}
               >
                 {message}
@@ -223,12 +218,12 @@ const Celebration = ({
               <motion.div
                 className="text-8xl mt-8"
                 animate={{
-                  rotate: [0, -10, 10, -10, 0],
-                  scale: [1, 1.2, 1],
+                  rotate: [0, -5, 5, 0],
+                  scale: [1, 1.1, 1],
                 }}
                 transition={{
-                  duration: 2,
-                  repeat: Infinity,
+                  duration: 1.2,
+                  repeat: 1, // Only repeat once
                 }}
               >
                 🏆
@@ -246,13 +241,13 @@ const Celebration = ({
             <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-transparent to-highlight-1/30" />
           </motion.div>
 
-          {/* Floating elements */}
+          {/* Optimized floating elements */}
           {type === 'coins' && (
             <div className="fixed inset-0 z-[9999] pointer-events-none">
-              {[...Array(20)].map((_, i) => (
+              {[...Array(12)].map((_, i) => ( // Reduced from 20 to 12
                 <motion.div
                   key={i}
-                  className="absolute w-12 h-12 text-4xl"
+                  className="absolute w-10 h-10 text-3xl" // Slightly smaller
                   initial={{
                     x: Math.random() * window.innerWidth,
                     y: -50,
@@ -262,8 +257,8 @@ const Celebration = ({
                     rotate: 360,
                   }}
                   transition={{
-                    duration: 3 + Math.random() * 2,
-                    delay: Math.random() * 2,
+                    duration: 1.5 + Math.random() * 1, // Faster: 1.5-2.5s instead of 3-5s
+                    delay: Math.random() * 0.5, // Reduced delay
                     ease: 'linear',
                   }}
                 >
@@ -275,10 +270,10 @@ const Celebration = ({
 
           {type === 'stars' && (
             <div className="fixed inset-0 z-[9999] pointer-events-none">
-              {[...Array(30)].map((_, i) => (
+              {[...Array(18)].map((_, i) => ( // Reduced from 30 to 18
                 <motion.div
                   key={i}
-                  className="absolute text-2xl"
+                  className="absolute text-xl" // Slightly smaller
                   initial={{
                     x: '50%',
                     y: '50%',
@@ -287,13 +282,13 @@ const Celebration = ({
                   animate={{
                     x: `${Math.random() * 100}%`,
                     y: `${Math.random() * 100}%`,
-                    scale: [0, 1, 0],
+                    scale: [0, 1.2, 0],
                     rotate: Math.random() * 360,
                   }}
                   transition={{
-                    duration: 2,
-                    delay: Math.random() * 0.5,
-                    repeat: 2,
+                    duration: 1.2, // Faster
+                    delay: Math.random() * 0.3, // Reduced delay
+                    repeat: 1, // Only repeat once
                   }}
                 >
                   ⭐

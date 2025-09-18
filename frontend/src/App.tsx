@@ -16,6 +16,7 @@ import { performanceMonitor } from '@utils/performance'
 const RoomList = lazy(() => import('@pages/RoomList/RoomList'))
 const Profile = lazy(() => import('@pages/Profile/Profile'))
 const GameRoom = lazy(() => import('@pages/GameRoom/GameRoom'))
+const Results = lazy(() => import('@pages/Results/Results'))
 
 // Page loader component
 const PageLoader = () => (
@@ -116,6 +117,7 @@ const AppContent = () => {
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<RoomList />} />
+            <Route path="/results" element={<Results />} />
             <Route
               path="/profile"
               element={

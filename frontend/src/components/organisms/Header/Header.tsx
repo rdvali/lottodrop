@@ -38,10 +38,10 @@ const Header = ({ user, onLogin, onLogout, notificationCount = 0 }: HeaderProps)
               Lobby
             </Link>
             <Link
-              to="/tournaments"
+              to="/results"
               className="text-gray-300 hover:text-text-primary transition-colors"
             >
-              Tournaments
+              Results
             </Link>
             <Link
               to="/leaderboard"
@@ -156,11 +156,11 @@ const Header = ({ user, onLogin, onLogout, notificationCount = 0 }: HeaderProps)
               Lobby
             </Link>
             <Link
-              to="/tournaments"
+              to="/results"
               className="block py-2 text-gray-300 hover:text-text-primary"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Tournaments
+              Results
             </Link>
             <Link
               to="/leaderboard"
