@@ -44,10 +44,10 @@ const Header = ({ user, onLogin, onLogout, notificationCount = 0 }: HeaderProps)
               Results
             </Link>
             <Link
-              to="/leaderboard"
+              to="/how-to-play"
               className="text-gray-300 hover:text-text-primary transition-colors"
             >
-              Leaderboard
+              How To Play
             </Link>
           </nav>
           
@@ -163,11 +163,11 @@ const Header = ({ user, onLogin, onLogout, notificationCount = 0 }: HeaderProps)
               Results
             </Link>
             <Link
-              to="/leaderboard"
+              to="/how-to-play"
               className="block py-2 text-gray-300 hover:text-text-primary"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Leaderboard
+              How To Play
             </Link>
             {user && (
               <div className="mt-4 pt-4 border-t border-primary/10">

@@ -17,6 +17,7 @@ const RoomList = lazy(() => import('@pages/RoomList/RoomList'))
 const Profile = lazy(() => import('@pages/Profile/Profile'))
 const GameRoom = lazy(() => import('@pages/GameRoom/GameRoom'))
 const Results = lazy(() => import('@pages/Results/Results'))
+const HowToPlay = lazy(() => import('@pages/HowToPlay/HowToPlay'))
 
 // Page loader component
 const PageLoader = () => (
@@ -118,6 +119,7 @@ const AppContent = () => {
           <Routes>
             <Route path="/" element={<RoomList />} />
             <Route path="/results" element={<Results />} />
+            <Route path="/how-to-play" element={<HowToPlay />} />
             <Route
               path="/profile"
               element={
