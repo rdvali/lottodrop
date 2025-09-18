@@ -4,8 +4,7 @@ import type { Room, RoomStatusUpdateData, GlobalGameCompletedData } from '../../
 import { roomAPI } from '@services/api'
 import { socketService } from '@services/socket'
 import { TournamentCard } from '@components/organisms'
-import { StatCard } from '@components/molecules'
-import { Button, Badge, CardSkeleton, StatCardSkeleton } from '@components/atoms'
+import { Button, Badge, CardSkeleton } from '@components/atoms'
 import { ParticleBackground } from '@components/animations'
 import { useAuth } from '@contexts/AuthContext'
 import { useModal } from '@hooks/useModal'
@@ -20,11 +19,6 @@ const RoomList = () => {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'fast_drop' | 'time_drop'>('all')
   const [joinedRooms, setJoinedRooms] = useState<Set<string>>(new Set())
-  const [stats, setStats] = useState({
-    totalPlayers: 0,
-    totalGames: 0,
-    totalPayouts: 0,
-  })
 
   // Fetch rooms
   useEffect(() => {
@@ -39,27 +33,11 @@ const RoomList = () => {
       }
     }
 
-    const fetchStats = async () => {
-      try {
-        const statsData = await roomAPI.getRoomStats()
-        setStats({
-          totalPlayers: statsData.totalPlayers,
-          totalGames: statsData.totalGames,
-          totalPayouts: statsData.totalPayouts,
-        })
-      } catch {
-        // If stats fail, don't show error - just use default values
-        console.error('Failed to fetch stats')
-      }
-    }
-
     fetchRooms()
-    fetchStats()
 
     // Increase interval to reduce API calls - 30 seconds for better rate limiting
     const interval = setInterval(() => {
       fetchRooms()
-      fetchStats()
     }, 30000) // Refresh every 30 seconds
 
     return () => clearInterval(interval)
@@ -129,13 +107,6 @@ const RoomList = () => {
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        {/* Stats Skeletons */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <StatCardSkeleton />
-          <StatCardSkeleton />
-          <StatCardSkeleton />
-        </div>
-
         {/* Room Grid Skeletons */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
@@ -157,36 +128,12 @@ const RoomList = () => {
       />
       
       <div className="container mx-auto px-4 py-8 relative z-10">
-      {/* Stats */}
-      <motion.div
-        className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-        <StatCard
-          label="Players Online"
-          value={stats.totalPlayers.toLocaleString()}
-          trend={{ value: 12.5, isPositive: true }}
-        />
-        <StatCard
-          label="Total Games"
-          value={stats.totalGames.toLocaleString()}
-          trend={{ value: 8.3, isPositive: true }}
-        />
-        <StatCard
-          label="Total Payouts"
-          value={`$${stats.totalPayouts.toLocaleString()}`}
-          trend={{ value: 23.7, isPositive: true }}
-        />
-      </motion.div>
-
       {/* Filters */}
-      <motion.div 
+      <motion.div
         className="flex flex-wrap items-center justify-between gap-4 mb-8"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
+        transition={{ duration: 0.5 }}
       >
         <div className="flex gap-2">
           <Button
@@ -239,7 +186,7 @@ const RoomList = () => {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
         >
           {filteredRooms.map((room, index) => (
             <motion.div

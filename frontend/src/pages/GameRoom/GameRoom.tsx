@@ -903,12 +903,20 @@ const GameRoom = () => {
                        modalWinnerData ? 'state' : 'none'
           })
 
+          // Trigger celebration when modal opens if user won
+          const userWon = user && activeModalData?.winners?.some(w => w.userId === user.id)
+          if (userWon && !showCelebration) {
+            setShowCelebration(true)
+            setTimeout(() => setShowCelebration(false), 5000)
+          }
+
           return (
             <Modal
               isOpen={showWinnerModal}
               onClose={() => {
                 console.log('[GameRoom] User manually closing winner modal, clearing modal display data')
                 setShowWinnerModal(false)
+                setShowCelebration(false) // Stop celebration when closing modal
 
                 // Unlock modal data to allow new rounds
                 setModalDataLocked(false)

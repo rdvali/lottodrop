@@ -50,8 +50,8 @@ export const authAPI = {
     return apiRateLimiter.execute(async () => {
       // Transform frontend RegisterForm to backend format
       const backendData = {
-        firstName: userData.username.split(' ')[0] || userData.username,
-        lastName: userData.username.split(' ').slice(1).join(' ') || '',
+        firstName: userData.firstName,
+        lastName: userData.lastName,
         email: userData.email,
         password: userData.password
       }

@@ -55,6 +55,7 @@ const Celebration = ({
     const defaults = {
       origin: { y: 0.7 },
       colors: ['#9D4EDD', '#A855F7', '#C084FC', '#6A4C93', '#F1F1F1'],
+      zIndex: 10001, // Higher than modal
     }
 
     function fire(particleRatio: number, opts: confetti.Options) {
@@ -92,7 +93,7 @@ const Celebration = ({
   const triggerFireworks = () => {
     const duration = 5 * 1000
     const animationEnd = Date.now() + duration
-    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 }
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 10001 }
 
     function randomInRange(min: number, max: number) {
       return Math.random() * (max - min) + min
@@ -131,6 +132,7 @@ const Celebration = ({
       startVelocity: 30,
       shapes: ['star'],
       colors: ['#FFE400', '#FFBD00', '#E89400', '#FFCA6C', '#FDFFB8'],
+      zIndex: 10001,
     }
 
     function shoot() {
@@ -163,6 +165,7 @@ const Celebration = ({
       startVelocity: 30,
       shapes: ['circle'] as Shape[],
       colors: ['#FFD700', '#FFA500', '#FFD700', '#FFA500'],
+      zIndex: 10001,
     }
 
     confetti({
@@ -179,7 +182,7 @@ const Celebration = ({
         <>
           {/* Message overlay */}
           <motion.div
-            className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
+            className="fixed inset-0 flex items-center justify-center z-[10000] pointer-events-none"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -235,7 +238,7 @@ const Celebration = ({
 
           {/* Background glow */}
           <motion.div
-            className="fixed inset-0 z-40 pointer-events-none"
+            className="fixed inset-0 z-[9998] pointer-events-none"
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.3 }}
             exit={{ opacity: 0 }}
@@ -245,7 +248,7 @@ const Celebration = ({
 
           {/* Floating elements */}
           {type === 'coins' && (
-            <div className="fixed inset-0 z-45 pointer-events-none">
+            <div className="fixed inset-0 z-[9999] pointer-events-none">
               {[...Array(20)].map((_, i) => (
                 <motion.div
                   key={i}
@@ -271,7 +274,7 @@ const Celebration = ({
           )}
 
           {type === 'stars' && (
-            <div className="fixed inset-0 z-45 pointer-events-none">
+            <div className="fixed inset-0 z-[9999] pointer-events-none">
               {[...Array(30)].map((_, i) => (
                 <motion.div
                   key={i}

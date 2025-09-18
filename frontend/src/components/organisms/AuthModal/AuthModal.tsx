@@ -27,7 +27,8 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) =
   })
   
   const [registerForm, setRegisterForm] = useState<RegisterForm>({
-    username: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -55,8 +56,8 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) =
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!registerForm.username || !registerForm.email || !registerForm.password || !registerForm.confirmPassword) {
+
+    if (!registerForm.firstName || !registerForm.lastName || !registerForm.email || !registerForm.password || !registerForm.confirmPassword) {
       toast.error('Please fill in all fields')
       return
     }
@@ -76,7 +77,8 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) =
       await register(registerForm)
       handleClose()
       setRegisterForm({
-        username: '',
+        firstName: '',
+        lastName: '',
         email: '',
         password: '',
         confirmPassword: '',
@@ -92,7 +94,8 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) =
     setMode(mode === 'login' ? 'register' : 'login')
     setLoginForm({ email: '', password: '' })
     setRegisterForm({
-      username: '',
+      firstName: '',
+      lastName: '',
       email: '',
       password: '',
       confirmPassword: '',
@@ -157,18 +160,29 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) =
       ) : (
         <form onSubmit={handleRegister}>
           <div className="space-y-4">
-            <Input
-              type="text"
-              label="Username"
-              placeholder="Choose a username"
-              value={registerForm.username}
-              onChange={(e) => setRegisterForm({ ...registerForm, username: e.target.value })}
-              required
-              fullWidth
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                type="text"
+                label="First Name"
+                placeholder="Enter your first name"
+                value={registerForm.firstName}
+                onChange={(e) => setRegisterForm({ ...registerForm, firstName: e.target.value })}
+                required
+                fullWidth
+              />
+              <Input
+                type="text"
+                label="Last Name"
+                placeholder="Enter your last name"
+                value={registerForm.lastName}
+                onChange={(e) => setRegisterForm({ ...registerForm, lastName: e.target.value })}
+                required
+                fullWidth
+              />
+            </div>
             <Input
               type="email"
-              label="Email"
+              label="Email Address"
               placeholder="Enter your email"
               value={registerForm.email}
               onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
