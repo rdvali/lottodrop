@@ -14,7 +14,8 @@ import {
 import { PlayerTransitions } from '@components/animations/PlayerTransitions'
 import { useAuth } from '@contexts/AuthContext'
 import { useModal } from '@hooks/useModal'
-import { motion } from 'framer-motion'
+import { useIsMobile } from '@hooks/useResponsive'
+import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
@@ -23,6 +24,7 @@ const GameRoom = () => {
   const navigate = useNavigate()
   const { user, updateBalance, rollbackBalance } = useAuth()
   const { openAuthModal } = useModal()
+  const isMobile = useIsMobile()
   
   const [room, setRoom] = useState<Room | null>(null)
   const [participants, setParticipants] = useState<Participant[]>([])
@@ -35,6 +37,8 @@ const GameRoom = () => {
   const [showWinnerModal, setShowWinnerModal] = useState(false)
   const [currentRoundWinners, setCurrentRoundWinners] = useState<string | null>(null) // Track which round's winners we've shown
   const [modalDataLocked, setModalDataLocked] = useState(false) // CRITICAL: Prevents modal data from being overwritten while modal is open
+  const [showFullScreenCountdown, setShowFullScreenCountdown] = useState(false)
+  const [hasUserInteracted, setHasUserInteracted] = useState(false) // Track if user has interacted with countdown
 
   // Separate modal data state - persists independently of room state
   const [modalWinnerData, setModalWinnerData] = useState<{
@@ -93,8 +97,19 @@ const GameRoom = () => {
   
   useEffect(() => {
     countdownRef.current = countdown
+    // Trigger full-screen countdown on mobile when ≤ 5 seconds
+    // Only auto-trigger if user hasn't manually closed it
+    if (countdown !== null && countdown <= 5 && isMobile && !showFullScreenCountdown && !hasUserInteracted) {
+      setShowFullScreenCountdown(true)
+    }
+
+    // Reset interaction state when countdown resets
+    if (countdown === null) {
+      setShowFullScreenCountdown(false)
+      setHasUserInteracted(false)
+    }
     // Removed: console.log('[GameRoom] countdown state changed to:', countdown)
-  }, [countdown])
+  }, [countdown, isMobile, showFullScreenCountdown, hasUserInteracted])
   
   useEffect(() => {
     userRef.current = user
@@ -657,7 +672,7 @@ const GameRoom = () => {
         />
       )}
 
-      <div className="container mx-auto px-4 py-8 relative z-10">
+      <div className="container mx-auto px-4 py-8 relative z-10" style={{ paddingTop: isMobile && countdown !== null && countdown > 5 ? '120px' : undefined }}>
         {/* Room Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -762,60 +777,254 @@ const GameRoom = () => {
           </Card>
         </motion.div>
 
-        {/* Game Status with Countdown Timer */}
-        {countdown !== null && (
-          <Card className="mb-8">
-            <div className="relative">
-              {/* Background effects matching VRF animation */}
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-highlight-1/10 rounded-xl blur-3xl" />
-              
-              {/* Title */}
-              <motion.div
-                className="text-center mb-6 relative"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <h2 className="text-3xl font-bold gradient-text mb-2">
-                  Game Starting Soon!
-                </h2>
-                <p className="text-gray-400">
-                  Get ready for the draw
-                </p>
-              </motion.div>
-              
-              {/* Countdown Timer */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex justify-center relative"
-              >
-                <CountdownTimer 
-                  seconds={countdown} 
-                  size="xl"
-                  onComplete={() => setCountdown(null)}
-                />
-              </motion.div>
-            </div>
-          </Card>
-        )}
+        {/* Responsive Countdown System - Completely Different Experiences */}
+        <AnimatePresence>
+          {countdown !== null && (
+            <>
+              {/* Mobile: Advanced Floating Overlay Countdown System */}
+              {isMobile && (
+                <>
+                  {/* Full-Screen Countdown for final moments (≤5 seconds) */}
+                  {countdown <= 5 && (
+                    <motion.div
+                      key="fullscreen-countdown"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center"
+                    >
+                      {/* Close button for accessibility */}
+                      <button
+                        onClick={() => {
+                          setShowFullScreenCountdown(false)
+                          setHasUserInteracted(true)
+                        }}
+                        className="absolute top-4 right-4 z-10 text-white/70 hover:text-white text-2xl p-2 rounded-full hover:bg-white/10 transition-colors"
+                        aria-label="Close full-screen countdown"
+                        title="Close full-screen view"
+                      >
+                        ×
+                      </button>
 
-        {/* VRF Winner Selection Animation */}
-        {animating && (
-          <Card className="mb-8">
-            <VRFWinnerSelection
-              participants={participants}
-              winners={winners}
-              isAnimating={animating}
-              duration={7}
-              onAnimationComplete={() => {
-                setAnimating(false)
-                // Notify backend that animation is complete to trigger winner processing
-                socketService.emit('animation-complete', roomId)
-                // Modal will be shown by useEffect when animating becomes false and winners exist
-              }}
-            />
-          </Card>
-        )}
+                      <div className="text-center px-6">
+                        <motion.div
+                          initial={{ scale: 0.8 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: "spring", stiffness: 200 }}
+                        >
+                          <h1 className="text-6xl font-bold gradient-text mb-4">
+                            GET READY!
+                          </h1>
+                          <div className="relative">
+                            <CountdownTimer
+                              seconds={countdown}
+                              size="xl"
+                              onComplete={() => {
+                                setCountdown(null)
+                                setShowFullScreenCountdown(false)
+                              }}
+                              className="mx-auto"
+                            />
+                          </div>
+                          <p className="text-xl text-gray-300 mt-6">
+                            The draw begins in...
+                          </p>
+                        </motion.div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Floating Sticky Countdown for mobile (>5 seconds) */}
+                  {countdown > 5 && (
+                    <motion.div
+                      key="mobile-floating-countdown"
+                      initial={{ y: -100, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: -100, opacity: 0 }}
+                      transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                      className="fixed top-4 left-4 right-4 z-40 mx-auto max-w-sm"
+                    >
+                      <Card
+                        className="bg-gradient-to-r from-primary/95 to-purple-600/95 backdrop-blur-md border-primary/30 shadow-2xl cursor-pointer transition-transform hover:scale-105"
+                        onClick={() => {
+                          setShowFullScreenCountdown(true)
+                          setHasUserInteracted(true)
+                        }}
+                      >
+                        <div className="px-4 py-3 text-center">
+                          <h3 className="text-lg font-bold text-white mb-2">
+                            🎰 Game Starting!
+                          </h3>
+                          <div className="flex items-center justify-center space-x-3">
+                            <CountdownTimer
+                              seconds={countdown}
+                              size="md"
+                              onComplete={() => setCountdown(null)}
+                              showProgress={false}
+                            />
+                            <div className="text-left">
+                              <p className="text-sm text-white/90 font-medium">
+                                Get Ready!
+                              </p>
+                              <p className="text-xs text-white/70">
+                                ${room.prizePool?.toLocaleString()} Prize Pool
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Tap to expand hint */}
+                          <motion.div
+                            animate={{ opacity: [0.5, 1, 0.5] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                            className="mt-2"
+                          >
+                            <p className="text-xs text-white/50 text-center">
+                              Tap to expand →
+                            </p>
+                          </motion.div>
+                        </div>
+                      </Card>
+                    </motion.div>
+                  )}
+                </>
+              )}
+
+              {/* Desktop: Original Simple Inline Countdown (Restored) */}
+              {!isMobile && (
+                <motion.div
+                  key="desktop-countdown"
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="mb-8"
+                >
+                  <Card className="text-center">
+                    <div className="py-6">
+                      <h2 className="text-2xl font-bold text-text-primary mb-4">
+                        Game Starting In
+                      </h2>
+                      <CountdownTimer
+                        seconds={countdown}
+                        size="lg"
+                        onComplete={() => setCountdown(null)}
+                      />
+                      <p className="text-gray-400 mt-3 text-sm">
+                        Prize Pool: ${room.prizePool?.toLocaleString()}
+                      </p>
+                    </div>
+                  </Card>
+                </motion.div>
+              )}
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Responsive VRF Winner Selection Animation System */}
+        <AnimatePresence>
+          {animating && (
+            <>
+              {/* Mobile: Full-Screen VRF Animation Experience */}
+              {isMobile && (
+                <motion.div
+                  key="mobile-fullscreen-vrf"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-50 bg-gradient-to-br from-black/95 to-purple-900/95 backdrop-blur-sm flex items-center justify-center"
+                >
+                  {/* Background particles for mobile */}
+                  <div className="absolute inset-0 overflow-hidden">
+                    {[...Array(20)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className="absolute w-1 h-1 bg-white rounded-full opacity-30"
+                        initial={{
+                          x: Math.random() * window.innerWidth,
+                          y: window.innerHeight + 10,
+                        }}
+                        animate={{
+                          y: -10,
+                          opacity: [0.3, 0.6, 0.3]
+                        }}
+                        transition={{
+                          duration: Math.random() * 3 + 2,
+                          repeat: Infinity,
+                          delay: Math.random() * 2,
+                          ease: "linear"
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Full-screen VRF animation container */}
+                  <div className="relative z-10 w-full h-full flex items-center justify-center px-4">
+                    <div className="w-full max-w-md">
+                      <VRFWinnerSelection
+                        participants={participants}
+                        winners={winners}
+                        isAnimating={animating}
+                        duration={7}
+                        onAnimationComplete={() => {
+                          setAnimating(false)
+                          // Notify backend that animation is complete to trigger winner processing
+                          socketService.emit('animation-complete', roomId)
+                          // Modal will be shown by useEffect when animating becomes false and winners exist
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Mobile VRF indicator */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="absolute bottom-8 left-0 right-0 text-center"
+                  >
+                    <p className="text-white/70 text-sm font-medium">
+                      🎰 Drawing Winner...
+                    </p>
+                    <motion.div
+                      animate={{ opacity: [0.5, 1, 0.5] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="mt-2"
+                    >
+                      <div className="w-12 h-1 bg-gradient-to-r from-primary to-purple-500 rounded-full mx-auto" />
+                    </motion.div>
+                  </motion.div>
+                </motion.div>
+              )}
+
+              {/* Desktop: Original Inline VRF Animation */}
+              {!isMobile && (
+                <motion.div
+                  key="desktop-vrf"
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="mb-8"
+                >
+                  <Card className="border border-primary/30 bg-gradient-to-br from-secondary-bg to-secondary-bg/50 shadow-2xl">
+                    <VRFWinnerSelection
+                      participants={participants}
+                      winners={winners}
+                      isAnimating={animating}
+                      duration={7}
+                      onAnimationComplete={() => {
+                        setAnimating(false)
+                        // Notify backend that animation is complete to trigger winner processing
+                        socketService.emit('animation-complete', roomId)
+                        // Modal will be shown by useEffect when animating becomes false and winners exist
+                      }}
+                    />
+                  </Card>
+                </motion.div>
+              )}
+            </>
+          )}
+        </AnimatePresence>
         {/* Participants with Player Transitions */}
         <Card>
           <h2 className="text-xl font-bold mb-4">

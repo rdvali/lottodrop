@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Participant, Winner } from '../../../types'
+import { useIsMobile } from '../../../hooks/useResponsive'
 import clsx from 'clsx'
 
 export interface VRFWinnerSelectionProps {
@@ -18,6 +19,7 @@ const VRFWinnerSelection = ({
   duration = 7,
   onAnimationComplete,
 }: VRFWinnerSelectionProps) => {
+  const isMobile = useIsMobile()
   const [animationPhase, setAnimationPhase] = useState<'init' | 'verification' | 'selection' | 'reveal' | 'complete'>('init')
   const [cyclingName, setCyclingName] = useState<string>('')
   const [cyclingIndex, setCyclingIndex] = useState(0)
@@ -72,13 +74,22 @@ const VRFWinnerSelection = ({
   }).join(', ')
 
   return (
-    <div className="relative min-h-[300px] flex flex-col items-center justify-center">
-      {/* Background effects */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-highlight-1/10 rounded-xl blur-3xl" />
+    <div className={clsx(
+      "relative flex flex-col items-center justify-center",
+      isMobile ? "min-h-[60vh] py-8" : "min-h-[300px]"
+    )}>
+      {/* Background effects - responsive */}
+      <div className={clsx(
+        "absolute inset-0 bg-gradient-to-r from-primary/10 to-highlight-1/10 blur-3xl",
+        isMobile ? "rounded-none" : "rounded-xl"
+      )} />
 
-      {/* Main content container */}
+      {/* Main content container - mobile optimized */}
       <motion.div
-        className="text-center mb-8 z-10 relative max-w-2xl mx-auto px-6"
+        className={clsx(
+          "text-center z-10 relative mx-auto",
+          isMobile ? "mb-4 max-w-sm px-4" : "mb-8 max-w-2xl px-6"
+        )}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
@@ -90,8 +101,11 @@ const VRFWinnerSelection = ({
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.3 }}
         >
-          {/* Main title with icon */}
-          <h2 className="text-3xl font-bold mb-3">
+          {/* Main title with icon - responsive sizing */}
+          <h2 className={clsx(
+            "font-bold mb-3",
+            isMobile ? "text-2xl" : "text-3xl"
+          )}>
             {animationPhase === 'init' && (
               <span className="gradient-text">
                 🔄 Collecting all participants...
@@ -124,37 +138,48 @@ const VRFWinnerSelection = ({
             )}
           </h2>
 
-          {/* Subtext */}
-          <p className="text-gray-400 text-lg">
-            {animationPhase === 'init' && 'Everyone in the room is included in the random draw.'}
-            {animationPhase === 'verification' && 'Powered by VRF (Verifiable Random Function) to guarantee fairness.'}
-            {animationPhase === 'selection' && 'Matching random result with participant list.'}
-            {animationPhase === 'reveal' && 'Congratulations! Your prize is on the way.'}
+          {/* Subtext - responsive sizing and content */}
+          <p className={clsx(
+            "text-gray-400",
+            isMobile ? "text-base px-2" : "text-lg"
+          )}>
+            {animationPhase === 'init' && (isMobile ? 'Including all players in draw.' : 'Everyone in the room is included in the random draw.')}
+            {animationPhase === 'verification' && (isMobile ? 'VRF ensures fair selection.' : 'Powered by VRF (Verifiable Random Function) to guarantee fairness.')}
+            {animationPhase === 'selection' && (isMobile ? 'Matching results...' : 'Matching random result with participant list.')}
+            {animationPhase === 'reveal' && (isMobile ? 'Congratulations!' : 'Congratulations! Your prize is on the way.')}
             {animationPhase === 'complete' && 'Winners have been announced!'}
           </p>
 
-          {/* Name cycling during selection phase */}
+          {/* Name cycling during selection phase - mobile optimized */}
           {animationPhase === 'selection' && cyclingName && (
             <motion.div
               key={cyclingIndex}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.1 }}
-              className="mt-6"
+              className={clsx(
+                isMobile ? "mt-4" : "mt-6"
+              )}
             >
-              <p className="text-2xl font-medium text-primary/60">
+              <p className={clsx(
+                "font-medium text-primary/60",
+                isMobile ? "text-xl" : "text-2xl"
+              )}>
                 {cyclingName}
               </p>
             </motion.div>
           )}
 
-          {/* Winner display with gold highlight */}
+          {/* Winner display with gold highlight - mobile optimized */}
           {animationPhase === 'reveal' && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="mt-6 space-y-2"
+              className={clsx(
+                "space-y-2",
+                isMobile ? "mt-4" : "mt-6"
+              )}
             >
               {winners.map((winner, index) => {
                 const participant = participants.find(p => p.userId === winner.userId)
@@ -164,12 +189,21 @@ const VRFWinnerSelection = ({
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="bg-gradient-to-r from-yellow-500/20 to-yellow-300/20 border border-yellow-400/50 rounded-lg p-4 shadow-lg"
+                    className={clsx(
+                      "bg-gradient-to-r from-yellow-500/20 to-yellow-300/20 border border-yellow-400/50 rounded-lg shadow-lg",
+                      isMobile ? "p-3" : "p-4"
+                    )}
                   >
-                    <p className="text-xl font-bold text-yellow-400">
+                    <p className={clsx(
+                      "font-bold text-yellow-400",
+                      isMobile ? "text-lg" : "text-xl"
+                    )}>
                       {participant?.username || 'Unknown'}
                     </p>
-                    <p className="text-success text-lg">
+                    <p className={clsx(
+                      "text-success",
+                      isMobile ? "text-base" : "text-lg"
+                    )}>
                       Prize: ${winner.prize.toLocaleString()}
                     </p>
                   </motion.div>
@@ -180,9 +214,15 @@ const VRFWinnerSelection = ({
         </motion.div>
       </motion.div>
 
-      {/* Progress bar */}
-      <div className="w-full max-w-2xl mx-auto px-6">
-        <div className="h-2 bg-secondary-bg rounded-full overflow-hidden">
+      {/* Progress bar - mobile responsive */}
+      <div className={clsx(
+        "w-full mx-auto",
+        isMobile ? "max-w-sm px-4" : "max-w-2xl px-6"
+      )}>
+        <div className={clsx(
+          "bg-secondary-bg rounded-full overflow-hidden",
+          isMobile ? "h-1.5" : "h-2"
+        )}>
           <motion.div
             className="h-full bg-primary-gradient"
             initial={{ width: '0%' }}

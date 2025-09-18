@@ -13,6 +13,26 @@ const getRelativeTime = (timestamp: string): string => {
   return `${Math.floor(diffInSeconds / 86400)} day${Math.floor(diffInSeconds / 86400) > 1 ? 's' : ''} ago`;
 };
 
+// Helper function to mask player name for privacy using industry-standard "First Name + Last Initial" format
+const maskPlayerName = (firstName: string, lastName: string, userId: string): string => {
+  // Sanitize and format names
+  const cleanFirstName = firstName?.trim() || '';
+  const cleanLastName = lastName?.trim() || '';
+
+  // Industry-standard format: "First Name + Last Initial"
+  if (cleanFirstName && cleanLastName) {
+    const lastInitial = cleanLastName[0].toUpperCase();
+    return `${cleanFirstName} ${lastInitial}`;
+  } else if (cleanFirstName) {
+    return cleanFirstName;
+  } else if (cleanLastName) {
+    const lastInitial = cleanLastName[0].toUpperCase();
+    return `User ${lastInitial}`;
+  } else {
+    return 'Anonymous';
+  }
+};
+
 export const getResults = async (req: Request, res: Response) => {
   try {
     // Get the last 20 completed game rounds that have actual winners
@@ -41,7 +61,7 @@ export const getResults = async (req: Request, res: Response) => {
     const formattedResults = result.rows.map((row) => ({
       roundId: row.round_id,
       userId: row.user_id,
-      playerName: `${row.first_name} ${row.last_name}`,
+      playerName: maskPlayerName(row.first_name, row.last_name, row.user_id),
       roomName: row.room_name,
       roomType: row.room_type || 'FAST_DROP',
       prizeWon: parseFloat(row.prize_won),
@@ -93,7 +113,7 @@ export const getResultsByUser = async (req: Request, res: Response) => {
     const formattedResults = result.rows.map((row) => ({
       roundId: row.round_id,
       userId: row.user_id,
-      playerName: `${row.first_name} ${row.last_name}`,
+      playerName: maskPlayerName(row.first_name, row.last_name, row.user_id),
       roomName: row.room_name,
       roomType: row.room_type || 'FAST_DROP',
       prizeWon: parseFloat(row.prize_won),
@@ -145,7 +165,7 @@ export const getResultsByRoom = async (req: Request, res: Response) => {
     const formattedResults = result.rows.map((row) => ({
       roundId: row.round_id,
       userId: row.user_id,
-      playerName: `${row.first_name} ${row.last_name}`,
+      playerName: maskPlayerName(row.first_name, row.last_name, row.user_id),
       roomName: row.room_name,
       roomType: row.room_type || 'FAST_DROP',
       prizeWon: parseFloat(row.prize_won),
