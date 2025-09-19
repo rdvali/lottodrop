@@ -57,7 +57,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [token]);
 
   const login = async (email: string, password: string) => {
-    const response = await api.post('/auth/login', { email, password });
+    const response = await api.post('/api/auth/login', { email, password });
     const { token: newToken, user: userData } = response.data;
     
     // Verify admin status
