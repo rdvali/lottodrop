@@ -838,4 +838,4 @@ After deployment, access your services at:
 ---
 
 *Last Updated: September 2025*
-*Version: 1.0.0*
+*Version: 1.0.1*
