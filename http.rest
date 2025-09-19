@@ -1,0 +1,355 @@
+### LottoDrop API Endpoints
+### Base URL: http://localhost:3001 (or your server URL)
+
+### ===========================================
+### HEALTH CHECK ENDPOINTS
+### ===========================================
+
+### Health Check
+GET {{baseUrl}}/health
+Content-Type: application/json
+
+### ===========================================
+### AUTHENTICATION ENDPOINTS
+### ===========================================
+
+### User Registration
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### User Login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### Get User Profile
+GET {{baseUrl}}/api/auth/profile
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### Change Password
+POST {{baseUrl}}/api/auth/change-password
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "oldpassword",
+  "newPassword": "newpassword123"
+}
+
+### Get User Rooms
+GET {{baseUrl}}/api/auth/me/rooms
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### ===========================================
+### BALANCE & TRANSACTION ENDPOINTS
+### ===========================================
+
+### Get User Balance
+GET {{baseUrl}}/api/balance
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### Get Transaction History
+GET {{baseUrl}}/api/transactions
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### Get Game History
+GET {{baseUrl}}/api/games
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### Adjust Balance (Admin Only)
+POST {{baseUrl}}/api/adjust
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "userId": "user-id",
+  "amount": 100.50,
+  "type": "deposit",
+  "description": "Manual balance adjustment"
+}
+
+### ===========================================
+### ROOM ENDPOINTS
+### ===========================================
+
+### Get All Rooms (Public)
+GET {{baseUrl}}/api/rooms
+Content-Type: application/json
+
+### Get Room by ID (Public)
+GET {{baseUrl}}/api/rooms/{{roomId}}
+Content-Type: application/json
+
+### Get Room by Share Code (Public)
+GET {{baseUrl}}/api/rooms/share/{{shareCode}}
+Content-Type: application/json
+
+### Get Recent Winners (Public)
+GET {{baseUrl}}/api/rooms/recent-winners
+Content-Type: application/json
+
+### Get Room Stats (Public)
+GET {{baseUrl}}/api/rooms/stats
+Content-Type: application/json
+
+### Join Room
+POST {{baseUrl}}/api/rooms/{{roomId}}/join
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "ticketCount": 5
+}
+
+### Unjoin Room
+POST {{baseUrl}}/api/rooms/{{roomId}}/unjoin
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### Verify Round VRF (Public)
+GET {{baseUrl}}/api/rounds/{{roundId}}/verify
+Content-Type: application/json
+
+### ===========================================
+### RESULTS ENDPOINTS
+### ===========================================
+
+### Get All Results (Public)
+GET {{baseUrl}}/api/results
+Content-Type: application/json
+
+### Get Results by User
+GET {{baseUrl}}/api/results/user/{{userId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### Get Results by Room
+GET {{baseUrl}}/api/results/room/{{roomId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+### ===========================================
+### ADMIN ENDPOINTS
+### ===========================================
+
+### ===========================================
+### DASHBOARD ENDPOINTS
+### ===========================================
+
+### Get Dashboard Stats
+GET {{baseUrl}}/api/admin/dashboard/stats
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### Get Weekly Revenue
+GET {{baseUrl}}/api/admin/dashboard/weekly-revenue
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### ===========================================
+### USER MANAGEMENT ENDPOINTS
+### ===========================================
+
+### Get All Users
+GET {{baseUrl}}/api/admin/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### Get User Stats
+GET {{baseUrl}}/api/admin/users/stats
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### Get User by ID
+GET {{baseUrl}}/api/admin/users/{{userId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### Create User
+POST {{baseUrl}}/api/admin/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "username": "newuser",
+  "email": "newuser@example.com",
+  "password": "password123",
+  "role": "user"
+}
+
+### Update User
+PUT {{baseUrl}}/api/admin/users/{{userId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "username": "updateduser",
+  "email": "updated@example.com",
+  "role": "user"
+}
+
+### Toggle User Status
+PATCH {{baseUrl}}/api/admin/users/{{userId}}/toggle-status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### Delete User
+DELETE {{baseUrl}}/api/admin/users/{{userId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### ===========================================
+### USER BALANCE MANAGEMENT ENDPOINTS
+### ===========================================
+
+### Deposit to User
+POST {{baseUrl}}/api/admin/users/{{userId}}/deposit
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "amount": 100.00,
+  "description": "Manual deposit"
+}
+
+### Withdraw from User
+POST {{baseUrl}}/api/admin/users/{{userId}}/withdraw
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "amount": 50.00,
+  "description": "Manual withdrawal"
+}
+
+### ===========================================
+### ROUND MANAGEMENT ENDPOINTS
+### ===========================================
+
+### Get All Rounds
+GET {{baseUrl}}/api/admin/rounds
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### Get Round Statistics
+GET {{baseUrl}}/api/admin/rounds/statistics
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### Get Round Details
+GET {{baseUrl}}/api/admin/rounds/{{roundId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### Cancel Round
+POST {{baseUrl}}/api/admin/rounds/{{roundId}}/cancel
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### ===========================================
+### TRANSACTION MANAGEMENT ENDPOINTS
+### ===========================================
+
+### Get All Transactions
+GET {{baseUrl}}/api/admin/transactions
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### Get Transaction Details
+GET {{baseUrl}}/api/admin/transactions/{{transactionId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### ===========================================
+### ADMIN ROOM MANAGEMENT ENDPOINTS
+### ===========================================
+
+### Get All Rooms (Admin)
+GET {{baseUrl}}/api/admin/rooms
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### Create Room (Admin)
+POST {{baseUrl}}/api/admin/rooms
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "New Room",
+  "description": "Room description",
+  "ticketPrice": 10.00,
+  "maxTickets": 100,
+  "duration": 300
+}
+
+### Update Room (Admin)
+PUT {{baseUrl}}/api/admin/rooms/{{roomId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated Room",
+  "description": "Updated description",
+  "ticketPrice": 15.00,
+  "maxTickets": 150,
+  "duration": 600
+}
+
+### Delete Room (Admin)
+DELETE {{baseUrl}}/api/admin/rooms/{{roomId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+### ===========================================
+### VARIABLES
+### ===========================================
+
+@baseUrl = http://localhost:3001
+@authToken = your-auth-token-here
+@adminToken = your-admin-token-here
+@roomId = room-id-here
+@userId = user-id-here
+@roundId = round-id-here
+@transactionId = transaction-id-here
+@shareCode = room-share-code-here
+
+### ===========================================
+### NOTES
+### ===========================================
+
+### Authentication:
+### - Most endpoints require a Bearer token in the Authorization header
+### - Admin endpoints require admin privileges
+### - Public endpoints (marked as "Public") don't require authentication
+
+### Rate Limiting:
+### - API endpoints have rate limiting applied
+### - Auth endpoints have stricter rate limiting
+### - Rate limits are relaxed in development/Docker environments
+
+### Error Responses:
+### - 400: Bad Request
+### - 401: Unauthorized
+### - 403: Forbidden (insufficient permissions)
+### - 404: Not Found
+### - 429: Too Many Requests (rate limited)
+### - 500: Internal Server Error
+
+### Content Types:
+### - All requests should use application/json
+### - All responses return JSON format
