@@ -66,7 +66,7 @@ const Rooms: React.FC = () => {
       });
       
       const queryString = params.toString();
-      const url = `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/admin/rooms${queryString ? `?${queryString}` : ''}`;
+      const url = `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/admin/rooms${queryString ? `?${queryString}` : ''}`;
       
       const response = await fetch(url, {
         headers: {
@@ -92,7 +92,7 @@ const Rooms: React.FC = () => {
     e.preventDefault();
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/admin/rooms`,
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/admin/rooms`,
         {
           method: 'POST',
           headers: {
@@ -134,7 +134,7 @@ const Rooms: React.FC = () => {
 
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/admin/rooms/${selectedRoom.id}`,
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/admin/rooms/${selectedRoom.id}`,
         {
           method: 'PUT',
           headers: {
@@ -174,7 +174,7 @@ const Rooms: React.FC = () => {
 
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/admin/rooms/${roomId}`,
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/admin/rooms/${roomId}`,
         {
           method: 'DELETE',
           headers: {
