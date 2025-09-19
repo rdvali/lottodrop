@@ -104,7 +104,7 @@ const XIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
 const Transactions: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -146,8 +146,9 @@ const Transactions: React.FC = () => {
         ...transformedFilters
       });
 
+
       const response = await axios.get(
-        `${API_URL}/admin/transactions?${params}`,
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001/api'}/api/admin/transactions?${params}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -173,7 +174,7 @@ const Transactions: React.FC = () => {
     try {
       const token = localStorage.getItem('adminToken');
       const response = await axios.get(
-        `${API_URL}/admin/transactions/${transactionId}`,
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001/api'}/admin/transactions/${transactionId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setSelectedTransaction(response.data.transaction);
