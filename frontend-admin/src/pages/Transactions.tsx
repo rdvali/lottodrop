@@ -148,7 +148,7 @@ const Transactions: React.FC = () => {
 
 
       const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:3001/api'}/api/admin/transactions?${params}`,
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001/api'}/admin/transactions?${params}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

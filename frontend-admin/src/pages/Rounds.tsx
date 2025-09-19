@@ -75,7 +75,7 @@ const Rounds: React.FC = () => {
       });
 
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/admin/rounds?${params}`,
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/admin/rounds?${params}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -101,7 +101,7 @@ const Rounds: React.FC = () => {
   const fetchRoundDetails = async (roundId: string) => {
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/admin/rounds/${roundId}`,
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/admin/rounds/${roundId}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
