@@ -408,14 +408,32 @@ export const joinRoom = async (req: Request, res: Response) => {
 
     // Update socket participant status for multi-room support
     await socketManager.updateUserParticipantStatus(userId, roomId, true);
-    
+
+    // Get current participant count for the room
+    const participantCountResult = await pool.query(
+      `SELECT COUNT(DISTINCT rp.user_id) as count
+       FROM round_participants rp
+       JOIN game_rounds gr ON rp.round_id = gr.id
+       WHERE gr.room_id = $1 AND gr.completed_at IS NULL AND gr.archived_at IS NULL`,
+      [roomId]
+    );
+    const currentParticipantCount = parseInt(participantCountResult.rows[0].count);
+
+    // Emit global room status update for Room List page real-time updates
+    socketManager.emitGlobal('room-status-update', {
+      roomId: roomId,
+      status: room.status,
+      participantCount: currentParticipantCount,
+      roomName: room.name
+    });
+
     // Start countdown if needed (after commit)
     if (shouldStartCountdown) {
       const countdownSeconds = roomResult.rows[0].countdown_seconds || 5; // Use room's countdown setting, default 5s
       console.log(`Triggering countdown for room ${roomId} with ${countdownSeconds} seconds`);
       // Use socketManager to start the game
       socketManager.startGameForRoom(roomId, countdownSeconds);
-      
+
       // Also notify room update so all players see the updated state
       socketManager.notifyRoomUpdate(roomId);
     }
@@ -1079,6 +1097,24 @@ export const unjoinRoom = async (req: Request, res: Response) => {
     socketManager.emitGlobal('balance-updated', {
       userId,
       newBalance
+    });
+
+    // Get updated participant count for the room
+    const updatedParticipantCountResult = await pool.query(
+      `SELECT COUNT(DISTINCT rp.user_id) as count
+       FROM round_participants rp
+       JOIN game_rounds gr ON rp.round_id = gr.id
+       WHERE gr.room_id = $1 AND gr.completed_at IS NULL AND gr.archived_at IS NULL`,
+      [roomId]
+    );
+    const updatedParticipantCount = parseInt(updatedParticipantCountResult.rows[0].count);
+
+    // Emit global room status update for Room List page real-time updates
+    socketManager.emitGlobal('room-status-update', {
+      roomId: roomId,
+      status: room.status,
+      participantCount: updatedParticipantCount,
+      roomName: room.name
     });
 
     // Notify room update so all players see the updated state
