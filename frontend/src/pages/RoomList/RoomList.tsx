@@ -56,7 +56,7 @@ const RoomList = () => {
     const handleGlobalGameCompleted = (data: GlobalGameCompletedData) => {
       toast.success(
         `🎉 ${data.winners[0]?.username} won $${data.winners[0]?.prize} in ${data.roomName}!`,
-        { duration: 8000 }
+        { duration: 8000 } 
       )
       
       // Refresh rooms
