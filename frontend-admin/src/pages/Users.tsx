@@ -86,7 +86,8 @@ interface UserFormData {
   isActive: boolean;
 }
 
-const API_URL = 'http://localhost:3001/api';
+// const API_URL = 'http://localhost:3001/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
 const Users: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -142,7 +143,7 @@ const Users: React.FC = () => {
         }
       });
       
-      const response = await axios.get(`${API_URL}/admin/users`, {
+      const response = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:3001/api'}/admin/users`, {
         headers: { Authorization: `Bearer ${token}` },
         params: {
           page: currentPage,
@@ -173,7 +174,7 @@ const Users: React.FC = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('adminToken');
-      await axios.post(`${API_URL}/admin/users`, formData, {
+      await axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:3001/api'}/admin/users`, formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('User created successfully');
@@ -213,7 +214,7 @@ const Users: React.FC = () => {
         updateData.password = formData.password;
       }
 
-      await axios.put(`${API_URL}/admin/users/${selectedUser.id}`, updateData, {
+      await axios.put(`${process.env.REACT_APP_API_URL || 'http://localhost:3001/api'}/admin/users/${selectedUser.id}`, updateData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('User updated successfully');
@@ -227,7 +228,7 @@ const Users: React.FC = () => {
   const handleToggleStatus = async (userId: string) => {
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await axios.patch(`${API_URL}/admin/users/${userId}/toggle-status`, {}, {
+      const response = await axios.patch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001/api'}/admin/users/${userId}/toggle-status`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success(response.data.message);
@@ -240,7 +241,7 @@ const Users: React.FC = () => {
   const handleViewUser = async (userId: string) => {
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await axios.get(`${API_URL}/admin/users/${userId}`, {
+      const response = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:3001/api'}/admin/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -386,7 +387,7 @@ const Users: React.FC = () => {
     try {
       const token = localStorage.getItem('adminToken');
       await axios.post(
-        `${API_URL}/admin/users/${selectedUser.id}/deposit`,
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001/api'}/admin/users/${selectedUser.id}/deposit`,
         {
           amount: parseFloat(transactionAmount),
           description: transactionDescription || `Admin deposit to ${selectedUser.firstName} ${selectedUser.lastName}`
@@ -413,7 +414,7 @@ const Users: React.FC = () => {
     try {
       const token = localStorage.getItem('adminToken');
       await axios.post(
-        `${API_URL}/admin/users/${selectedUser.id}/withdraw`,
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001/api'}/admin/users/${selectedUser.id}/withdraw`,
         {
           amount: parseFloat(transactionAmount),
           description: transactionDescription || `Admin withdrawal from ${selectedUser.firstName} ${selectedUser.lastName}`
