@@ -37,7 +37,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (token) {
         try {
           api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          const response = await api.get('/auth/profile');
+          const response = await api.get('/api/auth/profile');
           
           // Check if user is admin
           if (!response.data.isAdmin) {
