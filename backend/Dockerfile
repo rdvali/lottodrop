@@ -26,6 +26,9 @@ RUN npm run build
 # Stage 2: Production
 FROM node:18-alpine AS production
 
+# Install curl for healthcheck
+RUN apk add --no-cache curl
+
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001

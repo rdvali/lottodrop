@@ -43,9 +43,9 @@ RUN npx vite build --mode production
 # Stage 2: Production
 FROM nginx:alpine AS production
 
-# Security: Install security updates
+# Security: Install security updates and curl for healthcheck
 RUN apk update && apk upgrade && \
-    apk add --no-cache ca-certificates && \
+    apk add --no-cache ca-certificates curl && \
     rm -rf /var/cache/apk/*
 
 # nginx user already exists in nginx:alpine image
@@ -66,7 +66,7 @@ RUN chown -R nginx:nginx /usr/share/nginx/html && \
     touch /var/run/nginx.pid && \
     chown -R nginx:nginx /var/run/nginx.pid
 
-# Security: Remove unnecessary packages
+# Security: Keep curl for healthcheck, remove only ca-certificates
 RUN apk del ca-certificates
 
 # Switch to non-root user
