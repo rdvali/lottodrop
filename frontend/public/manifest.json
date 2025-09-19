@@ -1,6 +1,6 @@
 {
-  "name": "LottoDrop - Real-Time Lottery Gaming",
-  "short_name": "LottoDrop",
+  "name": "Drop - Real-Time Lottery Gaming",
+  "short_name": "Drop",
   "description": "Join exciting lottery games with instant payouts and provably fair results",
   "theme_color": "#1A1A2E",
   "background_color": "#1A1A2E",
@@ -10,9 +10,14 @@
   "start_url": "/",
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/drop-icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
     },
     {
       "src": "/pwa-192x192.png",
@@ -46,7 +51,7 @@
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "LottoDrop Game Room"
+      "label": "Drop Game Room"
     },
     {
       "src": "/screenshot-2.png",

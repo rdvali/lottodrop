@@ -2,10 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/manifest.json" />
+    <!-- Primary favicon with cache busting -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=3.0" />
+    <link rel="alternate icon" type="image/x-icon" href="/favicon.ico?v=3.0" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.svg?v=3.0" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon.svg?v=3.0" />
+    <link rel="apple-touch-icon" href="/drop-icon.svg?v=3.0" />
+    <link rel="mask-icon" href="/favicon.svg?v=3.0" color="#9D4EDD" />
+    <link rel="shortcut icon" href="/favicon.svg?v=3.0" />
+    <link rel="manifest" href="/manifest.json?v=3.0" />
     
     <!-- Viewport and Mobile Optimization -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
@@ -40,7 +45,7 @@
     <meta name="twitter:description" content="Join exciting lottery games with instant payouts" />
     <meta name="twitter:image" content="/twitter-card.png" />
     
-    <title>LottoDrop - Real-Time Lottery Gaming Platform</title>
+    <title>Drop - Real-Time Lottery Gaming Platform</title>
     
     <!-- Inline Critical CSS for faster initial paint -->
     <style>
@@ -78,7 +83,7 @@
       <!-- Initial loading state -->
       <div class="initial-loader">
         <div class="spinner"></div>
-        <p style="margin-top: 20px; color: #9D4EDD;">Loading LottoDrop...</p>
+        <p style="margin-top: 20px; color: #9D4EDD;">Loading Drop...</p>
       </div>
     </div>
     

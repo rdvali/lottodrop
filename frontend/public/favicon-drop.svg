@@ -1,0 +1,11 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="dropGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9D4EDD"/>
+      <stop offset="50%" stop-color="#C77DFF"/>
+      <stop offset="100%" stop-color="#7B2CBF"/>
+    </linearGradient>
+  </defs>
+  <path d="M32 4C32 4 16 20 16 36C16 44.8366 23.1634 52 32 52C40.8366 52 48 44.8366 48 36C48 20 32 4 32 4Z" fill="url(#dropGradient)"/>
+  <path d="M32 28L34.5 33.5L40 36L34.5 38.5L32 44L29.5 38.5L24 36L29.5 33.5L32 28Z" fill="white" opacity="0.9"/>
+</svg>

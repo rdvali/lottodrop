@@ -1,0 +1,33 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark background with rounded corners -->
+  <rect width="512" height="512" rx="96" fill="#1A1A2E"/>
+
+  <defs>
+    <linearGradient id="dropGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9D4EDD"/>
+      <stop offset="50%" stop-color="#C77DFF"/>
+      <stop offset="100%" stop-color="#7B2CBF"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <g transform="translate(256, 256)">
+    <!-- Drop shape with glow -->
+    <path d="M0 -128C0 -128 -64 -64 -64 0C-64 35.3462 -35.3462 64 0 64C35.3462 64 64 35.3462 64 0C64 -64 0 -128 0 -128Z"
+          fill="url(#dropGradient)"
+          transform="scale(1.5)"
+          filter="url(#glow)"/>
+
+    <!-- Sparkle in the center -->
+    <path d="M0 -32L10 -11L32 0L10 11L0 32L-10 11L-32 0L-10 -11L0 -32Z"
+          fill="white"
+          opacity="0.95"
+          transform="scale(1.5)"/>
+  </g>
+</svg>

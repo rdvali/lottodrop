@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Avatar, Badge, Button } from '@components/atoms'
+import { Avatar, Badge, Button, Logo } from '@components/atoms'
 
 export interface HeaderProps {
   user?: {
@@ -22,11 +22,8 @@ const Header = ({ user, onLogin, onLogout, notificationCount = 0 }: HeaderProps)
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-primary-gradient rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">L</span>
-            </div>
-            <span className="text-xl font-bold gradient-text">LottoDrop</span>
+          <Link to="/" className="flex items-center">
+            <Logo size="md" showText={true} />
           </Link>
           
           {/* Desktop Navigation */}
