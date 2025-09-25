@@ -121,13 +121,12 @@ export function NotificationCenter(): React.ReactElement {
           <h2 id="notification-center-title" className="notification-center__title">
             Round Results
           </h2>
-          <span className="notification-center__count">
-            {state.unreadCount > 0 && (
-              <span className="notification-center__unread-count">
-                {state.unreadCount > 99 ? '99+' : state.unreadCount} unread
-              </span>
-            )}
-          </span>
+          {state.unreadCount > 0 && (
+            <span className="notification-center__unread-count">
+              {state.unreadCount > 99 ? '99+' : `${state.unreadCount}`}
+              <span className="notification-center__unread-label"> unread</span>
+            </span>
+          )}
         </div>
 
         <div className="notification-center__header-actions">

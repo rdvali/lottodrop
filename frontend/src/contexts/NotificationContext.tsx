@@ -99,7 +99,6 @@ class NotificationStorage {
 interface NotificationState extends NotificationCenterState {
   toasts: ToastNotification[]
   preferences: NotificationPreferences[]
-  isPlayingSound: boolean
   permissionStatus: NotificationPermission
 }
 
@@ -124,7 +123,6 @@ type NotificationAction =
   | { type: 'SET_PREFERENCES'; payload: NotificationPreferences[] }
   | { type: 'UPDATE_PREFERENCE'; payload: NotificationPreferences }
   | { type: 'SET_PERMISSION_STATUS'; payload: NotificationPermission }
-  | { type: 'SET_PLAYING_SOUND'; payload: boolean }
 
 // Initial state
 const initialState: NotificationState = {
@@ -136,7 +134,6 @@ const initialState: NotificationState = {
   filter: {},
   toasts: [],
   preferences: [],
-  isPlayingSound: false,
   permissionStatus: 'default'
 }
 
@@ -297,12 +294,6 @@ function notificationReducer(state: NotificationState, action: NotificationActio
         permissionStatus: action.payload
       }
 
-    case 'SET_PLAYING_SOUND':
-      return {
-        ...state,
-        isPlayingSound: action.payload
-      }
-
     default:
       return state
   }
@@ -331,61 +322,10 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined)
 
-// Sound manager
-class SoundManager {
-  private audioContext: AudioContext | null = null
-  private sounds: Map<string, AudioBuffer> = new Map()
-
-  async init(): Promise<void> {
-    if (this.audioContext) return
-
-    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-
-    // Preload sounds
-    await this.loadSound('win', '/sounds/win.mp3')
-    await this.loadSound('jackpot', '/sounds/jackpot.mp3')
-    await this.loadSound('notification', '/sounds/notification.mp3')
-  }
-
-  private async loadSound(name: string, url: string): Promise<void> {
-    try {
-      const response = await fetch(url)
-      const arrayBuffer = await response.arrayBuffer()
-      const audioBuffer = await this.audioContext!.decodeAudioData(arrayBuffer)
-      this.sounds.set(name, audioBuffer)
-    } catch (error) {
-      console.warn(`Failed to load sound ${name}:`, error)
-    }
-  }
-
-  async playSound(name: string, volume = 0.5): Promise<void> {
-    if (!this.audioContext || !this.sounds.has(name)) return
-
-    const audioBuffer = this.sounds.get(name)!
-    const source = this.audioContext.createBufferSource()
-    const gainNode = this.audioContext.createGain()
-
-    source.buffer = audioBuffer
-    gainNode.gain.value = volume
-
-    source.connect(gainNode)
-    gainNode.connect(this.audioContext.destination)
-
-    source.start()
-  }
-}
-
 // Provider component
 export function NotificationProvider({ children }: { children: React.ReactNode }): React.ReactElement {
   const [state, dispatch] = useReducer(notificationReducer, initialState)
-  const soundManager = useRef<SoundManager | null>(null)
   const isInitialized = useRef(false)
-
-  // Initialize sound manager
-  useEffect(() => {
-    soundManager.current = new SoundManager()
-    soundManager.current.init().catch(console.warn)
-  }, [])
 
   // Initialize notification system
   useEffect(() => {
@@ -429,9 +369,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         })
       }
 
-      // Play sound if enabled
-      playNotificationSound(notification)
-
       // Show desktop notification if enabled
       showDesktopNotification(notification)
     }
@@ -464,38 +401,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [])
 
   // Helper functions
-  const playNotificationSound = useCallback(async (notification: Notification) => {
-    if (state.isPlayingSound) return
-
-    const preference = state.preferences.find(p =>
-      p.categoryName === notification.subtype || p.categoryName === 'all'
-    )
-
-    if (!preference?.soundEnabled) return
-
-    dispatch({ type: 'SET_PLAYING_SOUND', payload: true })
-
-    try {
-      let soundName = 'notification'
-
-      if (notification.subtype === 'game_result' && notification.amount) {
-        if (notification.isJackpot || notification.amount >= 100000) {
-          soundName = 'jackpot'
-        } else if (notification.amount > 0) {
-          soundName = 'win'
-        }
-      }
-
-      await soundManager.current?.playSound(soundName)
-    } catch (error) {
-      console.warn('Failed to play notification sound:', error)
-    } finally {
-      setTimeout(() => {
-        dispatch({ type: 'SET_PLAYING_SOUND', payload: false })
-      }, 1000)
-    }
-  }, [state.preferences, state.isPlayingSound])
-
   const showDesktopNotification = useCallback(async (notification: Notification) => {
     const preference = state.preferences.find(p =>
       p.categoryName === notification.subtype || p.categoryName === 'all'
@@ -547,12 +452,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       }
     }
 
-    // Play sound if enabled
-    playNotificationSound(notification)
-
     // Show desktop notification if enabled
     showDesktopNotification(notification)
-  }, [playNotificationSound, showDesktopNotification])
+  }, [showDesktopNotification])
 
   const showToast = useCallback((toast: Omit<ToastNotification, 'id' | 'timestamp' | 'userId'>) => {
     const toastNotification: ToastNotification = {
