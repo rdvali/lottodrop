@@ -122,17 +122,87 @@ export interface GameHistoryResponse {
   error?: string // For error handling
 }
 
-// Notification types
+// Enhanced notification types for comprehensive system
 export interface Notification {
   id: string
-  type: 'win' | 'loss' | 'game_start' | 'game_end' | 'info' | 'warning' | 'error'
+  userId: string
+  categoryId?: number
+  type: 'success' | 'warning' | 'error' | 'info' | 'jackpot'
+  subtype: 'game_result' | 'balance_update' | 'global_win' | 'round_start' | 'system_alert' | 'bonus' | 'achievement'
   title: string
   message: string
+  priority: 1 | 2 | 3 | 4 // 1=Critical, 2=High, 3=Medium, 4=Low
+
+  // Gaming-specific data
+  gameRoundId?: string
+  transactionId?: string
   roomId?: string
-  roundId?: string
-  timestamp: string
+  amount?: number // in cents
+  position?: number
+  totalPlayers?: number
+  multiplier?: number
+  isJackpot?: boolean
+
+  // State management
   isRead: boolean
+  isDeleted?: boolean
+  readAt?: string
+
+  // Delivery tracking
+  deliveryMethod?: 'websocket' | 'push' | 'email'
+  deliveredAt?: string
+
+  // Timestamps
+  timestamp: string
+  expiresAt?: string
+
+  // Additional structured data
   data?: Record<string, unknown>
+}
+
+// Notification preferences
+export interface NotificationPreferences {
+  id?: number
+  userId: string
+  categoryId?: number
+  categoryName: string
+  isEnabled: boolean
+  soundEnabled: boolean
+  desktopEnabled: boolean
+  emailEnabled: boolean
+  maxPerHour?: number
+  quietHoursStart?: string
+  quietHoursEnd?: string
+}
+
+// Toast notification state
+export interface ToastNotification extends Notification {
+  autoClose?: boolean
+  duration?: number
+  showProgress?: boolean
+  pauseOnHover?: boolean
+}
+
+// Notification center state
+export interface NotificationCenterState {
+  isOpen: boolean
+  notifications: Notification[]
+  unreadCount: number
+  isLoading: boolean
+  hasMore: boolean
+  filter: NotificationFilter
+}
+
+// Notification filters
+export interface NotificationFilter {
+  type?: Notification['type']
+  subtype?: Notification['subtype']
+  priority?: Notification['priority']
+  isRead?: boolean
+  startDate?: string
+  endDate?: string
+  limit?: number
+  offset?: number
 }
 
 // WebSocket event types
@@ -150,6 +220,13 @@ export interface SocketEvents {
   balanceUpdated: (data: BalanceUpdatedData) => void
   roomStatusUpdate: (data: RoomStatusUpdateData) => void
   error: (data: ErrorData) => void
+
+  // Notification events
+  notificationNew: (data: Notification) => void
+  notificationUpdate: (data: Notification) => void
+  notificationBatch: (data: Notification[]) => void
+  notificationMarkRead: (data: { notificationId: string }) => void
+  notificationPreferencesUpdate: (data: NotificationPreferences) => void
 }
 
 // WebSocket data types

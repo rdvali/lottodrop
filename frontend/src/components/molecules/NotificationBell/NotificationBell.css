@@ -1,0 +1,192 @@
+/* Notification Bell Styles */
+.notification-bell {
+  position: relative;
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.notification-bell:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.notification-bell:focus {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.notification-bell--active {
+  background: rgba(79, 70, 229, 0.2);
+  color: #a5b4fc;
+}
+
+.notification-bell--active:hover {
+  background: rgba(79, 70, 229, 0.3);
+  color: #c7d2fe;
+}
+
+/* Icon wrapper for positioning */
+.notification-bell__icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Bell icon */
+.notification-bell__icon {
+  transition: transform 0.2s ease;
+}
+
+.notification-bell:hover .notification-bell__icon {
+  transform: scale(1.1);
+}
+
+.notification-bell--active .notification-bell__icon {
+  transform: scale(1.05);
+}
+
+/* Unread count badge */
+.notification-bell__badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ef4444;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 10px;
+  min-width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: 2px solid #1f2937; /* Match background */
+}
+
+/* Pulse animation for new notifications */
+.notification-bell__pulse {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  background: #ef4444;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+  z-index: -1;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .notification-bell {
+    padding: 12px;
+  }
+
+  .notification-bell__icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .notification-bell__badge {
+    top: -2px;
+    right: -2px;
+    font-size: 9px;
+    min-width: 14px;
+    height: 14px;
+    padding: 1px 4px;
+  }
+
+  .notification-bell__pulse {
+    top: -2px;
+    right: -2px;
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .notification-bell {
+    border: 1px solid currentColor;
+  }
+
+  .notification-bell__badge {
+    border-width: 1px;
+    border-color: white;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .notification-bell,
+  .notification-bell__icon {
+    transition: none;
+  }
+
+  .notification-bell__pulse {
+    animation: none;
+  }
+}
+
+/* Focus styles for better accessibility */
+.notification-bell:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+/* Dark theme adjustments */
+@media (prefers-color-scheme: dark) {
+  .notification-bell__badge {
+    border-color: #111827;
+  }
+}
+
+/* Print styles */
+@media print {
+  .notification-bell {
+    display: none;
+  }
+}

@@ -8,6 +8,7 @@ import roomRoutes from './routes/roomRoutes';
 import adminRoutes from './routes/adminRoutes';
 import healthRoutes from './routes/health';
 import resultsRoutes from './routes/resultsRoutes';
+import notificationRoutes from './routes/notificationRoutes';
 import { SocketManager } from './socket/socketManager';
 import pool from './config/database';
 import { existsSync } from 'fs';
@@ -27,9 +28,9 @@ const socketManager = new SocketManager(httpServer);
 const corsOptions = {
   origin: function(origin: string | undefined, callback: Function) {
     // Get allowed origins from environment variable
-    const allowedOrigins = process.env.ALLOWED_ORIGINS 
+    const allowedOrigins = process.env.ALLOWED_ORIGINS
       ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-      : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'];
+      : ['http://localhost', 'http://localhost:80', 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'];
     
     // Allow requests with no origin (like health checks, curl, server-to-server)
     if (!origin) {
@@ -51,7 +52,7 @@ const corsOptions = {
     return callback(null, true);
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   maxAge: 86400 // Cache preflight requests for 24 hours
 };
@@ -76,6 +77,7 @@ app.use('/api', balanceRoutes);
 app.use('/api', roomRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/results', resultsRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check routes
 app.use('/', healthRoutes);

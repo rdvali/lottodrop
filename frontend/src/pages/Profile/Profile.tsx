@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Card, Button, Input, Badge, Spinner } from '@components/atoms'
 import { useAuth } from '@contexts/AuthContext'
 import { authAPI, balanceAPI } from '@services/api'
@@ -17,6 +18,7 @@ import { dateFormatters } from '../../utils/dateUtils'
 type TabType = 'games' | 'transactions' | 'settings'
 
 const Profile = () => {
+  const navigate = useNavigate()
   const { user, updateBalance: _updateBalance } = useAuth() // eslint-disable-line @typescript-eslint/no-unused-vars
   const [activeTab, setActiveTab] = useState<TabType>('games')
   const [gameHistory, setGameHistory] = useState<GameHistory[]>([])
@@ -130,6 +132,13 @@ const Profile = () => {
 
   const handlePageChange = (page: number) => {
     setFilters(prev => ({ ...prev, page }))
+  }
+
+  const handleGameClick = (game: GameHistory) => {
+    // Only navigate if the game is pending and has a roomId
+    if (game.result === 'pending' && game.roomId) {
+      navigate(`/room/${game.roomId}`)
+    }
   }
 
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -286,17 +295,37 @@ const Profile = () => {
                 ) : (
                   <>
                     {gameHistory.map((game) => (
-                      <Card key={game.id} className="flex items-center justify-between">
+                      <Card
+                        key={game.id}
+                        className={`flex items-center justify-between transition-all ${
+                          game.result === 'pending'
+                            ? 'cursor-pointer hover:bg-primary/10 border-2 border-warning/50 bg-warning/5'
+                            : ''
+                        }`}
+                        onClick={() => handleGameClick(game)}
+                      >
                         <div>
-                          <h3 className="font-semibold text-text-primary">
-                            {game.roomName}
-                          </h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-text-primary">
+                              {game.roomName}
+                            </h3>
+                            {game.result === 'pending' && (
+                              <span className="text-xs text-warning font-medium animate-pulse">
+                                LIVE
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm text-gray-400">
                             {dateFormatters.historyTimestamp(game.playedAt)}
                           </p>
                           {game.position && (
                             <p className="text-sm text-primary mt-1">
                               Position: #{game.position}
+                            </p>
+                          )}
+                          {game.result === 'pending' && (
+                            <p className="text-sm text-warning mt-2 font-medium">
+                              Click to rejoin room →
                             </p>
                           )}
                         </div>

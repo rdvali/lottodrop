@@ -1,0 +1,316 @@
+/* Notification Toast Styles */
+.notification-toast {
+  display: flex;
+  align-items: center;
+  min-height: 64px;
+  padding: 16px 20px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border: 2px solid;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateX(100%) translateY(-20px) scale(0.9);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 420px;
+  min-width: 320px;
+  color: white;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.notification-toast--visible {
+  opacity: 1;
+  transform: translateX(0) translateY(0) scale(1);
+}
+
+.notification-toast:hover {
+  transform: translateX(-8px) scale(1.02);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Progress bar */
+.notification-toast__progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.8);
+  transition: width 50ms linear;
+  border-radius: 2px 0 0 0;
+}
+
+/* Toast type variants */
+.notification-toast--success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-color: #34d399;
+}
+
+.notification-toast--error {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border-color: #f87171;
+}
+
+.notification-toast--warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border-color: #fbbf24;
+}
+
+.notification-toast--info {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-color: #60a5fa;
+}
+
+.notification-toast--jackpot {
+  background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
+  border-color: #a855f7;
+  animation: jackpotPulse 2s ease-in-out infinite;
+}
+
+@keyframes jackpotPulse {
+  0%, 100% {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 8px 32px rgba(147, 51, 234, 0.4), 0 0 20px rgba(147, 51, 234, 0.3);
+  }
+}
+
+/* Icon */
+.notification-toast__icon {
+  width: 40px;
+  height: 40px;
+  margin-right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.notification-toast--jackpot .notification-toast__icon {
+  animation: iconSpin 3s linear infinite;
+}
+
+@keyframes iconSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Content */
+.notification-toast__content {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.notification-toast__title {
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.2;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notification-toast__amount {
+  font-weight: 800;
+  font-size: 18px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  color: #ffd700;
+}
+
+.notification-toast--jackpot .notification-toast__amount {
+  animation: amountGlow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes amountGlow {
+  0% {
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    color: #ffd700;
+  }
+  100% {
+    text-shadow: 0 0 8px #ffd700, 1px 1px 2px rgba(0, 0, 0, 0.5);
+    color: #ffed4e;
+  }
+}
+
+.notification-toast__message {
+  font-size: 14px;
+  line-height: 1.4;
+  opacity: 0.9;
+  margin-bottom: 4px;
+}
+
+.notification-toast__meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  opacity: 0.8;
+  margin-top: 4px;
+}
+
+.notification-toast__position,
+.notification-toast__multiplier {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.notification-toast__multiplier {
+  color: #ffd700;
+}
+
+/* Close button */
+.notification-toast__close {
+  margin-left: 12px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: currentColor;
+  flex-shrink: 0;
+}
+
+.notification-toast__close:hover {
+  opacity: 1;
+  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.notification-toast__close:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+/* Unread indicator */
+.notification-toast__unread-indicator {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.2);
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .notification-toast {
+    margin: 0 16px 8px 16px;
+    max-width: calc(100vw - 32px);
+    min-width: auto;
+    padding: 12px 16px;
+    min-height: 56px;
+  }
+
+  .notification-toast__icon {
+    width: 32px;
+    height: 32px;
+    margin-right: 12px;
+    font-size: 16px;
+  }
+
+  .notification-toast__title {
+    font-size: 14px;
+  }
+
+  .notification-toast__amount {
+    font-size: 16px;
+  }
+
+  .notification-toast__message {
+    font-size: 13px;
+  }
+
+  .notification-toast__meta {
+    font-size: 11px;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .notification-toast {
+    border-width: 3px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.8);
+  }
+
+  .notification-toast__progress {
+    background: white;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .notification-toast {
+    animation: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .notification-toast--visible {
+    transform: translateX(0) translateY(0) scale(1);
+  }
+
+  .notification-toast:hover {
+    transform: translateX(0) scale(1);
+  }
+
+  .notification-toast--jackpot {
+    animation: none;
+  }
+
+  .notification-toast--jackpot .notification-toast__icon {
+    animation: none;
+  }
+
+  .notification-toast--jackpot .notification-toast__amount {
+    animation: none;
+  }
+
+  .notification-toast__unread-indicator {
+    animation: none;
+  }
+}
+
+/* Focus styles for accessibility */
+.notification-toast:focus {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+.notification-toast:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+  .notification-toast {
+    display: none;
+  }
+}

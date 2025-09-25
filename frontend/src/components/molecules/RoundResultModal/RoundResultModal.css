@@ -1,0 +1,241 @@
+/* Minimal Round Result Modal - Toast Style */
+
+/* Backdrop */
+.round-result-modal__backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9998;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Modal Container - Toast Style */
+.round-result-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1a1a1a;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  width: 320px;
+  max-width: 90vw;
+  max-height: 90vh;
+  z-index: 9999;
+  animation: modalSlideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow: hidden;
+  margin: 0;
+}
+
+/* Win/Loss Variants */
+.round-result-modal--win {
+  border: 2px solid #10b981;
+  box-shadow: 0 20px 40px rgba(16, 185, 129, 0.3);
+}
+
+.round-result-modal--loss {
+  border: 2px solid #f59e0b;
+  box-shadow: 0 20px 40px rgba(245, 158, 11, 0.2);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Simple Confetti */
+.round-result-modal__confetti {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 10000;
+}
+
+.round-result-modal__confetti-piece {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  top: -10px;
+  border-radius: 50%;
+  animation: confettiFall 2s linear infinite;
+}
+
+@keyframes confettiFall {
+  0% {
+    transform: translateY(-10px) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(180deg);
+    opacity: 0;
+  }
+}
+
+/* Close Button */
+.round-result-modal__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 1;
+}
+
+.round-result-modal__close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  transform: scale(1.1);
+}
+
+/* Content */
+.round-result-modal__content {
+  padding: 2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Emoji */
+.round-result-modal__emoji {
+  font-size: 3rem;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+/* Title */
+.round-result-modal__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  color: white;
+  letter-spacing: -0.025em;
+}
+
+/* Room Name */
+.round-result-modal__room {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Amount */
+.round-result-modal__amount {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.round-result-modal__amount-sign {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: currentColor;
+}
+
+.round-result-modal--win .round-result-modal__amount-sign {
+  color: #10b981;
+}
+
+.round-result-modal--loss .round-result-modal__amount-sign {
+  color: #f59e0b;
+}
+
+.round-result-modal__amount-value {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: white;
+  letter-spacing: -0.05em;
+}
+
+.round-result-modal--win .round-result-modal__amount-value {
+  color: #10b981;
+  text-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+}
+
+.round-result-modal--loss .round-result-modal__amount-value {
+  color: #f59e0b;
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+  .round-result-modal {
+    width: 280px;
+    margin: 1rem;
+  }
+
+  .round-result-modal__content {
+    padding: 1.5rem;
+  }
+
+  .round-result-modal__emoji {
+    font-size: 2.5rem;
+  }
+
+  .round-result-modal__title {
+    font-size: 1.25rem;
+  }
+
+  .round-result-modal__amount-value {
+    font-size: 2rem;
+  }
+
+  .round-result-modal__amount-sign {
+    font-size: 1.25rem;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .round-result-modal,
+  .round-result-modal__backdrop,
+  .round-result-modal__confetti-piece,
+  .round-result-modal__close {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media (prefers-contrast: high) {
+  .round-result-modal {
+    border-width: 3px;
+  }
+}
+
+/* Focus styles */
+.round-result-modal__close:focus {
+  outline: 2px solid #4ade80;
+  outline-offset: 2px;
+}

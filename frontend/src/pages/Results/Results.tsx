@@ -98,10 +98,10 @@ const Results = () => {
   }
 
   const getRoomTypeBadge = (type: string) => {
-    const badges = {
-      'FAST_DROP': { variant: 'success' as const, label: 'Fast Drop' },
-      'TIME_DROP': { variant: 'warning' as const, label: 'Time Drop' },
-      'MEGA_DROP': { variant: 'danger' as const, label: 'Mega Drop' },
+    const badges: Record<string, { variant: 'success' | 'warning' | 'danger', label: string }> = {
+      'FAST_DROP': { variant: 'success', label: 'Fast Drop' },
+      'TIME_DROP': { variant: 'warning', label: 'Time Drop' },
+      'MEGA_DROP': { variant: 'danger', label: 'Mega Drop' },
     }
     return badges[type] || badges['FAST_DROP']
   }

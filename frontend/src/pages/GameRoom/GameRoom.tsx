@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import type { Room, Participant, Winner } from '../../types'
 import { roomAPI } from '@services/api'
 import { socketService } from '@services/socket'
-import { Card, Button, Badge, Spinner, PlayerCardSkeleton } from '@components/atoms'
+import { Card, Button, Badge, Spinner, PlayerCardSkeleton, JoinRoomButton } from '@components/atoms'
 import { Modal } from '@components/organisms'
 import { 
   VRFWinnerSelection, 
@@ -13,6 +13,7 @@ import {
 } from '@components/animations'
 import { PlayerTransitions } from '@components/animations/PlayerTransitions'
 import { useAuth } from '@contexts/AuthContext'
+import { useNotifications } from '@contexts/NotificationContext'
 import { useModal } from '@hooks/useModal'
 import { useIsMobile } from '@hooks/useResponsive'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -24,6 +25,7 @@ const GameRoom = () => {
   const navigate = useNavigate()
   const { user, updateBalance, rollbackBalance } = useAuth()
   const { openAuthModal } = useModal()
+  const { addNotification } = useNotifications()
   const isMobile = useIsMobile()
   
   const [room, setRoom] = useState<Room | null>(null)
@@ -49,6 +51,8 @@ const GameRoom = () => {
     roundId: string | null
     timestamp?: number // Add timestamp to track when data was captured
     wasParticipant?: boolean // Track if user was a participant when modal opened
+    roomStatus?: 'waiting' | 'in_progress' | 'completed' // Track room status for Join Room button
+    entryFee?: number // Store entry fee for Join Room button
   } | null>(null)
 
   // Use ref to ensure modal data persists across re-renders
@@ -60,6 +64,8 @@ const GameRoom = () => {
     roundId: string | null
     timestamp: number // Add timestamp to track when data was captured
     wasParticipant: boolean // Track if user was a participant when modal opened
+    roomStatus?: 'waiting' | 'in_progress' | 'completed' // Track room status for Join Room button
+    entryFee?: number // Store entry fee for Join Room button
   } | null>(null)
 
   // Additional backup ref that's never cleared by room state changes
@@ -71,6 +77,8 @@ const GameRoom = () => {
     roundId: string | null
     timestamp: number // Add timestamp to track when data was captured
     wasParticipant: boolean // Track if user was a participant when modal opened
+    roomStatus?: 'waiting' | 'in_progress' | 'completed' // Track room status for Join Room button
+    entryFee?: number // Store entry fee for Join Room button
   } | null>(null)
 
   const [previousPrizePool, setPreviousPrizePool] = useState<number>(0)
@@ -154,7 +162,9 @@ const GameRoom = () => {
           platformFeeRate: platformFeeData.rate || room?.platformFeeRate || 0.1, // Use stored or default
           roundId: winnersId,
           timestamp: Date.now(), // Add timestamp to track when data was captured
-          wasParticipant: userWasParticipant // Store participant status at time of modal opening
+          wasParticipant: userWasParticipant, // Store participant status at time of modal opening
+          roomStatus: room?.status || 'waiting', // Store current room status
+          entryFee: room?.entryFee || 0 // Store entry fee for Join Room button
         }
 
         // Store in both state and ref for persistence
@@ -253,6 +263,21 @@ const GameRoom = () => {
       }
     }
   }, [roomId, navigate])
+
+  // Update modal data with new room status when it changes
+  useEffect(() => {
+    if (showWinnerModal && room) {
+      // Update room status in modal data refs when room status changes
+      if (modalWinnerDataRef.current) {
+        modalWinnerDataRef.current.roomStatus = room.status
+      }
+      if (backupModalDataRef.current) {
+        backupModalDataRef.current.roomStatus = room.status
+      }
+      // Also update state to trigger re-render
+      setModalWinnerData(prev => prev ? { ...prev, roomStatus: room.status } : prev)
+    }
+  }, [room?.status, showWinnerModal])
 
   // Socket listeners
   useEffect(() => {
@@ -505,31 +530,111 @@ const GameRoom = () => {
         
         // Get current values
         const currentUser = userRef.current
+        let isWinner = false
+        let prizeWon = 0
+        let position = 0
 
         // Handle single winner format (backward compatibility)
         if (data.isMultiWinner === false && data.winnerId === currentUser?.id && currentUser) {
           // Removed: console.log(`[GameRoom] User won single winner prize: ${data.winnerAmount}`)
           setShowCelebration(true)
-          
+          isWinner = true
+          prizeWon = data.winnerAmount
+          position = 1
+
           // Optimistic balance update for immediate UI feedback
           const newBalance = currentUser.balance + data.winnerAmount
           // Removed: console.log(`[GameRoom] Optimistically updating balance: ${currentUser.balance} + ${data.winnerAmount} = ${newBalance}`)
           updateBalance(newBalance, 'optimistic')
         }
-        
+
         // Handle multi-winner format
         if (data.winners && Array.isArray(data.winners)) {
           const userWinner = data.winners.find((w: Winner) => w.userId === currentUser?.id)
           if (userWinner && currentUser) {
             // Removed: console.log(`[GameRoom] User won prize: ${userWinner.prize}`)
             setShowCelebration(true)
-            
+            isWinner = true
+            prizeWon = userWinner.prize
+            position = userWinner.position
+
             // Optimistic balance update for immediate UI feedback
             const newBalance = currentUser.balance + userWinner.prize
             // Removed: console.log(`[GameRoom] Optimistically updating balance: ${currentUser.balance} + ${userWinner.prize} = ${newBalance}`)
             updateBalance(newBalance, 'optimistic')
-            
+
             // Socket event will provide authoritative balance update
+          }
+        }
+
+        // Trigger notification for game result
+        if (currentUser) {
+          const totalParticipants = participants.length
+
+          // Generate game numbers for display
+          // In a real lottery system, these would come from the VRF/backend
+          // For now, we'll simulate realistic numbers based on participant count
+          const winningNumber = Math.floor(Math.random() * totalParticipants) + 1
+          const userParticipantIndex = participantsRef.current.findIndex(p => p.userId === currentUser.id)
+          const selectedNumber = userParticipantIndex >= 0 ? userParticipantIndex + 1 : Math.floor(Math.random() * totalParticipants) + 1
+
+          // Create comprehensive data object for RoundResultModal
+          const gameData = {
+            winningNumber: winningNumber,
+            yourNumber: selectedNumber,
+            selectedNumber: selectedNumber, // Alternative field name
+            roomName: data.roomName || room?.name || 'Game Room',
+            playerCount: totalParticipants,
+            roundId: data.gameRoundId || roomId || 'unknown',
+            entryFee: room?.entryFee || 0,
+            prizePool: room?.prizePool || 0,
+            gameType: room?.type || 'unknown',
+            timestamp: new Date().toISOString(),
+            isParticipant: true
+          }
+
+          if (isWinner) {
+            // Winner notification
+            addNotification({
+              id: `game-${roomId}-${Date.now()}`,
+              userId: currentUser.id,
+              type: 'jackpot',
+              subtype: 'game_result',
+              title: '🎉 Congratulations! You Won!',
+              message: `You won $${prizeWon.toFixed(2)} in ${room?.name || 'the game'}! Position: #${position}`,
+              priority: 1,
+              gameRoundId: data.gameRoundId || roomId,
+              roomId: roomId,
+              amount: prizeWon * 100, // Convert to cents
+              position: position,
+              totalPlayers: totalParticipants,
+              isJackpot: prizeWon > 100,
+              isRead: false,
+              timestamp: new Date().toISOString(),
+              data: gameData
+            })
+          } else {
+            // Loser notification - include entry fee as amount lost
+            addNotification({
+              id: `game-${roomId}-${Date.now()}`,
+              userId: currentUser.id,
+              type: 'info',
+              subtype: 'game_result',
+              title: 'Game Completed',
+              message: `Better luck next time! The game "${room?.name || 'Room'}" has ended. ${winnersArray.length} player(s) won.`,
+              priority: 3,
+              gameRoundId: data.gameRoundId || roomId,
+              roomId: roomId,
+              amount: (room?.entryFee || 0) * 100, // Entry fee lost (in cents)
+              position: totalParticipants + 1, // Indicate loss position
+              totalPlayers: totalParticipants,
+              isRead: false,
+              timestamp: new Date().toISOString(),
+              data: {
+                ...gameData,
+                amount: (room?.entryFee || 0) * 100 // Include entry fee lost in data as well
+              }
+            })
           }
         }
       } else {
@@ -1146,151 +1251,145 @@ const GameRoom = () => {
           size="lg"
           className="text-center"
         >
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-3">
             {/* Handle case where data is missing */}
             {!activeModalData ? (
-              <div className="text-center py-6 sm:py-8">
-                <p className="text-gray-400 text-base sm:text-lg mb-3 sm:mb-4">Loading game results...</p>
-                <p className="text-xs sm:text-sm text-gray-500">If this persists, please refresh the page.</p>
+              <div className="text-center py-4">
+                <p className="text-gray-400 text-sm mb-2">Loading game results...</p>
+                <p className="text-xs text-gray-500">If this persists, please refresh the page.</p>
               </div>
             ) : (
               <>
-            {/* YOUR RESULT - MOST PROMINENT - Mobile optimized */}
-            {/* Use persisted wasParticipant flag instead of current participants array */}
+            {/* YOUR RESULT - Compact version */}
             {user && activeModalData && activeModalData.wasParticipant && (
               <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
+                initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: "spring", duration: 0.5 }}
+                transition={{ duration: 0.3 }}
                 className={clsx(
-                  "rounded-xl p-4 sm:p-6 text-center",
+                  "rounded-lg p-3 text-center",
                   activeModalData.winners && activeModalData.winners.some(w => w.userId === user.id)
-                    ? "bg-gradient-to-br from-green-500/20 to-green-600/20 border-2 border-green-500"
-                    : "bg-gradient-to-br from-red-500/20 to-red-600/20 border-2 border-red-500"
+                    ? "bg-gradient-to-br from-green-500/20 to-green-600/20 border border-green-500"
+                    : "bg-gradient-to-br from-red-500/20 to-red-600/20 border border-red-500"
                 )}
               >
                 {activeModalData.winners && activeModalData.winners.some(w => w.userId === user.id) ? (
-                  <>
-                    <div className="flex justify-center mb-2 sm:mb-3">
-                      <div className="text-5xl sm:text-6xl animate-bounce">
-                        🏆
-                      </div>
+                  <div className="flex items-center justify-center gap-4">
+                    <div className="text-4xl">🏆</div>
+                    <div>
+                      <h2 className="text-xl font-bold text-green-400">YOU WON!</h2>
+                      <p className="text-lg font-bold text-white">
+                        +${activeModalData.winners.find(w => w.userId === user.id)?.prize || 0}
+                      </p>
                     </div>
-                    <h2 className="text-2xl sm:text-4xl font-bold text-green-400 mb-2 sm:mb-3">
-                      YOU WON!
-                    </h2>
-                    <p className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">
-                      +${activeModalData.winners.find(w => w.userId === user.id)?.prize || 0}
-                    </p>
-                    <p className="text-xs sm:text-sm text-gray-300">
-                      Added to your balance
-                    </p>
-                  </>
+                  </div>
                 ) : (
-                  <>
-                    <div className="flex justify-center mb-2 sm:mb-3">
-                      <div className="text-5xl sm:text-6xl">
-                        😔
-                      </div>
+                  <div className="flex items-center justify-center gap-4">
+                    <div className="text-4xl">😔</div>
+                    <div>
+                      <h2 className="text-xl font-bold text-red-400">YOU LOST</h2>
+                      <p className="text-sm text-gray-300">Better luck next time!</p>
                     </div>
-                    <h2 className="text-2xl sm:text-4xl font-bold text-red-400 mb-2 sm:mb-3">
-                      YOU LOST
-                    </h2>
-                    <p className="text-base sm:text-lg text-gray-300">
-                      Better luck next time!
-                    </p>
-                  </>
+                  </div>
                 )}
               </motion.div>
             )}
 
-            {/* Game Summary - Mobile optimized single column */}
-            <div className="bg-secondary-bg/50 rounded-lg p-3 sm:p-4 space-y-3">
-              <div className="flex flex-col items-center space-y-2">
-                <span className="text-xs sm:text-sm text-gray-400">Prize Pool</span>
-                <span className="text-lg sm:text-xl font-bold text-text-primary">
-                  ${activeModalData?.prizePool || 0}
-                </span>
-              </div>
+            {/* Join Room Button - Prominent position */}
+            <div className="flex justify-center">
+              <JoinRoomButton
+                roomStatus={activeModalData?.roomStatus || 'waiting'}
+                entryFee={activeModalData?.entryFee || room?.entryFee || 0}
+                isWinner={!!userWinner}
+                onJoin={async () => {
+                  // Close modal first
+                  setShowWinnerModal(false)
+                  setShowCelebration(false)
+                  setModalDataLocked(false)
+                  setModalWinnerData(null)
+                  modalWinnerDataRef.current = null
+                  backupModalDataRef.current = null
 
-              <div className="flex flex-col items-center space-y-2">
-                <span className="text-xs sm:text-sm text-gray-400 text-center">
-                  Platform Fee
-                  <span className="text-xs text-gray-500 ml-1">
-                    ({activeModalData?.platformFeeAmount && activeModalData?.prizePool
-                      ? Math.round((activeModalData.platformFeeAmount / activeModalData.prizePool) * 100)
-                      : 10}%)
+                  // Then join room
+                  await handleJoinRoom()
+                }}
+                disabled={!user || (user && user.balance < (activeModalData?.entryFee || room?.entryFee || 0))}
+              />
+            </div>
+
+            {/* Balance warning if insufficient */}
+            {user && user.balance < (activeModalData?.entryFee || room?.entryFee || 0) && (
+              <p className="text-xs text-red-400 text-center">
+                Insufficient balance. Need ${activeModalData?.entryFee || room?.entryFee || 0}
+              </p>
+            )}
+
+            {/* Game Summary - Compact grid */}
+            <div className="bg-secondary-bg/50 rounded-lg p-2">
+              <div className="grid grid-cols-2 gap-2 text-center">
+                <div className="p-2">
+                  <span className="text-xs text-gray-400 block">Prize Pool</span>
+                  <span className="text-sm font-bold text-text-primary">
+                    ${activeModalData?.prizePool || 0}
                   </span>
-                </span>
-                <span className="text-base sm:text-lg text-yellow-400">
-                  -${(activeModalData?.platformFeeAmount || ((activeModalData?.prizePool || 0) * 0.1)).toFixed(2)}
-                </span>
-              </div>
-
-              <div className="flex flex-col items-center space-y-2 pt-3 border-t border-gray-700">
-                <span className="text-xs sm:text-sm text-gray-400 font-semibold">Total Distributed</span>
-                <span className="text-lg sm:text-xl font-bold text-green-400">
-                  ${((activeModalData?.prizePool || 0) - (activeModalData?.platformFeeAmount || ((activeModalData?.prizePool || 0) * 0.1))).toFixed(2)}
-                </span>
-              </div>
-
-              <div className="flex flex-col items-center space-y-2 pt-3">
-                <span className="text-xs sm:text-sm text-gray-400">Total Winners</span>
-                <span className="text-base sm:text-lg font-semibold text-text-primary">
-                  {activeModalData?.winners?.length || 0} player{activeModalData?.winners?.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-
-              {/* Platform fee explanation */}
-              <div className="mt-3 pt-3 border-t border-gray-700">
-                <p className="text-xs text-gray-500 text-center italic px-2">
-                  * A {activeModalData?.platformFeeAmount && activeModalData?.prizePool
-                    ? Math.round((activeModalData.platformFeeAmount / activeModalData.prizePool) * 100)
-                    : 10}% platform fee is deducted from the prize pool to maintain the service
-                </p>
+                </div>
+                <div className="p-2">
+                  <span className="text-xs text-gray-400 block">Distributed</span>
+                  <span className="text-sm font-bold text-green-400">
+                    ${((activeModalData?.prizePool || 0) * 0.9).toFixed(2)}
+                  </span>
+                </div>
+                <div className="p-2">
+                  <span className="text-xs text-gray-400 block">Platform Fee</span>
+                  <span className="text-sm text-yellow-400">
+                    ${((activeModalData?.prizePool || 0) * 0.1).toFixed(2)}
+                  </span>
+                </div>
+                <div className="p-2">
+                  <span className="text-xs text-gray-400 block">Winners</span>
+                  <span className="text-sm font-semibold text-text-primary">
+                    {activeModalData?.winners?.length || 0}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Winners List - Mobile optimized */}
-            <div className="space-y-2">
-              <p className="text-xs sm:text-sm text-gray-400 uppercase tracking-wider text-center">All Winners</p>
-              {activeModalData?.winners && activeModalData.winners.length > 0 ? (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {activeModalData.winners.map((winner, index) => (
+            {/* Winners List - Collapsible/Compact */}
+            <details className="bg-secondary-bg/50 rounded-lg">
+              <summary className="cursor-pointer p-2 text-xs text-gray-400 uppercase tracking-wider text-center hover:text-gray-300">
+                View All Winners ({activeModalData?.winners?.length || 0})
+              </summary>
+              <div className="p-2 space-y-1 max-h-32 overflow-y-auto">
+                {activeModalData?.winners && activeModalData.winners.length > 0 ? (
+                  activeModalData.winners.map((winner, index) => (
                     <div
                       key={winner.userId}
                       className={clsx(
-                        "flex flex-col sm:flex-row sm:justify-between items-center p-3 rounded-lg text-center sm:text-left",
+                        "flex justify-between items-center p-2 rounded text-sm",
                         winner.userId === user?.id
-                          ? "bg-green-500/10 border border-green-500/30"
-                          : "bg-secondary-bg border border-gray-700"
+                          ? "bg-green-500/10"
+                          : "bg-secondary-bg"
                       )}
                     >
-                      <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 mb-1 sm:mb-0">
-                        <span className="text-xs sm:text-sm text-gray-400">#{index + 1}</span>
-                        <span className="font-medium text-sm sm:text-base text-text-primary">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-400">#{index + 1}</span>
+                        <span className="text-text-primary">
                           {winner.username}
                           {winner.userId === user?.id && (
-                            <span className="text-green-400 ml-1 sm:ml-2 text-xs sm:text-sm">(You)</span>
+                            <span className="text-green-400 ml-1 text-xs">(You)</span>
                           )}
                         </span>
                       </div>
-                      <span className="font-bold text-green-400 text-base sm:text-lg">
+                      <span className="font-bold text-green-400">
                         +${winner.prize}
                       </span>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-center text-gray-400 py-4 text-sm">No winners data</p>
-              )}
-            </div>
-
-            {/* Close button instruction - mobile optimized */}
-            <div className="text-center text-xs sm:text-sm text-gray-500 px-2">
-              <span className="hidden sm:inline">Click the close button or press ESC to close</span>
-              <span className="sm:hidden">Tap the X to close</span>
-            </div>
+                  ))
+                ) : (
+                  <p className="text-center text-gray-400 py-2 text-xs">No winners data</p>
+                )}
+              </div>
+            </details>
               </>
             )}
           </div>

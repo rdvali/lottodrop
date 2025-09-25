@@ -54,11 +54,17 @@ const RoomList = () => {
     }
 
     const handleGlobalGameCompleted = (data: GlobalGameCompletedData) => {
-      toast.success(
-        `🎉 ${data.winners[0]?.username} won $${data.winners[0]?.prize} in ${data.roomName}!`,
-        { duration: 8000 }
-      )
-      
+      // Check if winners exist before accessing
+      if (data.winners && data.winners.length > 0) {
+        const winner = data.winners[0]
+        if (winner) {
+          toast.success(
+            `🎉 ${winner.username || 'Player'} won $${winner.prize || winner.prizeAmount || 0} in ${data.roomName}!`,
+            { duration: 8000 }
+          )
+        }
+      }
+
       // Refresh rooms
       roomAPI.getRooms().then(setRooms).catch(() => {})
     }

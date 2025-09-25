@@ -3,8 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { HelmetProvider } from 'react-helmet-async'
 import { Toaster } from 'react-hot-toast'
 import { MainLayout } from '@components/templates'
-import { AuthModal } from '@components/organisms'
+import { AuthModal, NotificationCenter, NotificationToastContainer } from '@components/organisms'
 import { AuthProvider, useAuth } from '@contexts/AuthContext'
+import { NotificationProvider, useNotifications } from '@contexts/NotificationContext'
 import { ModalProvider } from './providers'
 import { useModal } from '@hooks/useModal'
 import { socketService } from '@services/socket'
@@ -53,6 +54,7 @@ const AppContent = () => {
   const location = useLocation()
   const { user, logout } = useAuth()
   const { authModalOpen, openAuthModal, closeAuthModal } = useModal()
+  const { state: notificationState } = useNotifications()
   
   // Check URL params for login request (for backward compatibility)
   useEffect(() => {
@@ -113,7 +115,7 @@ const AppContent = () => {
         user={user || undefined}
         onLogin={handleLogin}
         onLogout={handleLogout}
-        notificationCount={0}
+        notificationCount={notificationState?.unreadCount || 0}
       >
         <Suspense fallback={<PageLoader />}>
           <Routes>
@@ -169,6 +171,9 @@ const AppContent = () => {
           },
         }}
       />
+
+      <NotificationCenter />
+      <NotificationToastContainer />
     </>
   )
 }
@@ -178,11 +183,13 @@ function App() {
   return (
     <HelmetProvider>
       <AuthProvider>
-        <ModalProvider>
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
-        </ModalProvider>
+        <NotificationProvider>
+          <ModalProvider>
+            <BrowserRouter>
+              <AppContent />
+            </BrowserRouter>
+          </ModalProvider>
+        </NotificationProvider>
       </AuthProvider>
     </HelmetProvider>
   )

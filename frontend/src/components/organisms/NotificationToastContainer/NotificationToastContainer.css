@@ -1,0 +1,76 @@
+/* Notification Toast Container Styles */
+.notification-toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: calc(100vh - 40px);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.notification-toast-container > * {
+  pointer-events: auto;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .notification-toast-container {
+    top: 10px;
+    right: 0;
+    left: 0;
+    max-height: calc(100vh - 20px);
+  }
+}
+
+/* Ensure proper stacking */
+.notification-toast-container .notification-toast:first-child {
+  z-index: 5;
+}
+
+.notification-toast-container .notification-toast:nth-child(2) {
+  z-index: 4;
+}
+
+.notification-toast-container .notification-toast:nth-child(3) {
+  z-index: 3;
+}
+
+.notification-toast-container .notification-toast:nth-child(4) {
+  z-index: 2;
+}
+
+.notification-toast-container .notification-toast:nth-child(5) {
+  z-index: 1;
+}
+
+/* Animation stagger for multiple toasts */
+.notification-toast-container .notification-toast:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.notification-toast-container .notification-toast:nth-child(2) {
+  animation-delay: 100ms;
+}
+
+.notification-toast-container .notification-toast:nth-child(3) {
+  animation-delay: 200ms;
+}
+
+.notification-toast-container .notification-toast:nth-child(4) {
+  animation-delay: 300ms;
+}
+
+.notification-toast-container .notification-toast:nth-child(5) {
+  animation-delay: 400ms;
+}
+
+/* Print styles */
+@media print {
+  .notification-toast-container {
+    display: none;
+  }
+}

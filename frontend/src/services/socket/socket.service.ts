@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client'
-import type { 
-  RoomStateData, 
-  UserJoinedData, 
+import type {
+  RoomStateData,
+  UserJoinedData,
   UserLeftData,
   GameStartingData,
   CountdownData,
@@ -10,7 +10,9 @@ import type {
   RoomResetData,
   GlobalGameCompletedData,
   BalanceUpdatedData,
-  RoomStatusUpdateData
+  RoomStatusUpdateData,
+  Notification,
+  NotificationPreferences
 } from '../../types'
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || ''
@@ -28,6 +30,14 @@ type GlobalGameCompletedCallback = (data: GlobalGameCompletedData) => void
 type BalanceUpdatedCallback = (data: BalanceUpdatedData) => void
 type RoomStatusUpdateCallback = (data: RoomStatusUpdateData) => void
 // type ErrorCallback = (data: ErrorData) => void
+
+// Notification callback types
+type NotificationNewCallback = (data: Notification) => void
+type NotificationUpdateCallback = (data: Notification) => void
+type NotificationBatchCallback = (data: Notification[]) => void
+type NotificationMarkReadCallback = (data: { notificationId: string }) => void
+type NotificationPreferencesUpdateCallback = (data: NotificationPreferences) => void
+
 type GenericCallback = (...args: unknown[]) => void
 
 class SocketService {
@@ -152,6 +162,27 @@ class SocketService {
     this.socket?.on('room-status-update', callback)
   }
 
+  // Notification event listeners
+  onNotificationNew(callback: NotificationNewCallback): void {
+    this.socket?.on('notification:new', callback)
+  }
+
+  onNotificationUpdate(callback: NotificationUpdateCallback): void {
+    this.socket?.on('notification:update', callback)
+  }
+
+  onNotificationBatch(callback: NotificationBatchCallback): void {
+    this.socket?.on('notification:batch', callback)
+  }
+
+  onNotificationMarkRead(callback: NotificationMarkReadCallback): void {
+    this.socket?.on('notification:mark-read', callback)
+  }
+
+  onNotificationPreferencesUpdate(callback: NotificationPreferencesUpdateCallback): void {
+    this.socket?.on('notification:preferences-update', callback)
+  }
+
   // Remove listeners
   offRoomState(callback?: RoomStateCallback): void {
     if (callback) {
@@ -239,6 +270,56 @@ class SocketService {
     } else {
       this.socket?.off('room-status-update')
     }
+  }
+
+  // Remove notification listeners
+  offNotificationNew(callback?: NotificationNewCallback): void {
+    if (callback) {
+      this.socket?.off('notification:new', callback)
+    } else {
+      this.socket?.off('notification:new')
+    }
+  }
+
+  offNotificationUpdate(callback?: NotificationUpdateCallback): void {
+    if (callback) {
+      this.socket?.off('notification:update', callback)
+    } else {
+      this.socket?.off('notification:update')
+    }
+  }
+
+  offNotificationBatch(callback?: NotificationBatchCallback): void {
+    if (callback) {
+      this.socket?.off('notification:batch', callback)
+    } else {
+      this.socket?.off('notification:batch')
+    }
+  }
+
+  offNotificationMarkRead(callback?: NotificationMarkReadCallback): void {
+    if (callback) {
+      this.socket?.off('notification:mark-read', callback)
+    } else {
+      this.socket?.off('notification:mark-read')
+    }
+  }
+
+  offNotificationPreferencesUpdate(callback?: NotificationPreferencesUpdateCallback): void {
+    if (callback) {
+      this.socket?.off('notification:preferences-update', callback)
+    } else {
+      this.socket?.off('notification:preferences-update')
+    }
+  }
+
+  // Notification emit methods
+  markNotificationAsRead(notificationId: string): void {
+    this.socket?.emit('notification:mark-read', { notificationId })
+  }
+
+  markAllNotificationsAsRead(): void {
+    this.socket?.emit('notification:mark-all-read')
   }
 
   get isConnected(): boolean {
