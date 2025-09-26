@@ -265,6 +265,18 @@
   color: white;
 }
 
+.notification-item__priority--win {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+}
+
+.notification-item__priority--lost {
+  background: #64748b;
+  color: white;
+}
+
 .notification-item__message {
   font-size: 13px;
   line-height: 1.4;

@@ -69,7 +69,7 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
   }
 
   const formatAmount = (amount?: number) => {
-    if (!amount) return ''
+    if (amount === undefined || amount === null || amount <= 0) return ''
     return `$${(amount / 100).toFixed(2)}`
   }
 
@@ -90,8 +90,13 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
   }
 
   const getPriorityLabel = () => {
+    // For winning notifications, show WIN instead of Critical
+    if (notification.type === 'success' && notification.priority === 1) {
+      return 'WIN'
+    }
+
     switch (notification.priority) {
-      case 1: return 'Critical'
+      case 1: return 'WIN'
       case 2: return 'High'
       case 3: return 'Medium'
       case 4: return 'Low'
@@ -102,9 +107,9 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
   const getSubtypeLabel = () => {
     switch (notification.subtype) {
       case 'game_result':
-        if (notification.type === 'success') return 'Win!'
-        if (notification.type === 'error') return 'Round Complete'
-        return 'Game Result'
+        if (notification.type === 'success') return 'GAME RESULT'
+        if (notification.type === 'error') return 'GAME RESULT'
+        return 'GAME RESULT'
       case 'balance_update': return 'Balance'
       case 'global_win': return 'Big Win'
       case 'round_start': return 'New Round'
@@ -177,7 +182,7 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
         <div className="notification-item__header">
           <div className="notification-item__title">
             {notification.title}
-            {notification.amount && notification.amount > 0 && (
+            {notification.amount !== undefined && notification.amount > 0 && (
               <span className="notification-item__amount">
                 {formatAmount(notification.amount)}
               </span>
@@ -187,9 +192,13 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
             <span className="notification-item__timestamp">
               {formatTimestamp(notification.timestamp)}
             </span>
-            {notification.priority <= 2 && (
-              <span className={`notification-item__priority notification-item__priority--${notification.priority === 1 ? 'critical' : 'high'}`}>
-                {getPriorityLabel()}
+            {(notification.priority <= 2 || notification.type === 'error') && (
+              <span className={`notification-item__priority notification-item__priority--${
+                notification.type === 'success' || notification.priority === 1 ? 'win' :
+                notification.type === 'error' ? 'lost' :
+                'high'
+              }`}>
+                {notification.type === 'error' && notification.subtype === 'game_result' ? 'LOST' : getPriorityLabel()}
               </span>
             )}
           </div>

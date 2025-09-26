@@ -618,11 +618,11 @@ const GameRoom = () => {
             addNotification({
               id: `game-${roomId}-${Date.now()}`,
               userId: currentUser.id,
-              type: 'info',
+              type: 'error',
               subtype: 'game_result',
               title: 'Game Completed',
               message: `Better luck next time! The game "${room?.name || 'Room'}" has ended. ${winnersArray.length} player(s) won.`,
-              priority: 3,
+              priority: 2,
               gameRoundId: data.gameRoundId || roomId,
               roomId: roomId,
               amount: (room?.entryFee || 0) * 100, // Entry fee lost (in cents)
