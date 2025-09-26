@@ -21,7 +21,6 @@ const RoomList = () => {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'fast_drop' | 'time_drop'>('all')
   const [joinedRooms, setJoinedRooms] = useState<Set<string>>(new Set())
-  const [prevRoomData, setPrevRoomData] = useState<Map<string, number>>(new Map())
 
   // Fetch rooms
   useEffect(() => {
