@@ -1,0 +1,344 @@
+.confirmationModal {
+  max-width: 520px;
+  width: 90vw;
+}
+
+.modalContent {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  position: relative;
+}
+
+/* Room Information Section */
+.roomInfo {
+  background: linear-gradient(135deg, rgba(157, 78, 221, 0.05) 0%, rgba(157, 78, 221, 0.02) 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(157, 78, 221, 0.1);
+}
+
+.roomHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.roomName {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.statLabel {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.statValue {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.entryFee {
+  color: var(--color-warning);
+}
+
+.prizePool {
+  color: var(--color-success);
+}
+
+/* Financial Section */
+.financialSection {
+  background: rgba(26, 26, 46, 0.4);
+  border-radius: 12px;
+  padding: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.balanceInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.balanceRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+
+.balanceRow.divider {
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 0.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.currentBalance {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.feeAmount {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.remainingBalance {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--color-success);
+}
+
+.remainingBalance.insufficient {
+  color: var(--color-danger);
+}
+
+.remainingBalance.low {
+  color: var(--color-warning);
+}
+
+/* Warning Boxes */
+.warningBox,
+.cautionBox {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.warningBox {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: var(--color-danger);
+}
+
+.cautionBox {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  color: var(--color-warning);
+}
+
+/* Confirmation Text */
+.confirmationText {
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.confirmationText p {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.subText {
+  margin-top: 0.5rem !important;
+  font-size: 0.875rem !important;
+  color: var(--text-secondary) !important;
+  font-weight: 400 !important;
+}
+
+/* Action Buttons */
+.actionButtons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.cancelButton,
+.confirmButton {
+  flex: 1;
+  min-height: 48px;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.cancelButton:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+.confirmButton:focus {
+  box-shadow: 0 0 0 3px rgba(157, 78, 221, 0.2);
+}
+
+/* Terms Notice */
+.termsNotice {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  margin: 0;
+  padding-top: 0.5rem;
+}
+
+/* Mobile Responsive - Prevent ALL Scrolling */
+@media (max-width: 640px) {
+  .confirmationModal {
+    width: 95vw;
+    max-height: 80vh; /* Reduced from 85vh */
+    max-height: min(80vh, 600px); /* Cap at 600px for tall phones */
+  }
+
+  .modalContent {
+    gap: 0.5rem; /* Reduced from 0.75rem */
+    max-height: calc(80vh - 50px); /* Reduced header space */
+    overflow-y: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .roomInfo {
+    padding: 0.625rem; /* Reduced from 0.875rem */
+    flex-shrink: 0;
+  }
+
+  .roomHeader {
+    margin-bottom: 0.5rem; /* Reduced from 0.875rem */
+  }
+
+  .roomName {
+    font-size: 1rem; /* Reduced from 1.125rem */
+  }
+
+  .statsGrid {
+    gap: 0.375rem; /* Reduced from 0.625rem */
+  }
+
+  .statLabel {
+    font-size: 0.6875rem; /* Reduced from 0.75rem */
+  }
+
+  .statValue {
+    font-size: 0.875rem; /* Reduced from 0.95rem */
+  }
+
+  .financialSection {
+    padding: 0.625rem; /* Reduced from 0.875rem */
+    flex-shrink: 0;
+  }
+
+  .balanceInfo {
+    gap: 0.375rem; /* Reduced from 0.5rem */
+  }
+
+  .balanceRow {
+    font-size: 0.8125rem; /* Reduced from 0.875rem */
+  }
+
+  .balanceRow.divider {
+    margin-top: 0.25rem; /* Reduced space */
+    padding-top: 0.375rem; /* Reduced from default */
+  }
+
+  .remainingBalance {
+    font-size: 0.9375rem; /* Reduced from 1rem */
+  }
+
+  .warningBox,
+  .cautionBox {
+    padding: 0.5rem 0.75rem; /* Reduced padding */
+    font-size: 0.75rem; /* Reduced font */
+    margin-top: 0.5rem; /* Reduced margin */
+  }
+
+  .confirmationText {
+    padding: 0; /* Removed padding */
+    margin: 0; /* Ensure no margin */
+  }
+
+  .confirmationText p {
+    font-size: 0.875rem; /* Reduced from 0.9375rem */
+    margin: 0;
+  }
+
+  .actionButtons {
+    flex-direction: column-reverse;
+    gap: 0.5rem; /* Reduced from 0.75rem */
+    margin-top: 0; /* Removed margin */
+    flex-shrink: 0;
+  }
+
+  .cancelButton,
+  .confirmButton {
+    width: 100%;
+    min-height: 40px; /* Reduced from 44px */
+    font-size: 0.875rem; /* Reduced from 0.9375rem */
+    padding: 0.625rem 1rem; /* Explicit padding */
+  }
+}
+
+/* Extra small devices - Ultra compact */
+@media (max-width: 375px) {
+  .confirmationModal {
+    max-height: 75vh; /* Even more reduced */
+  }
+
+  .modalContent {
+    gap: 0.375rem; /* Minimal gap */
+    max-height: calc(75vh - 45px);
+  }
+
+  .roomInfo {
+    padding: 0.5rem; /* Minimal padding */
+  }
+
+  .roomHeader {
+    margin-bottom: 0.375rem;
+  }
+
+  .financialSection {
+    padding: 0.5rem;
+  }
+
+  .statsGrid {
+    gap: 0.25rem; /* Minimal gap */
+  }
+
+  .statLabel {
+    font-size: 0.625rem; /* Smaller text */
+  }
+
+  .statValue {
+    font-size: 0.8125rem;
+  }
+
+  .balanceRow {
+    font-size: 0.75rem; /* Smaller text */
+  }
+
+  .actionButtons {
+    gap: 0.375rem; /* Minimal gap */
+  }
+
+  .cancelButton,
+  .confirmButton {
+    min-height: 38px; /* Smaller buttons */
+    font-size: 0.8125rem;
+  }
+}

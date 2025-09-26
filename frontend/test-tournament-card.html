@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TournamentCard Test</title>
+</head>
+<body>
+    <h1>TournamentCard Button Logic Test</h1>
+    <div style="font-family: monospace; padding: 20px;">
+        <h3>Test Scenarios:</h3>
+        <ul>
+            <li><strong>Joined Room:</strong> Button should show "View Room" with success variant and call onView()</li>
+            <li><strong>Non-joined Room (can join):</strong> Button should show "Join Room" with primary variant and call onJoin()</li>
+            <li><strong>Full Room:</strong> Button should show "Room Full" with secondary variant and be disabled</li>
+            <li><strong>Non-waiting Room:</strong> Button should show "View Room" with secondary variant and be disabled</li>
+        </ul>
+
+        <h3>Implementation Details:</h3>
+        <pre>
+// TournamentCard Button Logic:
+variant={isJoined ? 'success' : canJoin ? 'primary' : 'secondary'}
+disabled={!canJoin && !isJoined}
+onClick={() => {
+  if (isJoined) {
+    onView?.(room.id)  // Direct navigation to room
+  } else if (canJoin) {
+    onJoin?.(room.id)  // Show confirmation modal
+  }
+}}
+
+// Button Text:
+{isJoined ? 'View Room' : isFull ? 'Room Full' : isWaiting ? 'Join Room' : 'View Room'}
+        </pre>
+
+        <h3>Fixed Issues:</h3>
+        <ul>
+            <li>✅ Joined rooms now show "View Room" instead of "Already Joined"</li>
+            <li>✅ Joined rooms are clickable and call onView() for direct navigation</li>
+            <li>✅ Non-joined rooms still show confirmation modal via onJoin()</li>
+            <li>✅ Visual distinction with success variant for joined rooms</li>
+        </ul>
+    </div>
+</body>
+</html>

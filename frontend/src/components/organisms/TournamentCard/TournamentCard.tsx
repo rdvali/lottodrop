@@ -7,12 +7,13 @@ import { useEffect, useState, useRef } from 'react'
 export interface TournamentCardProps {
   room: Room
   onJoin?: (roomId: string) => void
+  onView?: (roomId: string) => void
   isJoined?: boolean
   className?: string
   activityType?: 'join' | 'leave' | null
 }
 
-const TournamentCard = ({ room, onJoin, isJoined = false, className, activityType }: TournamentCardProps) => {
+const TournamentCard = ({ room, onJoin, onView, isJoined = false, className, activityType }: TournamentCardProps) => {
   const isWaiting = room.status === 'waiting'
   const isFull = room.currentParticipants >= room.maxParticipants
   const canJoin = isWaiting && !isFull && !isJoined
@@ -212,11 +213,17 @@ const TournamentCard = ({ room, onJoin, isJoined = false, className, activityTyp
       {/* Action Button */}
       <Button
         fullWidth
-        variant={canJoin ? 'primary' : 'secondary'}
-        disabled={!canJoin}
-        onClick={() => canJoin && onJoin?.(room.id)}
+        variant={isJoined ? 'success' : canJoin ? 'primary' : 'secondary'}
+        disabled={!canJoin && !isJoined}
+        onClick={() => {
+          if (isJoined) {
+            onView?.(room.id)
+          } else if (canJoin) {
+            onJoin?.(room.id)
+          }
+        }}
       >
-        {isJoined ? 'Already Joined' : isFull ? 'Room Full' : isWaiting ? 'Join Room' : 'View Room'}
+        {isJoined ? 'View Room' : isFull ? 'Room Full' : isWaiting ? 'Join Room' : 'View Room'}
       </Button>
       
       {/* Background Decoration */}

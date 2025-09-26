@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Room, RoomStatusUpdateData, GlobalGameCompletedData } from '../../types'
 import { roomAPI } from '@services/api'
 import { socketService } from '@services/socket'
-import { TournamentCard } from '@components/organisms'
+import { TournamentCard, RoomJoinConfirmationModal } from '@components/organisms'
 import { Button, Badge, CardSkeleton } from '@components/atoms'
 import { ParticleBackground } from '@components/animations'
 import { useAuth } from '@contexts/AuthContext'
@@ -21,13 +21,34 @@ const RoomList = () => {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'fast_drop' | 'time_drop'>('all')
   const [joinedRooms, setJoinedRooms] = useState<Set<string>>(new Set())
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false)
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
+  const [isJoining, setIsJoining] = useState(false)
 
-  // Fetch rooms
+  // Helper function to update joined rooms based on room data
+  const updateJoinedRooms = useCallback((roomsData: Room[]) => {
+    if (user) {
+      const userJoinedRooms = new Set<string>()
+      roomsData.forEach(room => {
+        // Check if current user is in the participants list
+        const isUserParticipant = room.participants?.some(
+          participant => participant.userId === user.id || participant.username === user.username
+        )
+        if (isUserParticipant) {
+          userJoinedRooms.add(room.id)
+        }
+      })
+      setJoinedRooms(userJoinedRooms)
+    }
+  }, [user])
+
+  // Fetch rooms and determine which ones user has joined
   useEffect(() => {
     const fetchRooms = async () => {
       try {
         const data = await roomAPI.getRooms()
         setRooms(data)
+        updateJoinedRooms(data) // Use helper function
       } catch {
         toast.error('Failed to load rooms')
       } finally {
@@ -43,7 +64,7 @@ const RoomList = () => {
     }, 30000) // Refresh every 30 seconds
 
     return () => clearInterval(interval)
-  }, [])
+  }, [user]) // Re-run when user changes
 
   // Socket listeners
   useEffect(() => {
@@ -59,16 +80,22 @@ const RoomList = () => {
           }
         }
 
-        return prev.map(room =>
+        const updatedRooms = prev.map(room =>
           room.id === data.roomId
             ? { ...room, status: data.status, currentParticipants: data.participantCount }
             : room
         )
+
+        // CRITICAL FIX: Update joinedRooms state after room data changes
+        // This prevents the bug where buttons show incorrect state temporarily
+        updateJoinedRooms(updatedRooms)
+
+        return updatedRooms
       })
     }
 
     const handleGlobalGameCompleted = (data: GlobalGameCompletedData) => {
-      // Check if winners exist before accessing
+      // Show winner notification for all users (this is fine)
       if (data.winners && data.winners.length > 0) {
         const winner = data.winners[0]
         if (winner) {
@@ -79,8 +106,26 @@ const RoomList = () => {
         }
       }
 
-      // Refresh rooms
-      roomAPI.getRooms().then(setRooms).catch(() => {})
+      // CRITICAL FIX: Only refresh room data if the current user was a participant
+      // This prevents button flickering for non-participants
+      const userWasParticipant = user && data.winners?.some(winner =>
+        winner.userId === user.id || winner.username === user.username
+      )
+
+      if (userWasParticipant) {
+        // Only participants need fresh room data after game completion
+        roomAPI.getRooms().then(roomsData => {
+          setRooms(roomsData)
+          updateJoinedRooms(roomsData)
+        }).catch(() => {})
+      } else {
+        // For non-participants, only update the specific room status without refetching
+        setRooms(prev => prev.map(room =>
+          room.id === data.roomId
+            ? { ...room, status: 'completed' as const, currentParticipants: 0 }
+            : room
+        ))
+      }
     }
 
     socketService.onRoomStatusUpdate(handleRoomStatusUpdate)
@@ -90,9 +135,9 @@ const RoomList = () => {
       socketService.offRoomStatusUpdate(handleRoomStatusUpdate)
       socketService.offGlobalGameCompleted(handleGlobalGameCompleted)
     }
-  }, [])
+  }, [user, updateJoinedRooms, triggerRoomActivity]) // Add all dependencies
 
-  const handleJoinRoom = async (roomId: string) => {
+  const handleJoinRoom = (roomId: string) => {
     if (!user) {
       // Open auth modal directly without URL navigation
       openAuthModal()
@@ -102,21 +147,48 @@ const RoomList = () => {
     const room = rooms.find(r => r.id === roomId)
     if (!room) return
 
-    if (user.balance < room.entryFee) {
-      toast.error('Insufficient balance')
-      return
-    }
+    // Open confirmation modal instead of joining directly
+    setSelectedRoom(room)
+    setConfirmModalOpen(true)
+  }
 
+  const handleViewRoom = (roomId: string) => {
+    // Navigate directly to room without confirmation for joined rooms
+    navigate(`/room/${roomId}`)
+  }
+
+  const handleConfirmJoin = async () => {
+    if (!selectedRoom || !user) return
+
+    // Optimistic update - immediately show joined state to prevent flickering
+    setJoinedRooms(prev => new Set(prev).add(selectedRoom.id))
+
+    setIsJoining(true)
     try {
-      await roomAPI.joinRoom(roomId)
-      setJoinedRooms(prev => new Set(prev).add(roomId))
+      await roomAPI.joinRoom(selectedRoom.id)
       toast.success('Successfully joined room!')
-      navigate(`/room/${roomId}`)
+      setConfirmModalOpen(false)
+      navigate(`/room/${selectedRoom.id}`)
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 
+      // Rollback optimistic update on error
+      setJoinedRooms(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(selectedRoom.id)
+        return newSet
+      })
+
+      const errorMessage = error instanceof Error ? error.message :
         (error as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to join room'
       toast.error(errorMessage)
+    } finally {
+      setIsJoining(false)
     }
+  }
+
+  const handleCancelJoin = () => {
+    setConfirmModalOpen(false)
+    setSelectedRoom(null)
+    setIsJoining(false)
   }
 
   const filteredRooms = rooms.filter(room => {
@@ -220,6 +292,7 @@ const RoomList = () => {
               <TournamentCard
                 room={room}
                 onJoin={handleJoinRoom}
+                onView={handleViewRoom}
                 isJoined={joinedRooms.has(room.id)}
                 activityType={roomActivities.get(room.id) || null}
               />
@@ -228,6 +301,16 @@ const RoomList = () => {
         </motion.div>
       )}
       </div>
+
+      {/* Room Join Confirmation Modal */}
+      <RoomJoinConfirmationModal
+        room={selectedRoom}
+        userBalance={user?.balance || 0}
+        isOpen={confirmModalOpen}
+        onConfirm={handleConfirmJoin}
+        onCancel={handleCancelJoin}
+        isLoading={isJoining}
+      />
     </>
   )
 }
