@@ -18,24 +18,24 @@ const TournamentCard = ({ room, onJoin, isJoined = false, className }: Tournamen
   const getStatusBadge = () => {
     switch (room.status) {
       case 'waiting':
-        return <Badge variant="success" size="sm" dot>Waiting</Badge>
+        return <Badge variant="success" size="md" dot>Waiting</Badge>
       case 'in_progress':
-        return <Badge variant="warning" size="sm" dot>In Progress</Badge>
+        return <Badge variant="warning" size="md" dot>In Progress</Badge>
       case 'completed':
-        return <Badge variant="default" size="sm" dot>Completed</Badge>
+        return <Badge variant="default" size="md" dot>Completed</Badge>
       default:
         return null
     }
   }
-  
+
   const getRoomTypeBadge = () => {
     switch (room.type) {
       case 'fast_drop':
-        return <Badge variant="primary" size="sm">Fast Drop</Badge>
+        return <Badge variant="primary" size="md">Fast Drop</Badge>
       case 'time_drop':
-        return <Badge variant="info" size="sm">Time Drop</Badge>
+        return <Badge variant="info" size="md">Time Drop</Badge>
       case 'special':
-        return <Badge variant="warning" size="sm">Special</Badge>
+        return <Badge variant="warning" size="md">Special</Badge>
       default:
         return null
     }
