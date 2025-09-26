@@ -57,4 +57,4 @@ Disallow: /
 Crawl-delay: 1
 
 # Sitemap location (should be created for SEO optimization)
-Sitemap: https://lottodrop.com/sitemap.xml
+Sitemap: https://lottodrop.net/sitemap.xml
