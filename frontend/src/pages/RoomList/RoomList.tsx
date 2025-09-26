@@ -8,6 +8,7 @@ import { Button, Badge, CardSkeleton } from '@components/atoms'
 import { ParticleBackground } from '@components/animations'
 import { useAuth } from '@contexts/AuthContext'
 import { useModal } from '@hooks/useModal'
+import { useRoomActivityManager } from '@hooks/useRoomActivity'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 
@@ -15,10 +16,12 @@ const RoomList = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { openAuthModal } = useModal()
+  const { roomActivities, triggerRoomActivity } = useRoomActivityManager()
   const [rooms, setRooms] = useState<Room[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'fast_drop' | 'time_drop'>('all')
   const [joinedRooms, setJoinedRooms] = useState<Set<string>>(new Set())
+  const [prevRoomData, setPrevRoomData] = useState<Map<string, number>>(new Map())
 
   // Fetch rooms
   useEffect(() => {
@@ -46,11 +49,23 @@ const RoomList = () => {
   // Socket listeners
   useEffect(() => {
     const handleRoomStatusUpdate = (data: RoomStatusUpdateData) => {
-      setRooms(prev => prev.map(room => 
-        room.id === data.roomId 
-          ? { ...room, status: data.status, currentParticipants: data.participantCount }
-          : room
-      ))
+      setRooms(prev => {
+        const prevRoom = prev.find(r => r.id === data.roomId)
+        if (prevRoom && prevRoom.currentParticipants !== data.participantCount) {
+          // Trigger animation based on participant change
+          if (data.participantCount > prevRoom.currentParticipants) {
+            triggerRoomActivity(data.roomId, 'join')
+          } else if (data.participantCount < prevRoom.currentParticipants) {
+            triggerRoomActivity(data.roomId, 'leave')
+          }
+        }
+
+        return prev.map(room =>
+          room.id === data.roomId
+            ? { ...room, status: data.status, currentParticipants: data.participantCount }
+            : room
+        )
+      })
     }
 
     const handleGlobalGameCompleted = (data: GlobalGameCompletedData) => {
@@ -207,6 +222,7 @@ const RoomList = () => {
                 room={room}
                 onJoin={handleJoinRoom}
                 isJoined={joinedRooms.has(room.id)}
+                activityType={roomActivities.get(room.id) || null}
               />
             </motion.div>
           ))}

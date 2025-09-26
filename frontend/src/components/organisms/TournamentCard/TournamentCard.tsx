@@ -2,19 +2,54 @@ import { Card, Badge, Button } from '@components/atoms'
 import type { Room } from '../../../types'
 import { motion } from 'framer-motion'
 import clsx from 'clsx'
+import { useEffect, useState, useRef } from 'react'
 
 export interface TournamentCardProps {
   room: Room
   onJoin?: (roomId: string) => void
   isJoined?: boolean
   className?: string
+  activityType?: 'join' | 'leave' | null
 }
 
-const TournamentCard = ({ room, onJoin, isJoined = false, className }: TournamentCardProps) => {
+const TournamentCard = ({ room, onJoin, isJoined = false, className, activityType }: TournamentCardProps) => {
   const isWaiting = room.status === 'waiting'
   const isFull = room.currentParticipants >= room.maxParticipants
   const canJoin = isWaiting && !isFull && !isJoined
-  
+  const [playerCountChange, setPlayerCountChange] = useState<'increment' | 'decrement' | null>(null)
+  const prevParticipantsRef = useRef(room.currentParticipants)
+  const [isAnimating, setIsAnimating] = useState(false)
+
+  // Detect participant count changes
+  useEffect(() => {
+    if (prevParticipantsRef.current !== room.currentParticipants) {
+      if (room.currentParticipants > prevParticipantsRef.current) {
+        setPlayerCountChange('increment')
+      } else {
+        setPlayerCountChange('decrement')
+      }
+      prevParticipantsRef.current = room.currentParticipants
+
+      // Clear animation class after animation completes
+      const timeout = setTimeout(() => {
+        setPlayerCountChange(null)
+      }, 800)
+
+      return () => clearTimeout(timeout)
+    }
+  }, [room.currentParticipants])
+
+  // Handle activity type animation
+  useEffect(() => {
+    if (activityType) {
+      setIsAnimating(true)
+      const timeout = setTimeout(() => {
+        setIsAnimating(false)
+      }, activityType === 'join' ? 1500 : 1200)
+      return () => clearTimeout(timeout)
+    }
+  }, [activityType])
+
   const getStatusBadge = () => {
     switch (room.status) {
       case 'waiting':
@@ -41,25 +76,71 @@ const TournamentCard = ({ room, onJoin, isJoined = false, className }: Tournamen
     }
   }
   
+  // Animation variants for card
+  const cardAnimation = {
+    initial: { opacity: 0, y: 20, scale: 0.95 },
+    animate: { opacity: 1, y: 0, scale: 1 },
+    hover: {
+      y: -4,
+      scale: 1.02,
+      transition: { duration: 0.2, ease: 'easeOut' }
+    }
+  }
+
+  // Join/leave animation styles
+  const getAnimationStyle = () => {
+    if (!isAnimating || !activityType) return {}
+
+    if (activityType === 'join') {
+      return {
+        animation: 'joinPulse 1.5s ease-out',
+        boxShadow: '0 0 30px rgba(0, 255, 136, 0.3)',
+        borderColor: 'rgba(0, 255, 136, 0.4)',
+      }
+    } else {
+      return {
+        animation: 'leavePulse 1.2s ease-out',
+        boxShadow: '0 0 25px rgba(255, 107, 71, 0.3)',
+        borderColor: 'rgba(255, 107, 71, 0.4)',
+      }
+    }
+  }
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      whileHover={{ 
-        y: -4,
-        scale: 1.02,
-        transition: { duration: 0.2, ease: 'easeOut' }
-      }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
-    >
-      <Card
-        hoverable
-        className={clsx(
-          'relative overflow-hidden transition-all duration-300',
-          isJoined && 'ring-2 ring-primary',
-          className
-        )}
+    <>
+      <style>{`
+        @keyframes joinPulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.02); }
+        }
+        @keyframes leavePulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(0.98); }
+        }
+        @keyframes countUp {
+          0%, 100% { transform: translateY(0); color: inherit; }
+          50% { transform: translateY(-4px); color: #00ff88; }
+        }
+        @keyframes countDown {
+          0%, 100% { transform: translateY(0); color: inherit; }
+          50% { transform: translateY(4px); color: #ff6b47; }
+        }
+      `}</style>
+      <motion.div
+        initial={cardAnimation.initial}
+        animate={cardAnimation.animate}
+        whileHover={cardAnimation.hover}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
       >
+        <Card
+          hoverable
+          className={clsx(
+            'relative overflow-hidden transition-all duration-300',
+            isJoined && 'ring-2 ring-primary',
+            className
+          )}
+          style={getAnimationStyle()}
+        >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div>
@@ -93,7 +174,12 @@ const TournamentCard = ({ room, onJoin, isJoined = false, className }: Tournamen
         </div>
         <div>
           <p className="text-sm text-gray-400">Players</p>
-          <p className="text-lg font-semibold text-text-primary">
+          <p
+            className="text-lg font-semibold text-text-primary"
+            style={playerCountChange ? {
+              animation: playerCountChange === 'increment' ? 'countUp 0.8s ease-out' : 'countDown 0.8s ease-out'
+            } : undefined}
+          >
             {room.currentParticipants}/{room.maxParticipants}
           </p>
         </div>
@@ -161,6 +247,7 @@ const TournamentCard = ({ room, onJoin, isJoined = false, className }: Tournamen
       />
     </Card>
     </motion.div>
+    </>
   )
 }
 
