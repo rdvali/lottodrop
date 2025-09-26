@@ -11,7 +11,7 @@ const Footer = () => {
           <Logo size="sm" showText={true} />
 
           {/* Copyright */}
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-700">
             © {currentYear} Drop. All rights reserved.
           </p>
         </div>
