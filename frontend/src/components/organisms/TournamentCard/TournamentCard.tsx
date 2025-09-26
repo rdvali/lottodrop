@@ -83,7 +83,7 @@ const TournamentCard = ({ room, onJoin, isJoined = false, className, activityTyp
     hover: {
       y: -4,
       scale: 1.02,
-      transition: { duration: 0.2, ease: 'easeOut' }
+      transition: { duration: 0.2, ease: 'easeOut' as const }
     }
   }
 
@@ -130,7 +130,7 @@ const TournamentCard = ({ room, onJoin, isJoined = false, className, activityTyp
         initial={cardAnimation.initial}
         animate={cardAnimation.animate}
         whileHover={cardAnimation.hover}
-        transition={{ duration: 0.3, ease: 'easeOut' }}
+        transition={{ duration: 0.3, ease: 'easeOut' as const }}
       >
         <Card
           hoverable
@@ -204,7 +204,7 @@ const TournamentCard = ({ room, onJoin, isJoined = false, className, activityTyp
             animate={{ 
               width: `${(room.currentParticipants / room.maxParticipants) * 100}%` 
             }}
-            transition={{ duration: 1, ease: 'easeOut' }}
+            transition={{ duration: 1, ease: 'easeOut' as const }}
           />
         </div>
       </div>
@@ -226,10 +226,10 @@ const TournamentCard = ({ room, onJoin, isJoined = false, className, activityTyp
           scale: [1, 1.1, 1],
           opacity: [0.5, 0.3, 0.5] 
         }}
-        transition={{ 
-          duration: 4, 
-          repeat: Infinity, 
-          ease: 'easeInOut' 
+        transition={{
+          duration: 4,
+          repeat: Infinity,
+          ease: 'easeInOut' as const
         }}
       />
       <motion.div 
@@ -238,10 +238,10 @@ const TournamentCard = ({ room, onJoin, isJoined = false, className, activityTyp
           scale: [1, 1.2, 1],
           opacity: [0.3, 0.5, 0.3] 
         }}
-        transition={{ 
-          duration: 5, 
-          repeat: Infinity, 
-          ease: 'easeInOut',
+        transition={{
+          duration: 5,
+          repeat: Infinity,
+          ease: 'easeInOut' as const,
           delay: 0.5
         }}
       />

@@ -18,7 +18,6 @@ interface UseRoomActivityReturn {
  * Handles animation timing and cleanup
  */
 export const useRoomActivity = (
-  roomId: string,
   duration: number = 1500
 ): UseRoomActivityReturn => {
   const [activityType, setActivityType] = useState<ActivityType>(null)
