@@ -94,8 +94,8 @@ const TournamentCard = ({ room, onJoin, isJoined = false, className, activityTyp
     if (activityType === 'join') {
       return {
         animation: 'joinPulse 1.5s ease-out',
-        boxShadow: '0 0 30px rgba(147, 51, 234, 0.3)',
-        borderColor: 'rgba(147, 51, 234, 0.4)',
+        boxShadow: '0 0 30px rgba(124, 58, 237, 0.3)',
+        borderColor: 'rgba(124, 58, 237, 0.4)',
       }
     } else {
       return {
@@ -119,7 +119,7 @@ const TournamentCard = ({ room, onJoin, isJoined = false, className, activityTyp
         }
         @keyframes countUp {
           0%, 100% { transform: translateY(0); color: inherit; }
-          50% { transform: translateY(-4px); color: #9333ea; }
+          50% { transform: translateY(-4px); color: #7c3aed; }
         }
         @keyframes countDown {
           0%, 100% { transform: translateY(0); color: inherit; }
