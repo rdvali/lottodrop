@@ -90,6 +90,8 @@ const Header = ({ user, onLogin, onLogout, notificationCount = 0 }: HeaderProps)
                   <button
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                     className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                    aria-label="User menu"
+                    aria-expanded={userMenuOpen}
                   >
                     <Avatar userId={user.id} alt={user.username} size="sm" />
                     <span className="hidden sm:block text-text-primary font-medium">
@@ -137,6 +139,7 @@ const Header = ({ user, onLogin, onLogout, notificationCount = 0 }: HeaderProps)
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 text-gray-400 hover:text-text-primary"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {mobileMenuOpen ? (
