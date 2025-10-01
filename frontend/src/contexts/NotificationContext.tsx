@@ -100,6 +100,8 @@ interface NotificationState extends NotificationCenterState {
   toasts: ToastNotification[]
   preferences: NotificationPreferences[]
   permissionStatus: NotificationPermission
+  processedNotificationIds: Set<string>
+  lastProcessedTimestamp: number
 }
 
 // Notification actions
@@ -123,6 +125,8 @@ type NotificationAction =
   | { type: 'SET_PREFERENCES'; payload: NotificationPreferences[] }
   | { type: 'UPDATE_PREFERENCE'; payload: NotificationPreferences }
   | { type: 'SET_PERMISSION_STATUS'; payload: NotificationPermission }
+  | { type: 'ADD_PROCESSED_ID'; payload: string }
+  | { type: 'CLEAR_OLD_PROCESSED_IDS' }
 
 // Initial state
 const initialState: NotificationState = {
@@ -134,13 +138,22 @@ const initialState: NotificationState = {
   filter: {},
   toasts: [],
   preferences: [],
-  permissionStatus: 'default'
+  permissionStatus: 'default',
+  processedNotificationIds: new Set<string>(),
+  lastProcessedTimestamp: 0
 }
 
 // Reducer
 function notificationReducer(state: NotificationState, action: NotificationAction): NotificationState {
   switch (action.type) {
     case 'ADD_TOAST':
+      // Check for duplicate toast by ID
+      const isDuplicateToast = state.toasts.some(t => t.id === action.payload.id)
+      if (isDuplicateToast) {
+        console.log('[NotificationContext] Skipping duplicate toast:', action.payload.id)
+        return state
+      }
+
       return {
         ...state,
         toasts: [...state.toasts.slice(-4), action.payload] // Keep max 5 toasts
@@ -186,13 +199,25 @@ function notificationReducer(state: NotificationState, action: NotificationActio
       }
 
     case 'ADD_NOTIFICATION':
+      // Check for duplicate notification by ID
+      const isDuplicate = state.notifications.some(n => n.id === action.payload.id)
+      if (isDuplicate) {
+        console.log('[NotificationContext] Skipping duplicate notification:', action.payload.id)
+        return state
+      }
+
       const newNotifications = [action.payload, ...state.notifications]
       // Save to localStorage when notification is added
       NotificationStorage.save(newNotifications)
+
+      // Only increment unread count for game result and game win notifications
+      const shouldIncrementUnread = !action.payload.isRead &&
+        (action.payload.subtype === 'game_result' || action.payload.subtype === 'game_win')
+
       return {
         ...state,
         notifications: newNotifications,
-        unreadCount: action.payload.isRead ? state.unreadCount : state.unreadCount + 1
+        unreadCount: shouldIncrementUnread ? state.unreadCount + 1 : state.unreadCount
       }
 
     case 'UPDATE_NOTIFICATION':
@@ -294,6 +319,24 @@ function notificationReducer(state: NotificationState, action: NotificationActio
         permissionStatus: action.payload
       }
 
+    case 'ADD_PROCESSED_ID':
+      const newProcessedIds = new Set(state.processedNotificationIds)
+      newProcessedIds.add(action.payload)
+      return {
+        ...state,
+        processedNotificationIds: newProcessedIds,
+        lastProcessedTimestamp: Date.now()
+      }
+
+    case 'CLEAR_OLD_PROCESSED_IDS':
+      // Keep only recent processed IDs (last 5 minutes)
+      const fiveMinutesAgo = Date.now() - 5 * 60 * 1000
+      return {
+        ...state,
+        processedNotificationIds: new Set<string>(),
+        lastProcessedTimestamp: fiveMinutesAgo
+      }
+
     default:
       return state
   }
@@ -303,7 +346,7 @@ function notificationReducer(state: NotificationState, action: NotificationActio
 interface NotificationContextType {
   state: NotificationState
   addNotification: (notification: Notification) => void
-  showToast: (notification: Omit<ToastNotification, 'id' | 'timestamp' | 'userId'>) => void
+  showToast: (notification: Omit<ToastNotification, 'id' | 'timestamp' | 'userId' | 'createdAt'>) => void
   hideToast: (id: string) => void
   clearAllToasts: () => void
   clearAllNotifications: () => void
@@ -326,6 +369,21 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export function NotificationProvider({ children }: { children: React.ReactNode }): React.ReactElement {
   const [state, dispatch] = useReducer(notificationReducer, initialState)
   const isInitialized = useRef(false)
+  const notificationTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map())
+  const processingNotifications = useRef<Set<string>>(new Set())
+
+  // Get current location for context-aware notifications
+  const getCurrentLocation = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname
+      return {
+        path,
+        isInRoom: path.startsWith('/room/') && path !== '/room/',
+        roomId: path.startsWith('/room/') ? path.split('/room/')[1] : null
+      }
+    }
+    return { path: '/', isInRoom: false, roomId: null }
+  }, [])
 
   // Initialize notification system
   useEffect(() => {
@@ -337,40 +395,124 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       dispatch({ type: 'SET_PERMISSION_STATUS', payload: Notification.permission })
     }
 
-    console.log('🚀 [NotificationContext] Initializing notification system...')
+    console.log('🚀 [NotificationContext] Initializing unified notification system...')
 
     // Load stored notifications from localStorage immediately
     const storedNotifications = NotificationStorage.load()
     if (storedNotifications.length > 0) {
+      const unreadCount = storedNotifications.filter(n =>
+        !n.isRead && (n.subtype === 'game_result' || n.subtype === 'game_win')
+      ).length
       console.log('📱 [NotificationContext] Loaded from localStorage:', {
         count: storedNotifications.length,
-        unread: storedNotifications.filter(n => !n.isRead).length
+        unread: unreadCount
       })
       dispatch({ type: 'SET_NOTIFICATIONS', payload: storedNotifications })
-      dispatch({ type: 'SET_UNREAD_COUNT', payload: storedNotifications.filter(n => !n.isRead).length })
+      dispatch({ type: 'SET_UNREAD_COUNT', payload: unreadCount })
     }
 
     // Load initial notifications and preferences with game_result filter
     loadNotifications({ subtype: 'game_result' }) // This will merge with localStorage
     loadPreferences()
 
-    // Setup socket listeners
-    const handleNewNotification = (notification: Notification) => {
-      dispatch({ type: 'ADD_NOTIFICATION', payload: notification })
+    // Multi-round completion handler - NOW HANDLED BY NotificationsRoot
+    const handleMultiRoundCompleted = (data: any) => {
+      // Disabled - NotificationsRoot handles round results
+      console.log('[NotificationContext] Multi-round event received (handled by NotificationsRoot):', data)
+    }
 
-      // Show toast for high priority notifications
-      if (notification.priority <= 2) {
-        showToast({
-          ...notification,
-          autoClose: true,
-          duration: notification.priority === 1 ? 10000 : 6000,
-          showProgress: true,
-          pauseOnHover: true
-        })
+    // Personal round completion handler - NOW HANDLED BY NotificationsRoot
+    const handlePersonalRoundCompleted = (data: any) => {
+      // Disabled - NotificationsRoot handles round results
+      console.log('[NotificationContext] Personal round event received (handled by NotificationsRoot):', data)
+    }
+
+    // Global game completed handler - NOW HANDLED BY NotificationsRoot
+    const handleGlobalGameCompleted = (data: any) => {
+      // Disabled - NotificationsRoot handles round results and winner announcements
+      console.log('[NotificationContext] Global game event received (handled by NotificationsRoot):', data)
+    }
+
+    // Debounced notification handler to prevent duplicates
+    const handleNewNotification = (notification: Notification) => {
+      // Check if we're already processing this notification
+      if (processingNotifications.current.has(notification.id)) {
+        console.log('[NotificationContext] Already processing notification:', notification.id)
+        return
       }
 
-      // Show desktop notification if enabled
-      showDesktopNotification(notification)
+      // Check if notification was recently processed
+      if (state.processedNotificationIds.has(notification.id)) {
+        console.log('[NotificationContext] Notification already processed:', notification.id)
+        return
+      }
+
+      // Mark as being processed
+      processingNotifications.current.add(notification.id)
+
+      // Clear any existing timeout for this notification ID
+      const existingTimeout = notificationTimeouts.current.get(notification.id)
+      if (existingTimeout) {
+        clearTimeout(existingTimeout)
+      }
+
+      // Debounce notification processing by 100ms
+      const timeout = setTimeout(() => {
+        console.log('[NotificationContext] Processing notification:', {
+          id: notification.id,
+          type: notification.type,
+          subtype: notification.subtype,
+          title: notification.title
+        })
+
+        const location = getCurrentLocation()
+
+        // Add to notification center (persistent storage)
+        dispatch({ type: 'ADD_NOTIFICATION', payload: notification })
+        dispatch({ type: 'ADD_PROCESSED_ID', payload: notification.id })
+
+        // Context-aware toast display logic
+        const shouldShowToast =
+          // Always show winner announcements to everyone
+          notification.subtype === 'winner_announcement' ||
+          // Always show personal wins
+          (notification.subtype === 'game_win' && notification.userId !== 'global') ||
+          // Show high priority notifications (priority 1)
+          notification.priority === 1 ||
+          // Show game results only when NOT in a room
+          (!location.isInRoom && notification.subtype === 'game_result')
+
+        if (shouldShowToast) {
+          const toastDuration =
+            notification.subtype === 'game_win' ? 10000 : // 10 seconds for personal wins
+            notification.subtype === 'winner_announcement' ? 8000 : // 8 seconds for winner announcements
+            notification.priority === 1 ? 8000 : // 8 seconds for high priority
+            5000 // 5 seconds for others
+
+          // Prevent duplicate toasts
+          const toastId = `toast-${notification.id}`
+          const existingToast = state.toasts.find(t => t.id === toastId)
+          if (!existingToast) {
+            showToast({
+              ...notification,
+              id: toastId,
+              autoClose: true,
+              duration: toastDuration,
+              showProgress: true,
+              pauseOnHover: true
+            })
+          }
+        }
+
+        // Show desktop notification if enabled
+        showDesktopNotification(notification)
+
+        // Remove from processing set
+        processingNotifications.current.delete(notification.id)
+        notificationTimeouts.current.delete(notification.id)
+      }, 100)
+
+      notificationTimeouts.current.set(notification.id, timeout)
     }
 
     const handleNotificationUpdate = (notification: Notification) => {
@@ -385,11 +527,33 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       dispatch({ type: 'MARK_AS_READ', payload: notificationId })
     }
 
-    // Register socket listeners
+    const handlePendingNotifications = (data: any) => {
+      console.log('[NotificationContext] Pending notifications:', data)
+
+      if (data.notifications && data.notifications.length > 0) {
+        // Process pending notifications without showing toasts (to prevent spam)
+        data.notifications.forEach((notification: any) => {
+          dispatch({ type: 'ADD_NOTIFICATION', payload: notification })
+        })
+      }
+    }
+
+    // Register all socket listeners
     socketService.onNotificationNew(handleNewNotification)
     socketService.onNotificationUpdate(handleNotificationUpdate)
     socketService.onNotificationBatch(handleNotificationBatch)
     socketService.onNotificationMarkRead(handleMarkRead)
+
+    // Register game event listeners
+    socketService.onMultiRoundCompleted(handleMultiRoundCompleted)
+    socketService.onPersonalRoundCompleted(handlePersonalRoundCompleted)
+    socketService.onGlobalGameCompleted(handleGlobalGameCompleted)
+    socketService.onPendingNotifications(handlePendingNotifications)
+
+    // Cleanup old processed IDs periodically
+    const cleanupInterval = setInterval(() => {
+      dispatch({ type: 'CLEAR_OLD_PROCESSED_IDS' })
+    }, 5 * 60 * 1000) // Every 5 minutes
 
     // Cleanup
     return () => {
@@ -397,6 +561,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       socketService.offNotificationUpdate(handleNotificationUpdate)
       socketService.offNotificationBatch(handleNotificationBatch)
       socketService.offNotificationMarkRead(handleMarkRead)
+
+      // Remove game event listeners
+      socketService.offMultiRoundCompleted(handleMultiRoundCompleted)
+      socketService.offPersonalRoundCompleted(handlePersonalRoundCompleted)
+      socketService.offGlobalGameCompleted(handleGlobalGameCompleted)
+      socketService.offPendingNotifications(handlePendingNotifications)
+
+      // Clear timeouts and intervals
+      clearInterval(cleanupInterval)
+      notificationTimeouts.current.forEach(timeout => clearTimeout(timeout))
+      notificationTimeouts.current.clear()
+      processingNotifications.current.clear()
     }
   }, [])
 
@@ -417,6 +593,19 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   // Context methods
   const addNotification = useCallback((notification: Notification) => {
+    // Check for duplicate notification
+    if (state.processedNotificationIds.has(notification.id)) {
+      console.log('🔔 [NotificationContext] Skipping duplicate notification:', notification.id)
+      return
+    }
+
+    // Check if notification already exists in state
+    const existingNotification = state.notifications.find(n => n.id === notification.id)
+    if (existingNotification) {
+      console.log('🔔 [NotificationContext] Notification already exists:', notification.id)
+      return
+    }
+
     console.log('🔔 [NotificationContext] Adding notification:', {
       id: notification.id,
       type: notification.type,
@@ -428,12 +617,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     // Add notification to state (localStorage save happens in reducer)
     dispatch({ type: 'ADD_NOTIFICATION', payload: notification })
+    dispatch({ type: 'ADD_PROCESSED_ID', payload: notification.id })
 
     // Show toast for high priority notifications
     if (notification.priority <= 2) {
+      const toastId = `toast-${notification.id}-${Date.now()}`
       const toastNotification: ToastNotification = {
         ...notification,
-        id: notification.id || crypto.randomUUID(),
+        id: toastId,
         userId: notification.userId || '',
         timestamp: notification.timestamp || new Date().toISOString(),
         isRead: false,
@@ -447,19 +638,21 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       // Auto-remove toast
       if (toastNotification.autoClose) {
         setTimeout(() => {
-          dispatch({ type: 'REMOVE_TOAST', payload: toastNotification.id })
+          dispatch({ type: 'REMOVE_TOAST', payload: toastId })
         }, toastNotification.duration)
       }
     }
 
     // Show desktop notification if enabled
     showDesktopNotification(notification)
-  }, [showDesktopNotification])
+  }, [showDesktopNotification, state.processedNotificationIds, state.notifications])
 
-  const showToast = useCallback((toast: Omit<ToastNotification, 'id' | 'timestamp' | 'userId'>) => {
+  const showToast = useCallback((toast: Omit<ToastNotification, 'timestamp' | 'userId' | 'createdAt'> & { id?: string }) => {
+    // Use provided ID or generate unique ID for toast
+    const toastId = toast.id || `manual-toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     const toastNotification: ToastNotification = {
       ...toast,
-      id: crypto.randomUUID(),
+      id: toastId,
       userId: '', // Will be set by the system
       timestamp: new Date().toISOString(),
       isRead: false,
@@ -474,7 +667,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     // Auto-remove toast
     if (toastNotification.autoClose) {
       setTimeout(() => {
-        dispatch({ type: 'REMOVE_TOAST', payload: toastNotification.id })
+        dispatch({ type: 'REMOVE_TOAST', payload: toastId })
       }, toastNotification.duration)
     }
   }, [])
@@ -544,21 +737,30 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         // Merge localStorage notifications with backend notifications
         const mergedNotifications = NotificationStorage.mergeWithBackend(storedNotifications, validBackendNotifications)
 
+        // Only count game result and game win notifications as unread (exclude winner announcements)
+        const unreadCount = mergedNotifications.filter(n =>
+          !n.isRead && (n.subtype === 'game_result' || n.subtype === 'game_win')
+        ).length
+
         console.log('🔄 [NotificationContext] Merged notifications:', {
           stored: storedNotifications.length,
           backend: validBackendNotifications.length,
-          merged: mergedNotifications.length
+          merged: mergedNotifications.length,
+          unread: unreadCount
         })
 
         dispatch({ type: 'SET_NOTIFICATIONS', payload: mergedNotifications })
-        dispatch({ type: 'SET_UNREAD_COUNT', payload: mergedNotifications.filter(n => !n.isRead).length })
+        dispatch({ type: 'SET_UNREAD_COUNT', payload: unreadCount })
         dispatch({ type: 'SET_HAS_MORE', payload: response.data.hasMore })
       } else {
         console.log('📭 [NotificationContext] No backend notifications, using localStorage only')
         // If backend fails or returns no data, use localStorage notifications
         if (storedNotifications.length > 0) {
+          const unreadCount = storedNotifications.filter(n =>
+            !n.isRead && (n.subtype === 'game_result' || n.subtype === 'game_win')
+          ).length
           dispatch({ type: 'SET_NOTIFICATIONS', payload: storedNotifications })
-          dispatch({ type: 'SET_UNREAD_COUNT', payload: storedNotifications.filter(n => !n.isRead).length })
+          dispatch({ type: 'SET_UNREAD_COUNT', payload: unreadCount })
         } else {
           dispatch({ type: 'SET_NOTIFICATIONS', payload: [] })
           dispatch({ type: 'SET_UNREAD_COUNT', payload: 0 })
@@ -570,9 +772,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       // On error, fall back to localStorage
       const storedNotifications = NotificationStorage.load()
       if (storedNotifications.length > 0) {
+        const unreadCount = storedNotifications.filter(n =>
+          !n.isRead && (n.subtype === 'game_result' || n.subtype === 'game_win')
+        ).length
         console.log('💾 [NotificationContext] Falling back to localStorage notifications')
         dispatch({ type: 'SET_NOTIFICATIONS', payload: storedNotifications })
-        dispatch({ type: 'SET_UNREAD_COUNT', payload: storedNotifications.filter(n => !n.isRead).length })
+        dispatch({ type: 'SET_UNREAD_COUNT', payload: unreadCount })
       } else {
         dispatch({ type: 'SET_NOTIFICATIONS', payload: [] })
         dispatch({ type: 'SET_UNREAD_COUNT', payload: 0 })

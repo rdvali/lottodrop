@@ -1,9 +1,8 @@
 import { useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
-import { Toaster } from 'react-hot-toast'
 import { MainLayout } from '@components/templates'
-import { AuthModal, NotificationCenter, NotificationToastContainer } from '@components/organisms'
+import { AuthModal, NotificationCenter, NotificationToastContainer, NotificationsRoot } from '@components/organisms'
 import { AuthProvider, useAuth } from '@contexts/AuthContext'
 import { NotificationProvider, useNotifications } from '@contexts/NotificationContext'
 import { ModalProvider } from './providers'
@@ -148,32 +147,9 @@ const AppContent = () => {
         onClose={closeAuthModal}
       />
       
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: '#2D2D44',
-            color: '#F1F1F1',
-            border: '1px solid rgba(157, 78, 221, 0.2)',
-          },
-          success: {
-            iconTheme: {
-              primary: '#10B981',
-              secondary: '#F1F1F1',
-            },
-          },
-          error: {
-            iconTheme: {
-              primary: '#EF4444',
-              secondary: '#F1F1F1',
-            },
-          },
-        }}
-      />
-
       <NotificationCenter />
       <NotificationToastContainer />
+      <NotificationsRoot />
     </>
   )
 }

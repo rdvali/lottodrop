@@ -64,9 +64,14 @@ export const getRooms = async (req: Request, res: Response) => {
         COALESCE(
           json_agg(
             DISTINCT jsonb_build_object(
-              'id', rp.user_id,
+              'id', rp.id,
+              'userId', rp.user_id,
+              'username', COALESCE(u.first_name || ' ' || u.last_name, u.first_name, u.last_name, 'Player'),
               'first_name', u.first_name,
-              'last_name', u.last_name
+              'last_name', u.last_name,
+              'avatarUrl', null,
+              'joinedAt', rp.joined_at,
+              'status', 'active'
             )
           ) FILTER (WHERE rp.user_id IS NOT NULL),
           '[]'::json
@@ -127,9 +132,14 @@ export const getRoomById = async (req: Request, res: Response) => {
         COALESCE(
           json_agg(
             DISTINCT jsonb_build_object(
-              'id', rp.user_id,
+              'id', rp.id,
+              'userId', rp.user_id,
+              'username', COALESCE(u.first_name || ' ' || u.last_name, u.first_name, u.last_name, 'Player'),
               'first_name', u.first_name,
-              'last_name', u.last_name
+              'last_name', u.last_name,
+              'avatarUrl', null,
+              'joinedAt', rp.joined_at,
+              'status', 'active'
             )
           ) FILTER (WHERE rp.user_id IS NOT NULL),
           '[]'::json

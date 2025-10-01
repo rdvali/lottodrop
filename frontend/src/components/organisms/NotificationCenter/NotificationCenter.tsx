@@ -70,9 +70,11 @@ export function NotificationCenter(): React.ReactElement {
     return () => container.removeEventListener('scroll', handleScroll)
   }, [state.hasMore, state.isLoading, loadMoreNotifications])
 
-  // Only show game result notifications
+  // Show game result and winner notifications (but not global winner announcements in notification center)
   const gameResultNotifications = state.notifications.filter(
-    notification => notification.subtype === 'game_result'
+    notification =>
+      notification.subtype === 'game_result' ||
+      notification.subtype === 'game_win'
   )
 
   const handleNotificationClick = async (notification: Notification) => {
@@ -119,7 +121,7 @@ export function NotificationCenter(): React.ReactElement {
       <div className="notification-center__header">
         <div className="notification-center__title-section">
           <h2 id="notification-center-title" className="notification-center__title">
-            Round Results
+            Game History
           </h2>
           {state.unreadCount > 0 && (
             <span className="notification-center__unread-count">

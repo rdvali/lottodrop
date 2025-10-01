@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import type { Room, RoomStatusUpdateData, GlobalGameCompletedData } from '../../types'
 import { roomAPI } from '@services/api'
 import { socketService } from '@services/socket'
-import { TournamentCard, RoomJoinConfirmationModal } from '@components/organisms'
+import { TournamentCard, RoomJoinConfirmationModal, NotificationCenter } from '@components/organisms'
 import { Button, Badge, CardSkeleton } from '@components/atoms'
 import { ParticleBackground } from '@components/animations'
 import { useAuth } from '@contexts/AuthContext'
+import { useNotifications } from '@contexts/NotificationContext'
 import { useModal } from '@hooks/useModal'
 import { useRoomActivityManager } from '@hooks/useRoomActivity'
 import { motion } from 'framer-motion'
@@ -16,6 +17,7 @@ const RoomList = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { openAuthModal } = useModal()
+  const { state: notificationState, toggleNotificationCenter } = useNotifications()
   const { roomActivities, triggerRoomActivity } = useRoomActivityManager()
   const [rooms, setRooms] = useState<Room[]>([])
   const [loading, setLoading] = useState(true)
@@ -26,14 +28,19 @@ const RoomList = () => {
   const [isJoining, setIsJoining] = useState(false)
 
   // Helper function to update joined rooms based on room data
+  // IMPORTANT: This should ONLY be called when we have fresh participant data from the API
   const updateJoinedRooms = useCallback((roomsData: Room[]) => {
     if (user) {
       const userJoinedRooms = new Set<string>()
       roomsData.forEach(room => {
         // Check if current user is in the participants list
-        const isUserParticipant = room.participants?.some(
-          participant => participant.userId === user.id || participant.username === user.username
-        )
+        // CRITICAL FIX: Only check userId to prevent username collision bugs
+        // Safety check: ensure participants array exists and is valid
+        const isUserParticipant = Array.isArray(room.participants) && room.participants.length > 0 &&
+          room.participants.some(participant =>
+            participant && participant.userId && participant.userId === user.id
+          )
+
         if (isUserParticipant) {
           userJoinedRooms.add(room.id)
         }
@@ -80,18 +87,75 @@ const RoomList = () => {
           }
         }
 
-        const updatedRooms = prev.map(room =>
+        // Only update the status and participant count, preserve all other data including participants array
+        return prev.map(room =>
           room.id === data.roomId
             ? { ...room, status: data.status, currentParticipants: data.participantCount }
             : room
         )
-
-        // CRITICAL FIX: Update joinedRooms state after room data changes
-        // This prevents the bug where buttons show incorrect state temporarily
-        updateJoinedRooms(updatedRooms)
-
-        return updatedRooms
       })
+
+      // IMPORTANT: Do NOT call updateJoinedRooms here!
+      // The RoomStatusUpdateData doesn't contain participant list data,
+      // so we can't determine if the current user has joined.
+      // The joinedRooms state should only be updated when we have full room data
+      // with participants array (from API calls or initial load)
+    }
+
+    // Handle user joined event
+    const handleUserJoined = (data: { userId: string; username?: string; roomId: string }) => {
+      // Defensive programming: ensure all required fields exist
+      if (!data.userId || !data.roomId) {
+        console.warn('🚨 Invalid USER_JOINED event - missing required fields:', data);
+        return;
+      }
+
+      // CRITICAL: Only update joined state for the CURRENT user
+      if (user && data.userId === user.id) {
+        // Current user joined - add to joined rooms immediately
+        setJoinedRooms(prev => new Set(prev).add(data.roomId))
+      }
+      // If it's another user joining, we do NOTHING to joinedRooms state
+
+      // Update participant count for the specific room (for ALL users to see)
+      setRooms(prev => prev.map(room =>
+        room.id === data.roomId
+          ? { ...room, currentParticipants: Math.min((room.currentParticipants || 0) + 1, room.maxParticipants) }
+          : room
+      ))
+
+      // Trigger join animation for visual feedback
+      triggerRoomActivity(data.roomId, 'join')
+    }
+
+    // Handle user left event
+    const handleUserLeft = (data: { userId: string; username?: string; roomId: string }) => {
+      // Defensive programming: ensure all required fields exist
+      if (!data.userId || !data.roomId) {
+        console.warn('🚨 Invalid USER_LEFT event - missing required fields:', data);
+        return;
+      }
+
+      // SECURITY FIX: Only check userId to prevent username collision bugs
+      // Username check removed to prevent state pollution when users have similar usernames
+      if (user && data.userId === user.id) {
+        // Current user left - remove from joined rooms immediately
+        setJoinedRooms(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(data.roomId)
+          return newSet
+        })
+      }
+
+      // Update participant count for the specific room
+      setRooms(prev => prev.map(room =>
+        room.id === data.roomId
+          ? { ...room, currentParticipants: Math.max((room.currentParticipants || 0) - 1, 0) }
+          : room
+      ))
+
+      // Trigger leave animation
+      triggerRoomActivity(data.roomId, 'leave')
     }
 
     const handleGlobalGameCompleted = (data: GlobalGameCompletedData) => {
@@ -108,8 +172,9 @@ const RoomList = () => {
 
       // CRITICAL FIX: Only refresh room data if the current user was a participant
       // This prevents button flickering for non-participants
+      // SECURITY FIX: Only check userId to prevent username collision bugs
       const userWasParticipant = user && data.winners?.some(winner =>
-        winner.userId === user.id || winner.username === user.username
+        winner.userId === user.id
       )
 
       if (userWasParticipant) {
@@ -129,13 +194,17 @@ const RoomList = () => {
     }
 
     socketService.onRoomStatusUpdate(handleRoomStatusUpdate)
+    socketService.onUserJoined(handleUserJoined)
+    socketService.onUserLeft(handleUserLeft)
     socketService.onGlobalGameCompleted(handleGlobalGameCompleted)
 
     return () => {
       socketService.offRoomStatusUpdate(handleRoomStatusUpdate)
+      socketService.offUserJoined(handleUserJoined)
+      socketService.offUserLeft(handleUserLeft)
       socketService.offGlobalGameCompleted(handleGlobalGameCompleted)
     }
-  }, [user, updateJoinedRooms, triggerRoomActivity]) // Add all dependencies
+  }, [user, triggerRoomActivity]) // Remove updateJoinedRooms to prevent re-registration loops
 
   const handleJoinRoom = (roomId: string) => {
     if (!user) {
@@ -258,11 +327,42 @@ const RoomList = () => {
         </div>
 
         {user && (
-          <div className="text-right">
-            <p className="text-sm text-gray-400">Your Balance</p>
-            <p className="text-2xl font-bold text-success">
-              ${user.balance.toLocaleString()}
-            </p>
+          <div className="flex items-center gap-4">
+            {/* Game History Button */}
+            <button
+              onClick={() => toggleNotificationCenter()}
+              className="relative p-2 rounded-lg bg-secondary-bg hover:bg-primary/10 transition-colors"
+              data-notification-button
+              aria-label="Game History"
+              title="View Game History"
+            >
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="text-gray-300"
+              >
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+                <path d="M12 7v5l4 2"/>
+              </svg>
+              {notificationState.unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-error text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {notificationState.unreadCount > 9 ? '9+' : notificationState.unreadCount}
+                </span>
+              )}
+            </button>
+
+            {/* Balance Display */}
+            <div className="text-right">
+              <p className="text-sm text-gray-400">Your Balance</p>
+              <p className="text-2xl font-bold text-success">
+                ${user.balance.toLocaleString()}
+              </p>
+            </div>
           </div>
         )}
       </motion.div>
@@ -311,6 +411,9 @@ const RoomList = () => {
         onCancel={handleCancelJoin}
         isLoading={isJoining}
       />
+
+      {/* Game History / Notification Center */}
+      <NotificationCenter />
     </>
   )
 }

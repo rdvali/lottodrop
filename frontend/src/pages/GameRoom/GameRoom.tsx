@@ -17,7 +17,6 @@ import { useNotifications } from '@contexts/NotificationContext'
 import { useModal } from '@hooks/useModal'
 import { useIsMobile } from '@hooks/useResponsive'
 import { motion, AnimatePresence } from 'framer-motion'
-import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
 const GameRoom = () => {
@@ -25,7 +24,7 @@ const GameRoom = () => {
   const navigate = useNavigate()
   const { user, updateBalance, rollbackBalance } = useAuth()
   const { openAuthModal } = useModal()
-  const { addNotification } = useNotifications()
+  const { addNotification, showToast } = useNotifications()
   const isMobile = useIsMobile()
   
   const [room, setRoom] = useState<Room | null>(null)
@@ -248,7 +247,14 @@ const GameRoom = () => {
         setParticipants(data.participants || [])
         socketService.joinRoom(roomId)
       } catch (error) {
-        toast.error('Failed to load room')
+        showToast({
+          type: 'error',
+          subtype: 'system_alert',
+          title: 'Failed to load room',
+          message: 'Unable to load room details',
+          priority: 2,
+          isRead: false
+        })
         navigate('/')
       } finally {
         setLoading(false)
@@ -358,7 +364,14 @@ const GameRoom = () => {
         const isAlreadyParticipant = currentParticipants.some(p => p.userId === data.userId)
         
         if (!isAlreadyParticipant) {
-          toast.success(`${data.username} joined the room`)
+          showToast({
+            type: 'info',
+            subtype: 'system_alert',
+            title: 'Player Joined',
+            message: `${data.username} joined the room`,
+            priority: 3,
+          isRead: false
+          })
           const newParticipants = [...currentParticipants, {
             id: data.userId,
             userId: data.userId,
@@ -377,7 +390,14 @@ const GameRoom = () => {
               const minPlayers = prev.minParticipants
               const currentCountdown = countdownRef.current
               if (newParticipants.length >= minPlayers && prev.status === 'waiting' && currentCountdown === null) {
-                toast.success(`Minimum ${minPlayers} players reached! Game starting in 30 seconds...`)
+                showToast({
+                  type: 'success',
+                  subtype: 'game_result',
+                  title: 'Game Starting',
+                  message: `Minimum ${minPlayers} players reached! Game starting in 30 seconds...`,
+                  priority: 2,
+          isRead: false
+                })
                 // Socket event will trigger countdown from backend
               }
               
@@ -406,7 +426,14 @@ const GameRoom = () => {
         const wasParticipant = currentParticipants.some(p => p.userId === data.userId)
         
         if (wasParticipant) {
-          toast(`${data.username} left the room`)
+          showToast({
+            type: 'info',
+            subtype: 'system_alert',
+            title: 'Player Left',
+            message: `${data.username} left the room`,
+            priority: 3,
+          isRead: false
+          })
           const newParticipants = currentParticipants.filter(p => p.userId !== data.userId)
           setParticipants(newParticipants)
           
@@ -418,7 +445,14 @@ const GameRoom = () => {
               const minPlayers = prev.minParticipants
               const currentCountdown = countdownRef.current
               if (newParticipants.length < minPlayers && currentCountdown !== null) {
-                toast(`Players dropped below minimum ${minPlayers}. Countdown stopped.`, { icon: '⚠️' })
+                showToast({
+                  type: 'warning',
+                  subtype: 'system_alert',
+                  title: 'Countdown Stopped',
+                  message: `Players dropped below minimum ${minPlayers}. Countdown stopped.`,
+                  priority: 2,
+          isRead: false
+                })
                 setCountdown(null)
               }
               
@@ -446,7 +480,14 @@ const GameRoom = () => {
         const countdownValue = data.countdown || 30
         // Removed: console.log('[GameRoom] Setting countdown to:', countdownValue)
         setCountdown(countdownValue)
-        toast.success('Game is starting!')
+        showToast({
+          type: 'success',
+          subtype: 'game_result',
+          title: 'Game Starting',
+          message: 'Game is starting!',
+          priority: 2,
+          isRead: false
+        })
       }
     }
 
@@ -567,76 +608,8 @@ const GameRoom = () => {
           }
         }
 
-        // Trigger notification for game result
-        if (currentUser) {
-          const totalParticipants = participants.length
-
-          // Generate game numbers for display
-          // In a real lottery system, these would come from the VRF/backend
-          // For now, we'll simulate realistic numbers based on participant count
-          const winningNumber = Math.floor(Math.random() * totalParticipants) + 1
-          const userParticipantIndex = participantsRef.current.findIndex(p => p.userId === currentUser.id)
-          const selectedNumber = userParticipantIndex >= 0 ? userParticipantIndex + 1 : Math.floor(Math.random() * totalParticipants) + 1
-
-          // Create comprehensive data object for RoundResultModal
-          const gameData = {
-            winningNumber: winningNumber,
-            yourNumber: selectedNumber,
-            selectedNumber: selectedNumber, // Alternative field name
-            roomName: data.roomName || room?.name || 'Game Room',
-            playerCount: totalParticipants,
-            roundId: data.gameRoundId || roomId || 'unknown',
-            entryFee: room?.entryFee || 0,
-            prizePool: room?.prizePool || 0,
-            gameType: room?.type || 'unknown',
-            timestamp: new Date().toISOString(),
-            isParticipant: true
-          }
-
-          if (isWinner) {
-            // Winner notification
-            addNotification({
-              id: `game-${roomId}-${Date.now()}`,
-              userId: currentUser.id,
-              type: 'jackpot',
-              subtype: 'game_result',
-              title: '🎉 Congratulations! You Won!',
-              message: `You won $${prizeWon.toFixed(2)} in ${room?.name || 'the game'}! Position: #${position}`,
-              priority: 1,
-              gameRoundId: data.gameRoundId || roomId,
-              roomId: roomId,
-              amount: prizeWon * 100, // Convert to cents
-              position: position,
-              totalPlayers: totalParticipants,
-              isJackpot: prizeWon > 100,
-              isRead: false,
-              timestamp: new Date().toISOString(),
-              data: gameData
-            })
-          } else {
-            // Loser notification - include entry fee as amount lost
-            addNotification({
-              id: `game-${roomId}-${Date.now()}`,
-              userId: currentUser.id,
-              type: 'error',
-              subtype: 'game_result',
-              title: 'Game Completed',
-              message: `Better luck next time! The game "${room?.name || 'Room'}" has ended. ${winnersArray.length} player(s) won.`,
-              priority: 2,
-              gameRoundId: data.gameRoundId || roomId,
-              roomId: roomId,
-              amount: (room?.entryFee || 0) * 100, // Entry fee lost (in cents)
-              position: totalParticipants + 1, // Indicate loss position
-              totalPlayers: totalParticipants,
-              isRead: false,
-              timestamp: new Date().toISOString(),
-              data: {
-                ...gameData,
-                amount: (room?.entryFee || 0) * 100 // Include entry fee lost in data as well
-              }
-            })
-          }
-        }
+        // Notification creation is handled by NotificationsRoot component
+        // This prevents duplicate notifications from appearing
       } else {
         // Removed: console.log('[GameRoom] game-completed event for different room, ignoring')
       }
@@ -681,7 +654,13 @@ const GameRoom = () => {
     }
 
     if (user.balance < room.entryFee) {
-      toast.error('Insufficient balance')
+      showToast({
+        type: 'error',
+        subtype: 'system_alert',
+        title: 'Insufficient Balance',
+        message: 'You do not have enough balance to join this room',
+        priority: 2
+      })
       return
     }
 
@@ -698,7 +677,13 @@ const GameRoom = () => {
       updateBalance(newBalance, 'optimistic')
       
       await roomAPI.joinRoom(room.id)
-      toast.success('Successfully joined!')
+      showToast({
+        type: 'success',
+        subtype: 'system_alert',
+        title: 'Room Joined',
+        message: 'Successfully joined the room!',
+        priority: 2
+      })
       
       // Balance is already updated optimistically
       // Socket events will provide authoritative balance if different
@@ -706,7 +691,13 @@ const GameRoom = () => {
     } catch (error: any) {
       // Rollback optimistic update on failure
       rollbackBalance()
-      toast.error(error.response?.data?.error || 'Failed to join')
+      showToast({
+        type: 'error',
+        subtype: 'system_alert',
+        title: 'Join Failed',
+        message: error.response?.data?.error || 'Failed to join room',
+        priority: 2
+      })
     }
   }
 
@@ -723,7 +714,13 @@ const GameRoom = () => {
       updateBalance(originalBalance + refundAmount, 'optimistic')
       
       await roomAPI.leaveRoom(room.id)
-      toast.success('Left room successfully - entry fee refunded!')
+      showToast({
+        type: 'success',
+        subtype: 'system_alert',
+        title: 'Left Room',
+        message: 'Left room successfully - entry fee refunded!',
+        priority: 2
+      })
       
       // Balance is already updated optimistically
       // Socket events will provide authoritative balance if different
@@ -733,7 +730,13 @@ const GameRoom = () => {
       // Rollback optimistic update on failure
       // Removed: console.log('[GameRoom] Leave room failed, rolling back balance')
       rollbackBalance()
-      toast.error(error.response?.data?.error || 'Failed to leave')
+      showToast({
+        type: 'error',
+        subtype: 'system_alert',
+        title: 'Leave Failed',
+        message: error.response?.data?.error || 'Failed to leave room',
+        priority: 2
+      })
     }
     setShowLeaveModal(false)
   }

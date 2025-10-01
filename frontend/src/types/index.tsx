@@ -127,8 +127,8 @@ export interface Notification {
   id: string
   userId: string
   categoryId?: number
-  type: 'success' | 'warning' | 'error' | 'info' | 'jackpot'
-  subtype: 'game_result' | 'balance_update' | 'global_win' | 'round_start' | 'system_alert' | 'bonus' | 'achievement'
+  type: 'success' | 'warning' | 'error' | 'info' | 'jackpot' | 'game'
+  subtype: 'game_result' | 'game_win' | 'winner_announcement' | 'balance_update' | 'global_win' | 'round_start' | 'system_alert' | 'bonus' | 'achievement'
   title: string
   message: string
   priority: 1 | 2 | 3 | 4 // 1=Critical, 2=High, 3=Medium, 4=Low
@@ -155,6 +155,7 @@ export interface Notification {
   // Timestamps
   timestamp: string
   expiresAt?: string
+  createdAt: string
 
   // Additional structured data
   data?: Record<string, unknown>

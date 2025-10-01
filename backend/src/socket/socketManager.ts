@@ -6,6 +6,7 @@ import { AuthPayload, ChatMessage } from '../types';
 import { processRoundWinner } from '../controllers/roomController';
 import { seedAuditLogger } from '../utils/seedAuditLogger';
 import { winnerProcessingQueue } from '../utils/winnerProcessingQueue';
+import { NotificationManager } from '../services/notificationManager';
 
 interface SocketWithAuth extends Socket {
   userId?: string;
@@ -18,6 +19,7 @@ export class SocketManager {
   private roomTimers: Map<string, NodeJS.Timeout> = new Map();
   private roomProcessingTimers: Map<string, NodeJS.Timeout> = new Map(); // Track server-side processing timers
   private processedRounds: Set<string> = new Set(); // Track which rounds have been processed
+  private notificationManager: NotificationManager;
 
   constructor(server: HttpServer) {
     this.io = new SocketServer(server, {
@@ -27,6 +29,7 @@ export class SocketManager {
       }
     });
 
+    this.notificationManager = new NotificationManager(this.io);
     this.setupMiddleware();
     this.setupEventHandlers();
     this.setupQueueEventListeners();
@@ -106,7 +109,16 @@ export class SocketManager {
           
           // Send global notification to ALL connected users for main page
           this.io.emit('global-game-completed', gameCompletedData);
-          
+
+          // Process multi-round notifications through NotificationManager
+          if (roundId) {
+            await this.notificationManager.processRoundCompletion(
+              roundId,
+              winnersWithNames,
+              { roomId, roomName }
+            );
+          }
+
           // Send persistent winner data that survives room state changes
           await this.notifyRoomParticipants(roomId, 'winners-announced', {
             ...gameCompletedData,
@@ -171,12 +183,26 @@ export class SocketManager {
             roomName: roomName,
             roundId: roundId
           };
-          
+
           await this.notifyRoomParticipants(roomId, 'game-completed', gameCompletedData);
-          
+
           // Send global notification to ALL connected users for main page
           this.io.emit('global-game-completed', gameCompletedData);
-          
+
+          // Process multi-round notifications through NotificationManager
+          if (roundId) {
+            await this.notificationManager.processRoundCompletion(
+              roundId,
+              [{
+                userId: singleResult.winnerId,
+                position: 1,
+                prizeAmount: singleResult.winnerAmount,
+                name: `${winnerResult.rows[0].first_name} ${winnerResult.rows[0].last_name}`
+              }],
+              { roomId, roomName }
+            );
+          }
+
           // Send persistent winner data that survives room state changes
           await this.notifyRoomParticipants(roomId, 'winners-announced', {
             ...gameCompletedData,
@@ -238,8 +264,13 @@ export class SocketManager {
   }
 
   private setupEventHandlers() {
-    this.io.on('connection', (socket: SocketWithAuth) => {
+    this.io.on('connection', async (socket: SocketWithAuth) => {
       console.log(`User ${socket.userId} connected`);
+
+      // Check for pending notifications when user connects
+      if (socket.userId) {
+        await this.notificationManager.checkPendingNotifications(socket.userId);
+      }
 
       socket.on('join-room', async (roomId: string) => {
         console.log(`Socket: User ${socket.userId} joining room ${roomId}`);
@@ -291,8 +322,22 @@ export class SocketManager {
           
           // Only notify others if user is a participant
           if (isParticipant) {
-            socket.to(roomId).emit('user-joined', {
-              userId: socket.userId
+            // Get user info to send complete data
+            const userResult = await pool.query(
+              'SELECT first_name, last_name FROM users WHERE id = $1',
+              [socket.userId]
+            );
+
+            const username = userResult.rows.length > 0
+              ? `${userResult.rows[0].first_name} ${userResult.rows[0].last_name}`.trim()
+              : 'Player';
+
+            // CRITICAL FIX: Use broadcast.to() to exclude the joining user from receiving their own join event
+            // This prevents ALL other users from incorrectly updating their joinedRooms state
+            socket.broadcast.to(roomId).emit('user-joined', {
+              userId: socket.userId,
+              username: username,
+              roomId: roomId
             });
           }
         } catch (error) {
@@ -314,8 +359,30 @@ export class SocketManager {
         
         if (wasParticipant) {
           socket.participantRooms?.delete(roomId);
-          socket.to(roomId).emit('user-left', {
-            userId: socket.userId
+
+          // Get user info for complete data
+          pool.query(
+            'SELECT first_name, last_name FROM users WHERE id = $1',
+            [socket.userId]
+          ).then(userResult => {
+            const username = userResult.rows.length > 0
+              ? `${userResult.rows[0].first_name} ${userResult.rows[0].last_name}`.trim()
+              : 'Player';
+
+            // CRITICAL FIX: Use broadcast.to() to exclude the leaving user from receiving their own leave event
+            socket.broadcast.to(roomId).emit('user-left', {
+              userId: socket.userId,
+              username: username,
+              roomId: roomId
+            });
+          }).catch(error => {
+            console.error('Error getting user info for user-left:', error);
+            // Fallback without username - CRITICAL FIX: Use broadcast.to() here as well
+            socket.broadcast.to(roomId).emit('user-left', {
+              userId: socket.userId,
+              username: 'Player',
+              roomId: roomId
+            });
           });
         }
         
@@ -454,11 +521,34 @@ export class SocketManager {
         console.log(`User ${socket.userId} disconnected`);
         // Notify all rooms where user was a participant
         if (socket.participantRooms && socket.participantRooms.size > 0) {
-          for (const roomId of socket.participantRooms) {
-            socket.to(roomId).emit('user-left', {
-              userId: socket.userId
-            });
-          }
+          // Get user info for complete data on disconnect
+          pool.query(
+            'SELECT first_name, last_name FROM users WHERE id = $1',
+            [socket.userId]
+          ).then(userResult => {
+            const username = userResult.rows.length > 0
+              ? `${userResult.rows[0].first_name} ${userResult.rows[0].last_name}`.trim()
+              : 'Player';
+
+            for (const roomId of socket.participantRooms!) {
+              // CRITICAL FIX: Use broadcast.to() for disconnect events as well
+              socket.broadcast.to(roomId).emit('user-left', {
+                userId: socket.userId,
+                username: username,
+                roomId: roomId
+              });
+            }
+          }).catch(error => {
+            console.error('Error getting user info on disconnect:', error);
+            // Fallback without username - CRITICAL FIX: Use broadcast.to() here as well
+            for (const roomId of socket.participantRooms!) {
+              socket.broadcast.to(roomId).emit('user-left', {
+                userId: socket.userId,
+                username: 'Player',
+                roomId: roomId
+              });
+            }
+          });
         }
       });
     });

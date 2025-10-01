@@ -120,9 +120,10 @@ const transformRoom = (backendRoom: BackendRoom): Room => {
     endTime: undefined,
     winnersCount: backendRoom.number_of_winners || 1,
     participants: backendRoom.participants?.map(p => ({
-      id: p.id || p.userId || `participant-${Date.now()}-${Math.random()}`,
-      userId: p.userId || p.id || `user-${Date.now()}-${Math.random()}`,
-      username: p.username || 
+      id: p.id || `participant-${Date.now()}-${Math.random()}`,
+      // CRITICAL: userId must be the actual user ID from backend, not generated
+      userId: p.userId || p.user_id || null,
+      username: p.username ||
                (p.first_name && p.last_name ? `${p.first_name} ${p.last_name}`.trim() : null) ||
                (p.firstName && p.lastName ? `${p.firstName} ${p.lastName}`.trim() : null) ||
                'Player',

@@ -154,6 +154,18 @@ class SocketService {
     this.socket?.on('global-game-completed', callback)
   }
 
+  onMultiRoundCompleted(callback: (data: any) => void): void {
+    this.socket?.on('multi-round-completed', callback)
+  }
+
+  onPersonalRoundCompleted(callback: (data: any) => void): void {
+    this.socket?.on('personal-round-completed', callback)
+  }
+
+  onPendingNotifications(callback: (data: any) => void): void {
+    this.socket?.on('pending-notifications', callback)
+  }
+
   onBalanceUpdated(callback: (data: BalanceUpdatedData) => void): void {
     this.socket?.on('balance-updated', callback)
   }
@@ -253,6 +265,30 @@ class SocketService {
       this.socket?.off('global-game-completed', callback)
     } else {
       this.socket?.off('global-game-completed')
+    }
+  }
+
+  offMultiRoundCompleted(callback?: (...args: any[]) => void): void {
+    if (callback) {
+      this.socket?.off('multi-round-completed', callback)
+    } else {
+      this.socket?.off('multi-round-completed')
+    }
+  }
+
+  offPersonalRoundCompleted(callback?: (...args: any[]) => void): void {
+    if (callback) {
+      this.socket?.off('personal-round-completed', callback)
+    } else {
+      this.socket?.off('personal-round-completed')
+    }
+  }
+
+  offPendingNotifications(callback?: (...args: any[]) => void): void {
+    if (callback) {
+      this.socket?.off('pending-notifications', callback)
+    } else {
+      this.socket?.off('pending-notifications')
     }
   }
 

@@ -1,0 +1,62 @@
+/* Global Notifications Root Container */
+.notifications-root {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 9999;
+  max-width: 400px;
+  pointer-events: none;
+}
+
+.notifications-root > * {
+  pointer-events: auto;
+}
+
+/* Overflow indicator */
+.notifications-overflow {
+  margin-top: 8px;
+  padding: 8px 16px;
+  background: rgba(45, 45, 68, 0.95);
+  border: 1px solid rgba(157, 78, 221, 0.2);
+  border-radius: 8px;
+  color: #9CA3AF;
+  font-size: 12px;
+  text-align: center;
+  pointer-events: auto;
+  backdrop-filter: blur(8px);
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .notifications-root {
+    top: 70px;
+    right: 0;
+    left: 0;
+    max-width: 100%;
+    padding: 0 16px;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .notifications-root {
+    right: 16px;
+  }
+}
+
+/* Animation container spacing */
+.notifications-root > *:not(:last-child) {
+  margin-bottom: 0;
+}
+
+/* Ensure proper stacking context */
+.notifications-root::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: -20px;
+  right: -20px;
+  bottom: -20px;
+  pointer-events: none;
+  z-index: -1;
+}
