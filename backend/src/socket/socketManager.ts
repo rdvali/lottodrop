@@ -110,13 +110,15 @@ export class SocketManager {
           // Send global notification to ALL connected users for main page
           this.io.emit('global-game-completed', gameCompletedData);
 
-          // Process multi-round notifications through NotificationManager
+          // Process multi-round notifications through NotificationManager (non-blocking)
           if (roundId) {
-            await this.notificationManager.processRoundCompletion(
+            this.notificationManager.processRoundCompletion(
               roundId,
               winnersWithNames,
               { roomId, roomName }
-            );
+            ).catch(err => {
+              console.error('[SocketManager] Notification processing error:', err);
+            });
           }
 
           // Send persistent winner data that survives room state changes
@@ -236,7 +238,7 @@ export class SocketManager {
         // Reset room after short delay to allow proper winner display
         setTimeout(async () => {
           await this.resetRoomForNextRound(roomId);
-        }, 8000); // 8 seconds to display winner - reduced for better UX
+        }, 2000); // 2 seconds to display winner - frontend handles persistent display
       } catch (error) {
         console.error('CRITICAL: Error processing winner result:', error);
         // Emit error immediately to prevent hanging
@@ -834,11 +836,12 @@ export class SocketManager {
           console.log(`[Room Reset] Cleaned up ${cleanupResult.rows.length} incomplete rounds`);
         }
         
-        // 3. Reset room status to WAITING
-        await client.query(
-          'UPDATE rooms SET status = $1, updated_at = NOW() WHERE id = $2',
+        // 3. Reset room status to WAITING and fetch room info for broadcast
+        const roomResetResult = await client.query(
+          'UPDATE rooms SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING id, name, type',
           ['WAITING', roomId]
         );
+        const roomInfo = roomResetResult.rows[0];
         
         await client.query('COMMIT');
         console.log(`[Room Reset] Successfully reset room ${roomId} for next round`);
@@ -859,7 +862,20 @@ export class SocketManager {
         
         // 6. Send updated room state
         this.sendRoomState(roomId);
-        
+
+        // 7. Broadcast GLOBAL status update for Room List page (CRITICAL for instant UI updates)
+        if (roomInfo) {
+          this.io.emit('room-status-update', {
+            roomId: roomId,
+            status: 'WAITING',
+            participantCount: 0,
+            roomName: roomInfo.name,
+            roomType: roomInfo.type,
+            resetForNewRound: true
+          });
+          console.log(`[Room Reset] Broadcasted global status update: WAITING for room ${roomId} (${roomInfo.name})`);
+        }
+
       } catch (error) {
         await client.query('ROLLBACK');
         throw error;

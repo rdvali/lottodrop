@@ -35,6 +35,7 @@ const Profile = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [gamesLoading, setGamesLoading] = useState(false)
+  const [gamesError, setGamesError] = useState<string | null>(null)
   const [passwordForm, setPasswordForm] = useState<ChangePasswordForm>({
     currentPassword: '',
     newPassword: '',
@@ -54,6 +55,7 @@ const Profile = () => {
   // Fetch game history with caching - memoized to prevent recreating
   const fetchGameHistory = useCallback(async () => {
     setGamesLoading(true)
+    setGamesError(null)
     try {
       const response = await fetchCachedGameHistory(filters)
       setGameHistory(response.data)
@@ -63,8 +65,11 @@ const Profile = () => {
       if (response.pagination.page < response.pagination.totalPages) {
         prefetchNextPage(filters)
       }
-    } catch {
-      toast.error('Failed to load game history')
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load game history'
+      setGamesError(errorMessage)
+      toast.error(errorMessage)
+      console.error('[Profile] Game history fetch error:', error)
     } finally {
       setGamesLoading(false)
     }
@@ -81,8 +86,16 @@ const Profile = () => {
         setGameHistory(gameResponse.data)
         setPagination(gameResponse.pagination)
         setTransactions(trans)
-      } catch {
-        toast.error('Failed to load profile data')
+        console.log('[Profile] Initial data loaded:', {
+          gamesCount: gameResponse.data.length,
+          transactionsCount: trans.length,
+          pagination: gameResponse.pagination
+        })
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load profile data'
+        setGamesError(errorMessage)
+        toast.error(errorMessage)
+        console.error('[Profile] Initial data load error:', error)
       } finally {
         setLoading(false)
       }
@@ -288,9 +301,54 @@ const Profile = () => {
                   <div className="flex justify-center py-12">
                     <Spinner size="xl" />
                   </div>
-                ) : gameHistory.length === 0 ? (
+                ) : gamesError ? (
                   <Card className="text-center py-12">
-                    <p className="text-gray-400">No games found with current filters</p>
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="w-16 h-16 rounded-full bg-error/10 flex items-center justify-center">
+                        <svg className="w-8 h-8 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-text-primary mb-2">Failed to Load Game History</h3>
+                        <p className="text-gray-400 mb-4">{gamesError}</p>
+                      </div>
+                      <Button
+                        variant="primary"
+                        onClick={() => fetchGameHistory()}
+                      >
+                        Try Again
+                      </Button>
+                    </div>
+                  </Card>
+                ) : gameHistory.length === 0 ? (
+                  <Card className="text-center py-16">
+                    <div className="flex flex-col items-center gap-6">
+                      <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">
+                        <svg className="w-12 h-12 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                        </svg>
+                      </div>
+                      <div className="max-w-md">
+                        <h3 className="text-2xl font-bold text-text-primary mb-3">
+                          Ready to Start Playing?
+                        </h3>
+                        <p className="text-gray-400 mb-2">
+                          Your game history will appear here once you join your first room!
+                        </p>
+                        <p className="text-sm text-gray-500 mb-6">
+                          Join active rooms, compete with other players, and track all your wins and games in one place.
+                        </p>
+                      </div>
+                      <Button
+                        variant="primary"
+                        size="lg"
+                        onClick={() => navigate('/')}
+                        className="px-8"
+                      >
+                        Browse Active Rooms
+                      </Button>
+                    </div>
                   </Card>
                 ) : (
                   <>

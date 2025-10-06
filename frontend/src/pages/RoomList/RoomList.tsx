@@ -65,10 +65,10 @@ const RoomList = () => {
 
     fetchRooms()
 
-    // Increase interval to reduce API calls - 30 seconds for better rate limiting
+    // Polling fallback - reduced frequency since WebSocket handles real-time updates
     const interval = setInterval(() => {
       fetchRooms()
-    }, 30000) // Refresh every 30 seconds
+    }, 60000) // Refresh every 60 seconds (fallback only)
 
     return () => clearInterval(interval)
   }, [user]) // Re-run when user changes

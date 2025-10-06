@@ -26,25 +26,25 @@ export const balanceAPI = {
   async getGameHistory(filters?: GameHistoryFilters): Promise<GameHistoryResponse> {
     return gameHistoryRateLimiter.execute(async () => {
       const params = new URLSearchParams()
-    
+
     if (filters) {
       // Add pagination params
       if (filters.page) params.append('page', filters.page.toString())
       if (filters.limit) params.append('limit', filters.limit.toString())
-      
+
       // Add date range
       if (filters.startDate) params.append('startDate', filters.startDate)
       if (filters.endDate) params.append('endDate', filters.endDate)
-      
+
       // Add result filter
       if (filters.result && filters.result !== 'all') {
         params.append('result', filters.result)
       }
-      
+
       // Add sorting
       if (filters.sortBy) params.append('sortBy', filters.sortBy)
       if (filters.sortOrder) params.append('sortOrder', filters.sortOrder)
-      
+
       // Add entry fee range
       if (filters.minEntryFee !== undefined) {
         params.append('minEntryFee', filters.minEntryFee.toString())
@@ -53,10 +53,10 @@ export const balanceAPI = {
         params.append('maxEntryFee', filters.maxEntryFee.toString())
       }
     }
-    
+
     const queryString = params.toString()
     const url = `/games${queryString ? `?${queryString}` : ''}`
-    
+
     // Add performance optimizations
     const requestConfig = {
       headers: {
@@ -64,34 +64,88 @@ export const balanceAPI = {
       },
       timeout: 30000, // 30 second timeout for large datasets
     }
-    
-      const { data } = await apiClient.get<GameHistoryResponse>(url, requestConfig)
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to get game history')
-      }
 
-      // Ensure backward compatibility
-      return {
-        success: data.success,
-        data: data.data || [],
-        games: data.games || data.data || [],
-        pagination: data.pagination || {
-          page: 1,
-        limit: 10,
-        total: 0,
-        totalPages: 0
-      },
-      statistics: data.statistics || {
-        totalGames: 0,
-        totalWon: 0,
-        totalLost: 0,
-        totalPending: 0,
-        totalWinnings: 0,
-        totalSpent: 0,
-        winRate: 0,
-        averageEntryFee: 0,
-        biggestWin: 0
-      }
+      // Enhanced debugging - log request details
+      const token = localStorage.getItem('token')
+      const isAuthenticated = !!token
+
+      console.group('[Game History API] Request')
+      console.log('URL:', url)
+      console.log('Filters:', filters)
+      console.log('Authenticated:', isAuthenticated)
+      console.log('Auth Header:', isAuthenticated ? 'Bearer ***' + (token?.slice(-8) || '') : 'None')
+      console.log('Request Config:', requestConfig)
+      console.groupEnd()
+
+      try {
+        const { data } = await apiClient.get<GameHistoryResponse>(url, requestConfig)
+
+        // Enhanced debugging - log response details
+        console.group('[Game History API] Response')
+        console.log('Success:', data.success)
+        console.log('Data length:', data.data?.length || 0)
+        console.log('Games length:', data.games?.length || 0)
+        console.log('Pagination:', data.pagination)
+        console.log('Statistics:', data.statistics)
+        if (data.error) {
+          console.error('API Error:', data.error)
+        }
+        console.log('Full Response:', data)
+        console.groupEnd()
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to get game history')
+        }
+
+        // Ensure backward compatibility
+        const response = {
+          success: data.success,
+          data: data.data || [],
+          games: data.games || data.data || [],
+          pagination: data.pagination || {
+            page: 1,
+            limit: 10,
+            total: 0,
+            totalPages: 0
+          },
+          statistics: data.statistics || {
+            totalGames: 0,
+            totalWon: 0,
+            totalLost: 0,
+            totalPending: 0,
+            totalWinnings: 0,
+            totalSpent: 0,
+            winRate: 0,
+            averageEntryFee: 0,
+            biggestWin: 0
+          }
+        }
+
+        console.log('[Game History API] Processed Response:', {
+          dataCount: response.data.length,
+          gamesCount: response.games.length,
+          totalGames: response.statistics.totalGames
+        })
+
+        return response
+      } catch (error) {
+        // Enhanced error logging
+        console.group('[Game History API] Error')
+        console.error('Error Type:', error instanceof Error ? error.name : typeof error)
+        console.error('Error Message:', error instanceof Error ? error.message : String(error))
+        if ((error as any).response) {
+          console.error('Response Status:', (error as any).response.status)
+          console.error('Response Data:', (error as any).response.data)
+          console.error('Response Headers:', (error as any).response.headers)
+        }
+        if ((error as any).request) {
+          console.error('Request Made:', true)
+          console.error('No Response Received')
+        }
+        console.error('Full Error:', error)
+        console.groupEnd()
+
+        throw error
       }
     })
   },

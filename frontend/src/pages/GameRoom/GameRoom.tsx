@@ -24,7 +24,7 @@ const GameRoom = () => {
   const navigate = useNavigate()
   const { user, updateBalance, rollbackBalance } = useAuth()
   const { openAuthModal } = useModal()
-  const { addNotification, showToast } = useNotifications()
+  const { showToast } = useNotifications()
   const isMobile = useIsMobile()
   
   const [room, setRoom] = useState<Room | null>(null)
@@ -246,14 +246,13 @@ const GameRoom = () => {
         setRoom(data)
         setParticipants(data.participants || [])
         socketService.joinRoom(roomId)
-      } catch (error) {
+      } catch {
         showToast({
           type: 'error',
           subtype: 'system_alert',
           title: 'Failed to load room',
           message: 'Unable to load room details',
-          priority: 2,
-          isRead: false
+          priority: 2
         })
         navigate('/')
       } finally {
@@ -369,8 +368,7 @@ const GameRoom = () => {
             subtype: 'system_alert',
             title: 'Player Joined',
             message: `${data.username} joined the room`,
-            priority: 3,
-          isRead: false
+            priority: 3
           })
           const newParticipants = [...currentParticipants, {
             id: data.userId,
@@ -395,8 +393,7 @@ const GameRoom = () => {
                   subtype: 'game_result',
                   title: 'Game Starting',
                   message: `Minimum ${minPlayers} players reached! Game starting in 30 seconds...`,
-                  priority: 2,
-          isRead: false
+                  priority: 2
                 })
                 // Socket event will trigger countdown from backend
               }
@@ -431,8 +428,7 @@ const GameRoom = () => {
             subtype: 'system_alert',
             title: 'Player Left',
             message: `${data.username} left the room`,
-            priority: 3,
-          isRead: false
+            priority: 3
           })
           const newParticipants = currentParticipants.filter(p => p.userId !== data.userId)
           setParticipants(newParticipants)
@@ -450,8 +446,7 @@ const GameRoom = () => {
                   subtype: 'system_alert',
                   title: 'Countdown Stopped',
                   message: `Players dropped below minimum ${minPlayers}. Countdown stopped.`,
-                  priority: 2,
-          isRead: false
+                  priority: 2
                 })
                 setCountdown(null)
               }
@@ -485,8 +480,7 @@ const GameRoom = () => {
           subtype: 'game_result',
           title: 'Game Starting',
           message: 'Game is starting!',
-          priority: 2,
-          isRead: false
+          priority: 2
         })
       }
     }
@@ -571,17 +565,11 @@ const GameRoom = () => {
         
         // Get current values
         const currentUser = userRef.current
-        let isWinner = false
-        let prizeWon = 0
-        let position = 0
 
         // Handle single winner format (backward compatibility)
         if (data.isMultiWinner === false && data.winnerId === currentUser?.id && currentUser) {
           // Removed: console.log(`[GameRoom] User won single winner prize: ${data.winnerAmount}`)
           setShowCelebration(true)
-          isWinner = true
-          prizeWon = data.winnerAmount
-          position = 1
 
           // Optimistic balance update for immediate UI feedback
           const newBalance = currentUser.balance + data.winnerAmount
@@ -595,9 +583,6 @@ const GameRoom = () => {
           if (userWinner && currentUser) {
             // Removed: console.log(`[GameRoom] User won prize: ${userWinner.prize}`)
             setShowCelebration(true)
-            isWinner = true
-            prizeWon = userWinner.prize
-            position = userWinner.position
 
             // Optimistic balance update for immediate UI feedback
             const newBalance = currentUser.balance + userWinner.prize

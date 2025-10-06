@@ -146,7 +146,7 @@ const initialState: NotificationState = {
 // Reducer
 function notificationReducer(state: NotificationState, action: NotificationAction): NotificationState {
   switch (action.type) {
-    case 'ADD_TOAST':
+    case 'ADD_TOAST': {
       // Check for duplicate toast by ID
       const isDuplicateToast = state.toasts.some(t => t.id === action.payload.id)
       if (isDuplicateToast) {
@@ -158,6 +158,7 @@ function notificationReducer(state: NotificationState, action: NotificationActio
         ...state,
         toasts: [...state.toasts.slice(-4), action.payload] // Keep max 5 toasts
       }
+    }
 
     case 'REMOVE_TOAST':
       return {
@@ -198,7 +199,7 @@ function notificationReducer(state: NotificationState, action: NotificationActio
         notifications: action.payload
       }
 
-    case 'ADD_NOTIFICATION':
+    case 'ADD_NOTIFICATION': {
       // Check for duplicate notification by ID
       const isDuplicate = state.notifications.some(n => n.id === action.payload.id)
       if (isDuplicate) {
@@ -219,6 +220,7 @@ function notificationReducer(state: NotificationState, action: NotificationActio
         notifications: newNotifications,
         unreadCount: shouldIncrementUnread ? state.unreadCount + 1 : state.unreadCount
       }
+    }
 
     case 'UPDATE_NOTIFICATION':
       return {
@@ -228,7 +230,7 @@ function notificationReducer(state: NotificationState, action: NotificationActio
         )
       }
 
-    case 'MARK_AS_READ':
+    case 'MARK_AS_READ': {
       const updatedNotificationsRead = state.notifications.map(notification =>
         notification.id === action.payload
           ? { ...notification, isRead: true, readAt: new Date().toISOString() }
@@ -241,8 +243,9 @@ function notificationReducer(state: NotificationState, action: NotificationActio
         notifications: updatedNotificationsRead,
         unreadCount: Math.max(0, state.unreadCount - 1)
       }
+    }
 
-    case 'MARK_ALL_AS_READ':
+    case 'MARK_ALL_AS_READ': {
       const allReadNotifications = state.notifications.map(notification => ({
         ...notification,
         isRead: true,
@@ -255,8 +258,9 @@ function notificationReducer(state: NotificationState, action: NotificationActio
         notifications: allReadNotifications,
         unreadCount: 0
       }
+    }
 
-    case 'DELETE_NOTIFICATION':
+    case 'DELETE_NOTIFICATION': {
       const deletedNotification = state.notifications.find(n => n.id === action.payload)
       const filteredNotifications = state.notifications.filter(notification => notification.id !== action.payload)
       // Save to localStorage when notification is deleted
@@ -268,6 +272,7 @@ function notificationReducer(state: NotificationState, action: NotificationActio
           ? Math.max(0, state.unreadCount - 1)
           : state.unreadCount
       }
+    }
 
     case 'SET_UNREAD_COUNT':
       return {
@@ -319,7 +324,7 @@ function notificationReducer(state: NotificationState, action: NotificationActio
         permissionStatus: action.payload
       }
 
-    case 'ADD_PROCESSED_ID':
+    case 'ADD_PROCESSED_ID': {
       const newProcessedIds = new Set(state.processedNotificationIds)
       newProcessedIds.add(action.payload)
       return {
@@ -327,8 +332,9 @@ function notificationReducer(state: NotificationState, action: NotificationActio
         processedNotificationIds: newProcessedIds,
         lastProcessedTimestamp: Date.now()
       }
+    }
 
-    case 'CLEAR_OLD_PROCESSED_IDS':
+    case 'CLEAR_OLD_PROCESSED_IDS': {
       // Keep only recent processed IDs (last 5 minutes)
       const fiveMinutesAgo = Date.now() - 5 * 60 * 1000
       return {
@@ -336,6 +342,7 @@ function notificationReducer(state: NotificationState, action: NotificationActio
         processedNotificationIds: new Set<string>(),
         lastProcessedTimestamp: fiveMinutesAgo
       }
+    }
 
     default:
       return state
@@ -346,7 +353,7 @@ function notificationReducer(state: NotificationState, action: NotificationActio
 interface NotificationContextType {
   state: NotificationState
   addNotification: (notification: Notification) => void
-  showToast: (notification: Omit<ToastNotification, 'id' | 'timestamp' | 'userId' | 'createdAt'>) => void
+  showToast: (notification: Omit<ToastNotification, 'id' | 'timestamp' | 'userId' | 'createdAt' | 'isRead'> & { isRead?: boolean }) => void
   hideToast: (id: string) => void
   clearAllToasts: () => void
   clearAllNotifications: () => void
@@ -647,7 +654,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     showDesktopNotification(notification)
   }, [showDesktopNotification, state.processedNotificationIds, state.notifications])
 
-  const showToast = useCallback((toast: Omit<ToastNotification, 'timestamp' | 'userId' | 'createdAt'> & { id?: string }) => {
+  const showToast = useCallback((toast: Omit<ToastNotification, 'id' | 'timestamp' | 'userId' | 'createdAt' | 'isRead'> & { id?: string; isRead?: boolean }) => {
     // Use provided ID or generate unique ID for toast
     const toastId = toast.id || `manual-toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     const toastNotification: ToastNotification = {
@@ -655,7 +662,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       id: toastId,
       userId: '', // Will be set by the system
       timestamp: new Date().toISOString(),
-      isRead: false,
+      createdAt: new Date().toISOString(),
+      isRead: toast.isRead ?? false,
       autoClose: toast.autoClose ?? true,
       duration: toast.duration ?? 5000,
       showProgress: toast.showProgress ?? false,
@@ -869,8 +877,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         subtype: 'system_alert',
         title: 'Test Notification',
         message: 'This is a test notification to verify your settings.',
-        priority: 3,
-        isRead: false
+        priority: 3
       })
     } catch (error) {
       console.error('Failed to send test notification:', error)

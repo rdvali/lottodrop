@@ -89,39 +89,34 @@ export class NotificationManager {
         this.processedRounds.delete(roundId);
       }, 5 * 60 * 1000);
 
-      // Get all participants in this round
-      const participants = await this.getRoundParticipants(roundId);
-
-      // Get round details
+      // Get round details with all participants and user info in a single query (optimized - no N+1)
       const roundResult = await pool.query(
         `SELECT
           gr.*,
           r.name as room_name,
-          r.bet_amount
+          r.bet_amount,
+          rp.user_id,
+          u.first_name,
+          u.last_name
         FROM game_rounds gr
         JOIN rooms r ON r.id = gr.room_id
+        JOIN round_participants rp ON rp.round_id = gr.id
+        JOIN users u ON u.id = rp.user_id
         WHERE gr.id = $1`,
         [roundId]
       );
 
       if (roundResult.rows.length === 0) {
-        console.error(`Round ${roundId} not found`);
+        console.error(`Round ${roundId} not found or has no participants`);
         return;
       }
 
       const round = roundResult.rows[0];
 
-      // Process notifications for each participant
-      for (const userId of participants) {
-        // Get user info
-        const userResult = await pool.query(
-          'SELECT first_name, last_name FROM users WHERE id = $1',
-          [userId]
-        );
-
-        const username = userResult.rows.length > 0
-          ? `${userResult.rows[0].first_name} ${userResult.rows[0].last_name}`.trim()
-          : 'Player';
+      // Process notifications for each participant (all data already fetched)
+      for (const participant of roundResult.rows) {
+        const userId = participant.user_id;
+        const username = `${participant.first_name} ${participant.last_name}`.trim() || 'Player';
 
         // Check if user is a winner
         const winnerData = winners.find(w => w.userId === userId);
