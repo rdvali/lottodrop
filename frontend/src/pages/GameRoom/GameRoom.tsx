@@ -175,15 +175,6 @@ const GameRoom = () => {
         // Lock the modal data to prevent any updates while modal is open
         setModalDataLocked(true)
         setShowWinnerModal(true)
-        console.log('[GameRoom] Modal winner data set:', {
-          winners: winners.length,
-          prizePool: actualPrizePool,
-          roundId: winnersId,
-          wasParticipant: userWasParticipant,
-          userId: currentUser?.id,
-          participantsCount: participantsRef.current.length,
-          entryFee: room?.entryFee
-        })
       }
     }
   }, [winners, currentRoundWinners, modalDataLocked]) // CRITICAL: No room dependency to prevent modal data reset on status change
@@ -195,47 +186,17 @@ const GameRoom = () => {
   useEffect(() => {
     // Only clear winners if modal data is NOT locked (i.e., modal is not open)
     if (room?.status === 'waiting' && winners.length > 0 && !modalDataLocked) {
-      console.log('[GameRoom] Room reset to waiting, clearing winners array and round tracking')
       // Clear winners array for room state
       setWinners([])
       // Also clear the current round winners tracker when room resets for a new round
       // This allows the next round's winners to be properly displayed
       setCurrentRoundWinners(null)
 
-      // EXTRA SAFEGUARD: Ensure modal data refs are NEVER affected by room status changes
-      // Log both refs to confirm they're still intact
-      if (modalWinnerDataRef.current || backupModalDataRef.current) {
-        console.log('[GameRoom] Modal data refs confirmed intact after room reset:', {
-          mainRef: !!modalWinnerDataRef.current,
-          backupRef: !!backupModalDataRef.current,
-          winnersCount: (modalWinnerDataRef.current || backupModalDataRef.current)?.winners.length || 0,
-          prizePool: (modalWinnerDataRef.current || backupModalDataRef.current)?.prizePool || 0
-        })
-      }
-
       // CRITICAL: Never touch modalWinnerData, modalWinnerDataRef, currentRoundWinners, or showWinnerModal here
       // These must ONLY be cleared when user manually closes the modal
     }
   }, [room?.status, winners.length, modalDataLocked])
 
-  // Debug effect to continuously monitor modal data persistence
-  useEffect(() => {
-    if (showWinnerModal) {
-      const checkInterval = setInterval(() => {
-        console.log('[GameRoom] MODAL DATA MONITOR:', {
-          mainRef: !!modalWinnerDataRef.current,
-          backupRef: !!backupModalDataRef.current,
-          state: !!modalWinnerData,
-          persistedData: !!(modalWinnerDataRef.current || backupModalDataRef.current || modalWinnerData),
-          isModalOpen: showWinnerModal,
-          roomStatus: room?.status,
-          timestamp: new Date().toISOString()
-        })
-      }, 2000) // Check every 2 seconds
-
-      return () => clearInterval(checkInterval)
-    }
-  }, [showWinnerModal])
 
   useEffect(() => {
     if (!roomId) return
@@ -291,7 +252,6 @@ const GameRoom = () => {
     const handleRoomState = (data: any) => {
       // CRITICAL: Never clear modal data during room state updates
       // Modal data must persist until user manually closes it
-      console.log('[GameRoom] Room state update received, preserving modal data if present')
 
       // Transform participants to have username field
       const transformedParticipants = (data.participants || []).map((p: any) => ({
@@ -1191,20 +1151,6 @@ const GameRoom = () => {
             // Don't return null here - let the modal render with a fallback message
           }
 
-          // Debug logging to track data persistence
-          console.log('[GameRoom] Rendering modal with data:', {
-            hasActiveData: !!activeModalData,
-            winnersCount: activeModalData?.winners?.length || 0,
-            prizePool: activeModalData?.prizePool || 0,
-            roundId: activeModalData?.roundId,
-            timestamp: activeModalData?.timestamp,
-            wasParticipant: activeModalData?.wasParticipant,
-            userId: user?.id,
-            dataSource: modalWinnerDataRef.current ? 'mainRef' :
-                       backupModalDataRef.current ? 'backupRef' :
-                       modalWinnerData ? 'state' : 'none'
-          })
-
           // Trigger celebration when modal opens if user won
           const userWon = user && activeModalData?.winners?.some(w => w.userId === user.id)
           if (userWon && !showCelebration) {
@@ -1216,7 +1162,6 @@ const GameRoom = () => {
             <Modal
               isOpen={showWinnerModal}
               onClose={() => {
-                console.log('[GameRoom] User manually closing winner modal, clearing modal display data')
                 setShowWinnerModal(false)
                 setShowCelebration(false) // Stop celebration when closing modal
 
@@ -1232,8 +1177,6 @@ const GameRoom = () => {
                 // Keep it to prevent the modal from re-opening with the same winners
                 // It will be naturally replaced when new winners arrive
                 // setCurrentRoundWinners(null) // REMOVED - this was causing the modal to reopen
-
-                console.log('[GameRoom] Modal closed, keeping currentRoundWinners to prevent reopening')
               }}
           title="Round Result"
           size="lg"

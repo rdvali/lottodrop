@@ -48,7 +48,6 @@ export const preloadGameHistoryComponents = () => {
   // Preload lazy components
   // Note: preload is not available on LazyExoticComponent in React 18
   // Components will load when needed
-  console.log('Game history components are ready for lazy loading');
 };
 
 // Pre-configured lazy components with appropriate loading states

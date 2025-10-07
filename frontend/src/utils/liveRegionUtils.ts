@@ -3,9 +3,8 @@
 // Hook for using live region announcements
 export function useGameAnnouncements() {
   // const { announce } = useLiveRegion('assertive');
-  const announce = (message: string) => {
+  const announce = (_message: string) => {
     // Placeholder until useLiveRegion hook is implemented
-    console.log('Live region announcement:', message);
   };
 
   const announceGameStart = (gameType: string) => {

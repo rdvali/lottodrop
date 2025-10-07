@@ -65,33 +65,8 @@ export const balanceAPI = {
       timeout: 30000, // 30 second timeout for large datasets
     }
 
-      // Enhanced debugging - log request details
-      const token = localStorage.getItem('token')
-      const isAuthenticated = !!token
-
-      console.group('[Game History API] Request')
-      console.log('URL:', url)
-      console.log('Filters:', filters)
-      console.log('Authenticated:', isAuthenticated)
-      console.log('Auth Header:', isAuthenticated ? 'Bearer ***' + (token?.slice(-8) || '') : 'None')
-      console.log('Request Config:', requestConfig)
-      console.groupEnd()
-
       try {
         const { data } = await apiClient.get<GameHistoryResponse>(url, requestConfig)
-
-        // Enhanced debugging - log response details
-        console.group('[Game History API] Response')
-        console.log('Success:', data.success)
-        console.log('Data length:', data.data?.length || 0)
-        console.log('Games length:', data.games?.length || 0)
-        console.log('Pagination:', data.pagination)
-        console.log('Statistics:', data.statistics)
-        if (data.error) {
-          console.error('API Error:', data.error)
-        }
-        console.log('Full Response:', data)
-        console.groupEnd()
 
         if (!data.success) {
           throw new Error(data.error || 'Failed to get game history')
@@ -120,12 +95,6 @@ export const balanceAPI = {
             biggestWin: 0
           }
         }
-
-        console.log('[Game History API] Processed Response:', {
-          dataCount: response.data.length,
-          gamesCount: response.games.length,
-          totalGames: response.statistics.totalGames
-        })
 
         return response
       } catch (error) {

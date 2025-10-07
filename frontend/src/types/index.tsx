@@ -297,6 +297,9 @@ export interface RoomStatusUpdateData {
   roomId: string
   status: Room['status']
   participantCount: number
+  roomName?: string
+  roomType?: string
+  resetForNewRound?: boolean
 }
 
 export interface ErrorData {

@@ -305,43 +305,31 @@ export class SocketManager {
           if (!socket.participantRooms) {
             socket.participantRooms = new Set<string>();
           }
-          
+
+          // Check if user was already in this socket room (to prevent duplicate join events)
+          const wasAlreadyInRoom = socket.joinedRooms.has(roomId);
+
           // Join the socket room
           socket.join(roomId);
           socket.joinedRooms.add(roomId);
-          
+
           // Track if user is an active participant
           const isParticipant = participantResult.rows.length > 0;
+          const wasAlreadyParticipant = socket.participantRooms.has(roomId);
+
           if (isParticipant) {
             socket.participantRooms.add(roomId);
           }
-          
-          console.log(`Socket: User ${socket.userId} successfully joined room ${roomId} (participant: ${isParticipant})`);
+
+          console.log(`Socket: User ${socket.userId} joined room ${roomId} (participant: ${isParticipant}, wasAlreadyInRoom: ${wasAlreadyInRoom})`);
           console.log(`Socket: User ${socket.userId} is now in rooms: ${Array.from(socket.joinedRooms).join(', ')}`);
-          
+
           // Send room state to new user
           await this.sendRoomState(roomId, socket.id);
-          
-          // Only notify others if user is a participant
-          if (isParticipant) {
-            // Get user info to send complete data
-            const userResult = await pool.query(
-              'SELECT first_name, last_name FROM users WHERE id = $1',
-              [socket.userId]
-            );
 
-            const username = userResult.rows.length > 0
-              ? `${userResult.rows[0].first_name} ${userResult.rows[0].last_name}`.trim()
-              : 'Player';
-
-            // CRITICAL FIX: Use broadcast.to() to exclude the joining user from receiving their own join event
-            // This prevents ALL other users from incorrectly updating their joinedRooms state
-            socket.broadcast.to(roomId).emit('user-joined', {
-              userId: socket.userId,
-              username: username,
-              roomId: roomId
-            });
-          }
+          // NOTE: user-joined events are now emitted from the joinRoom API endpoint
+          // when a user actually becomes a participant (pays entry fee).
+          // Socket join-room is purely for connection management and should not trigger game events.
         } catch (error) {
           console.error('Join room error:', error);
           socket.emit('error', { message: 'Failed to join room' });
@@ -350,44 +338,21 @@ export class SocketManager {
 
       socket.on('leave-room', (roomId: string) => {
         socket.leave(roomId);
-        
+
         // Remove from tracking sets
         if (socket.joinedRooms) {
           socket.joinedRooms.delete(roomId);
         }
-        
-        // Check if user was a participant in this specific room
-        const wasParticipant = socket.participantRooms?.has(roomId);
-        
-        if (wasParticipant) {
+
+        // Remove from participant tracking
+        if (socket.participantRooms?.has(roomId)) {
           socket.participantRooms?.delete(roomId);
-
-          // Get user info for complete data
-          pool.query(
-            'SELECT first_name, last_name FROM users WHERE id = $1',
-            [socket.userId]
-          ).then(userResult => {
-            const username = userResult.rows.length > 0
-              ? `${userResult.rows[0].first_name} ${userResult.rows[0].last_name}`.trim()
-              : 'Player';
-
-            // CRITICAL FIX: Use broadcast.to() to exclude the leaving user from receiving their own leave event
-            socket.broadcast.to(roomId).emit('user-left', {
-              userId: socket.userId,
-              username: username,
-              roomId: roomId
-            });
-          }).catch(error => {
-            console.error('Error getting user info for user-left:', error);
-            // Fallback without username - CRITICAL FIX: Use broadcast.to() here as well
-            socket.broadcast.to(roomId).emit('user-left', {
-              userId: socket.userId,
-              username: 'Player',
-              roomId: roomId
-            });
-          });
         }
-        
+
+        // NOTE: user-left events are now emitted from the unjoinRoom API endpoint
+        // when a user actually quits the game (removes database participant status).
+        // Socket leave-room is purely for connection management.
+
         console.log(`Socket: User ${socket.userId} left room ${roomId}`);
         console.log(`Socket: User ${socket.userId} remaining rooms: ${socket.joinedRooms ? Array.from(socket.joinedRooms).join(', ') : 'none'}`);
       });
@@ -948,6 +913,23 @@ export class SocketManager {
 
   public emitGlobal(event: string, data: any) {
     this.io.emit(event, data);
+  }
+
+  /**
+   * Broadcast event to all users in a specific room
+   * Used for notifying room participants about events
+   */
+  public broadcastToRoom(roomId: string, event: string, data: any) {
+    this.io.to(roomId).emit(event, data);
+  }
+
+  /**
+   * Broadcast event to all users NOT in a specific room
+   * Used for notifying room list viewers about events
+   */
+  public broadcastExceptRoom(roomId: string, event: string, data: any) {
+    // Emit to all connected sockets except those in the specified room
+    this.io.except(roomId).emit(event, data);
   }
 
   /**

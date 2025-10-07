@@ -7,7 +7,6 @@ import { TournamentCard, RoomJoinConfirmationModal, NotificationCenter } from '@
 import { Button, Badge, CardSkeleton } from '@components/atoms'
 import { ParticleBackground } from '@components/animations'
 import { useAuth } from '@contexts/AuthContext'
-import { useNotifications } from '@contexts/NotificationContext'
 import { useModal } from '@hooks/useModal'
 import { useRoomActivityManager } from '@hooks/useRoomActivity'
 import { motion } from 'framer-motion'
@@ -17,7 +16,6 @@ const RoomList = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { openAuthModal } = useModal()
-  const { state: notificationState, toggleNotificationCenter } = useNotifications()
   const { roomActivities, triggerRoomActivity } = useRoomActivityManager()
   const [rooms, setRooms] = useState<Room[]>([])
   const [loading, setLoading] = useState(true)
@@ -71,75 +69,47 @@ const RoomList = () => {
     }, 60000) // Refresh every 60 seconds (fallback only)
 
     return () => clearInterval(interval)
-  }, [user]) // Re-run when user changes
+  }, [user, updateJoinedRooms]) // Re-run when user changes
 
   // Socket listeners
   useEffect(() => {
     const handleRoomStatusUpdate = (data: RoomStatusUpdateData) => {
-      setRooms(prev => {
-        const prevRoom = prev.find(r => r.id === data.roomId)
-        if (prevRoom && prevRoom.currentParticipants !== data.participantCount) {
-          // Trigger animation based on participant change
-          if (data.participantCount > prevRoom.currentParticipants) {
-            triggerRoomActivity(data.roomId, 'join')
-          } else if (data.participantCount < prevRoom.currentParticipants) {
-            triggerRoomActivity(data.roomId, 'leave')
-          }
-        }
-
-        // Only update the status and participant count, preserve all other data including participants array
-        return prev.map(room =>
-          room.id === data.roomId
-            ? { ...room, status: data.status, currentParticipants: data.participantCount }
-            : room
-        )
-      })
-
-      // IMPORTANT: Do NOT call updateJoinedRooms here!
-      // The RoomStatusUpdateData doesn't contain participant list data,
-      // so we can't determine if the current user has joined.
-      // The joinedRooms state should only be updated when we have full room data
-      // with participants array (from API calls or initial load)
-    }
-
-    // Handle user joined event
-    const handleUserJoined = (data: { userId: string; username?: string; roomId: string }) => {
-      // Defensive programming: ensure all required fields exist
-      if (!data.userId || !data.roomId) {
-        console.warn('🚨 Invalid USER_JOINED event - missing required fields:', data);
-        return;
-      }
-
-      // CRITICAL: Only update joined state for the CURRENT user
-      if (user && data.userId === user.id) {
-        // Current user joined - add to joined rooms immediately
-        setJoinedRooms(prev => new Set(prev).add(data.roomId))
-      }
-      // If it's another user joining, we do NOTHING to joinedRooms state
-
-      // Update participant count for the specific room (for ALL users to see)
       setRooms(prev => prev.map(room =>
         room.id === data.roomId
-          ? { ...room, currentParticipants: Math.min((room.currentParticipants || 0) + 1, room.maxParticipants) }
+          ? {
+              ...room,
+              status: data.status,
+              ...(data.participantCount !== undefined && { currentParticipants: data.participantCount })
+            }
           : room
       ))
 
-      // Trigger join animation for visual feedback
-      triggerRoomActivity(data.roomId, 'join')
+      // Trigger reset animation if room is resetting for a new round
+      if (data.resetForNewRound) {
+        triggerRoomActivity(data.roomId, 'reset')
+      }
     }
 
-    // Handle user left event
+    // Handle user joined event - informational only
+    // Participant count is updated via room-status-update event (authoritative from database)
+    // Animations are triggered by TournamentCard detecting count changes from room-status-update
+    const handleUserJoined = (data: { userId: string; username?: string; roomId: string }) => {
+      // NOTE: Do NOT modify participant count here to avoid double increment
+      // The room-status-update event provides the authoritative count from the database
+      // This event is kept for potential future use (notifications, user-specific actions, etc.)
+    }
+
+    // Handle user left event - informational only
+    // Participant count is updated via room-status-update event (authoritative from database)
+    // Animations are triggered by TournamentCard detecting count changes from room-status-update
     const handleUserLeft = (data: { userId: string; username?: string; roomId: string }) => {
       // Defensive programming: ensure all required fields exist
       if (!data.userId || !data.roomId) {
-        console.warn('🚨 Invalid USER_LEFT event - missing required fields:', data);
         return;
       }
 
-      // SECURITY FIX: Only check userId to prevent username collision bugs
-      // Username check removed to prevent state pollution when users have similar usernames
+      // If current user left - remove from joined rooms immediately for UI state
       if (user && data.userId === user.id) {
-        // Current user left - remove from joined rooms immediately
         setJoinedRooms(prev => {
           const newSet = new Set(prev)
           newSet.delete(data.roomId)
@@ -147,15 +117,9 @@ const RoomList = () => {
         })
       }
 
-      // Update participant count for the specific room
-      setRooms(prev => prev.map(room =>
-        room.id === data.roomId
-          ? { ...room, currentParticipants: Math.max((room.currentParticipants || 0) - 1, 0) }
-          : room
-      ))
-
-      // Trigger leave animation
-      triggerRoomActivity(data.roomId, 'leave')
+      // NOTE: Do NOT modify participant count here to avoid double decrement
+      // The room-status-update event provides the authoritative count from the database
+      // This event is kept for potential future use (notifications, user-specific actions, etc.)
     }
 
     const handleGlobalGameCompleted = (data: GlobalGameCompletedData) => {
@@ -328,34 +292,6 @@ const RoomList = () => {
 
         {user && (
           <div className="flex items-center gap-4">
-            {/* Game History Button */}
-            <button
-              onClick={() => toggleNotificationCenter()}
-              className="relative p-2 rounded-lg bg-secondary-bg hover:bg-primary/10 transition-colors"
-              data-notification-button
-              aria-label="Game History"
-              title="View Game History"
-            >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                className="text-gray-300"
-              >
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                <path d="M3 3v5h5"/>
-                <path d="M12 7v5l4 2"/>
-              </svg>
-              {notificationState.unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-error text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                  {notificationState.unreadCount > 9 ? '9+' : notificationState.unreadCount}
-                </span>
-              )}
-            </button>
-
             {/* Balance Display */}
             <div className="text-right">
               <p className="text-sm text-gray-400">Your Balance</p>

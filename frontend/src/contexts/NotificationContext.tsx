@@ -42,7 +42,6 @@ class NotificationStorage {
 
       // Check version compatibility
       if (data.version !== STORAGE_VERSION) {
-        console.log('[NotificationStorage] Version mismatch, clearing stored notifications')
         this.clear()
         return []
       }
@@ -150,7 +149,6 @@ function notificationReducer(state: NotificationState, action: NotificationActio
       // Check for duplicate toast by ID
       const isDuplicateToast = state.toasts.some(t => t.id === action.payload.id)
       if (isDuplicateToast) {
-        console.log('[NotificationContext] Skipping duplicate toast:', action.payload.id)
         return state
       }
 
@@ -203,7 +201,6 @@ function notificationReducer(state: NotificationState, action: NotificationActio
       // Check for duplicate notification by ID
       const isDuplicate = state.notifications.some(n => n.id === action.payload.id)
       if (isDuplicate) {
-        console.log('[NotificationContext] Skipping duplicate notification:', action.payload.id)
         return state
       }
 
@@ -402,18 +399,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       dispatch({ type: 'SET_PERMISSION_STATUS', payload: Notification.permission })
     }
 
-    console.log('🚀 [NotificationContext] Initializing unified notification system...')
-
     // Load stored notifications from localStorage immediately
     const storedNotifications = NotificationStorage.load()
     if (storedNotifications.length > 0) {
       const unreadCount = storedNotifications.filter(n =>
         !n.isRead && (n.subtype === 'game_result' || n.subtype === 'game_win')
       ).length
-      console.log('📱 [NotificationContext] Loaded from localStorage:', {
-        count: storedNotifications.length,
-        unread: unreadCount
-      })
       dispatch({ type: 'SET_NOTIFICATIONS', payload: storedNotifications })
       dispatch({ type: 'SET_UNREAD_COUNT', payload: unreadCount })
     }
@@ -423,34 +414,29 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     loadPreferences()
 
     // Multi-round completion handler - NOW HANDLED BY NotificationsRoot
-    const handleMultiRoundCompleted = (data: any) => {
+    const handleMultiRoundCompleted = (_data: any) => {
       // Disabled - NotificationsRoot handles round results
-      console.log('[NotificationContext] Multi-round event received (handled by NotificationsRoot):', data)
     }
 
     // Personal round completion handler - NOW HANDLED BY NotificationsRoot
-    const handlePersonalRoundCompleted = (data: any) => {
+    const handlePersonalRoundCompleted = (_data: any) => {
       // Disabled - NotificationsRoot handles round results
-      console.log('[NotificationContext] Personal round event received (handled by NotificationsRoot):', data)
     }
 
     // Global game completed handler - NOW HANDLED BY NotificationsRoot
-    const handleGlobalGameCompleted = (data: any) => {
+    const handleGlobalGameCompleted = (_data: any) => {
       // Disabled - NotificationsRoot handles round results and winner announcements
-      console.log('[NotificationContext] Global game event received (handled by NotificationsRoot):', data)
     }
 
     // Debounced notification handler to prevent duplicates
     const handleNewNotification = (notification: Notification) => {
       // Check if we're already processing this notification
       if (processingNotifications.current.has(notification.id)) {
-        console.log('[NotificationContext] Already processing notification:', notification.id)
         return
       }
 
       // Check if notification was recently processed
       if (state.processedNotificationIds.has(notification.id)) {
-        console.log('[NotificationContext] Notification already processed:', notification.id)
         return
       }
 
@@ -465,13 +451,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
       // Debounce notification processing by 100ms
       const timeout = setTimeout(() => {
-        console.log('[NotificationContext] Processing notification:', {
-          id: notification.id,
-          type: notification.type,
-          subtype: notification.subtype,
-          title: notification.title
-        })
-
         const location = getCurrentLocation()
 
         // Add to notification center (persistent storage)
@@ -535,8 +514,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
 
     const handlePendingNotifications = (data: any) => {
-      console.log('[NotificationContext] Pending notifications:', data)
-
       if (data.notifications && data.notifications.length > 0) {
         // Process pending notifications without showing toasts (to prevent spam)
         data.notifications.forEach((notification: any) => {
@@ -602,25 +579,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const addNotification = useCallback((notification: Notification) => {
     // Check for duplicate notification
     if (state.processedNotificationIds.has(notification.id)) {
-      console.log('🔔 [NotificationContext] Skipping duplicate notification:', notification.id)
       return
     }
 
     // Check if notification already exists in state
     const existingNotification = state.notifications.find(n => n.id === notification.id)
     if (existingNotification) {
-      console.log('🔔 [NotificationContext] Notification already exists:', notification.id)
       return
     }
-
-    console.log('🔔 [NotificationContext] Adding notification:', {
-      id: notification.id,
-      type: notification.type,
-      subtype: notification.subtype,
-      title: notification.title,
-      hasData: !!notification.data,
-      dataKeys: notification.data ? Object.keys(notification.data) : []
-    })
 
     // Add notification to state (localStorage save happens in reducer)
     dispatch({ type: 'ADD_NOTIFICATION', payload: notification })
@@ -726,13 +692,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       const storedNotifications = NotificationStorage.load()
 
       if (response.success && response.data) {
-        console.log('📥 [NotificationContext] Loaded notifications from backend:', {
-          count: response.data.notifications.length,
-          unread: response.data.unreadCount,
-          hasMore: response.data.hasMore,
-          filter
-        })
-
         // Filter out any potentially invalid notifications
         const validBackendNotifications = response.data.notifications.filter(notification => {
           const isValid = notification.id && notification.userId && notification.type && notification.subtype
@@ -750,18 +709,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           !n.isRead && (n.subtype === 'game_result' || n.subtype === 'game_win')
         ).length
 
-        console.log('🔄 [NotificationContext] Merged notifications:', {
-          stored: storedNotifications.length,
-          backend: validBackendNotifications.length,
-          merged: mergedNotifications.length,
-          unread: unreadCount
-        })
-
         dispatch({ type: 'SET_NOTIFICATIONS', payload: mergedNotifications })
         dispatch({ type: 'SET_UNREAD_COUNT', payload: unreadCount })
         dispatch({ type: 'SET_HAS_MORE', payload: response.data.hasMore })
       } else {
-        console.log('📭 [NotificationContext] No backend notifications, using localStorage only')
         // If backend fails or returns no data, use localStorage notifications
         if (storedNotifications.length > 0) {
           const unreadCount = storedNotifications.filter(n =>
@@ -783,7 +734,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         const unreadCount = storedNotifications.filter(n =>
           !n.isRead && (n.subtype === 'game_result' || n.subtype === 'game_win')
         ).length
-        console.log('💾 [NotificationContext] Falling back to localStorage notifications')
         dispatch({ type: 'SET_NOTIFICATIONS', payload: storedNotifications })
         dispatch({ type: 'SET_UNREAD_COUNT', payload: unreadCount })
       } else {
@@ -865,7 +815,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [])
 
   const clearAllNotifications = useCallback(() => {
-    console.log('🧽 [NotificationContext] Clearing all notifications')
     dispatch({ type: 'CLEAR_ALL_NOTIFICATIONS' })
   }, [])
 

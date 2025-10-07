@@ -79,15 +79,6 @@ export function NotificationCenter(): React.ReactElement {
 
   const handleNotificationClick = async (notification: Notification) => {
     try {
-      console.log('💆 [NotificationCenter] Notification clicked:', {
-        id: notification.id,
-        type: notification.type,
-        subtype: notification.subtype,
-        isRead: notification.isRead,
-        hasData: !!notification.data,
-        data: notification.data
-      })
-
       // Mark as read if not already read
       if (!notification.isRead) {
         await markAsRead(notification.id)

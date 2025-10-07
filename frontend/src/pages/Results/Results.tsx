@@ -33,8 +33,6 @@ const Results = () => {
   // Listen for real-time updates
   useEffect(() => {
     const handleNewResult = (data: any) => {
-      console.log('[Results] New game result received:', data)
-
       // Create new result entry from socket data
       const newResult: GameResult = {
         roundId: data.roundId || 'N/A',

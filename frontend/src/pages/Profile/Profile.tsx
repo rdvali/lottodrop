@@ -86,11 +86,6 @@ const Profile = () => {
         setGameHistory(gameResponse.data)
         setPagination(gameResponse.pagination)
         setTransactions(trans)
-        console.log('[Profile] Initial data loaded:', {
-          gamesCount: gameResponse.data.length,
-          transactionsCount: trans.length,
-          pagination: gameResponse.pagination
-        })
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to load profile data'
         setGamesError(errorMessage)

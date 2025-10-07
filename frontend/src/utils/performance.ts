@@ -37,11 +37,6 @@ class PerformanceMonitor {
 
   private handleMetric = (name: Exclude<keyof PerformanceMetrics, 'longTasks'>) => (metric: Metric) => {
     this.metrics[name] = metric.value
-    
-    // Log to console in development
-    if (import.meta.env.DEV) {
-      console.log(`[Performance] ${name}:`, metric.value.toFixed(2))
-    }
 
     // Notify callbacks
     this.callbacks.forEach(callback => callback(this.metrics))
@@ -69,9 +64,8 @@ class PerformanceMonitor {
         loadComplete: navigation.loadEventEnd - navigation.fetchStart
       }
 
-      if (import.meta.env.DEV) {
-        console.table(timings)
-      }
+      // Timings recorded for potential future use
+      void timings
     }
   }
 
@@ -191,11 +185,7 @@ class PerformanceMonitor {
     try {
       performance.measure(name, startMark, endMark)
       const measure = performance.getEntriesByName(name, 'measure')[0]
-      
-      if (import.meta.env.DEV && measure) {
-        console.log(`[Performance] ${name}:`, measure.duration.toFixed(2), 'ms')
-      }
-      
+
       return measure?.duration
     } catch (e) {
       console.error('[Performance] Measurement failed:', e)
@@ -217,10 +207,9 @@ export const performanceMonitor = new PerformanceMonitor()
 
 // Helper function to report custom metrics
 export const reportMetric = (name: string, value: number) => {
-  if (import.meta.env.DEV) {
-    console.log(`[Performance] Custom metric - ${name}:`, value.toFixed(2))
-  }
-  
+  // Custom metrics recorded
+  void name
+  void value
   // You can extend this to send to your analytics service
 }
 

@@ -437,6 +437,32 @@ export const joinRoom = async (req: Request, res: Response) => {
       roomName: room.name
     });
 
+    // Emit user-joined event for real-time animations (NEW participants only)
+    // Get user info for complete event data
+    const userInfoResult = await pool.query(
+      'SELECT first_name, last_name FROM users WHERE id = $1',
+      [userId]
+    );
+    const username = userInfoResult.rows.length > 0
+      ? `${userInfoResult.rows[0].first_name} ${userInfoResult.rows[0].last_name}`.trim()
+      : 'Player';
+
+    // Notify users IN the room
+    socketManager.broadcastToRoom(roomId, 'user-joined', {
+      userId: userId,
+      username: username,
+      roomId: roomId
+    });
+
+    // Notify users NOT in the room (for room list animations)
+    socketManager.broadcastExceptRoom(roomId, 'user-joined', {
+      userId: userId,
+      username: username,
+      roomId: roomId
+    });
+
+    console.log(`[Room Join] Emitted user-joined events for user ${userId} in room ${roomId}`);
+
     // Start countdown if needed (after commit)
     if (shouldStartCountdown) {
       const countdownSeconds = roomResult.rows[0].countdown_seconds || 5; // Use room's countdown setting, default 5s
@@ -1126,6 +1152,32 @@ export const unjoinRoom = async (req: Request, res: Response) => {
       participantCount: updatedParticipantCount,
       roomName: room.name
     });
+
+    // Emit user-left event for real-time animations (actual participant removal)
+    // Get user info for complete event data
+    const userInfoResult = await pool.query(
+      'SELECT first_name, last_name FROM users WHERE id = $1',
+      [userId]
+    );
+    const username = userInfoResult.rows.length > 0
+      ? `${userInfoResult.rows[0].first_name} ${userInfoResult.rows[0].last_name}`.trim()
+      : 'Player';
+
+    // Notify users IN the room
+    socketManager.broadcastToRoom(roomId, 'user-left', {
+      userId: userId,
+      username: username,
+      roomId: roomId
+    });
+
+    // Notify users NOT in the room (for room list animations)
+    socketManager.broadcastExceptRoom(roomId, 'user-left', {
+      userId: userId,
+      username: username,
+      roomId: roomId
+    });
+
+    console.log(`[Room Unjoin] Emitted user-left events for user ${userId} from room ${roomId}`);
 
     // Notify room update so all players see the updated state
     socketManager.notifyRoomUpdate(roomId);

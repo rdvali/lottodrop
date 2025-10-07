@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 
-export type ActivityType = 'join' | 'leave' | null
+export type ActivityType = 'join' | 'leave' | 'reset' | null
 
 interface RoomActivity {
   type: ActivityType
@@ -9,7 +9,7 @@ interface RoomActivity {
 
 interface UseRoomActivityReturn {
   activityType: ActivityType
-  triggerActivity: (type: 'join' | 'leave') => void
+  triggerActivity: (type: 'join' | 'leave' | 'reset') => void
   isAnimating: boolean
 }
 
@@ -53,7 +53,7 @@ export const useRoomActivity = (
   }, [duration])
 
   // Trigger new activity
-  const triggerActivity = useCallback((type: 'join' | 'leave') => {
+  const triggerActivity = useCallback((type: 'join' | 'leave' | 'reset') => {
     const now = Date.now()
 
     // Add to queue
@@ -91,7 +91,7 @@ export const useRoomActivityManager = () => {
   const [roomActivities, setRoomActivities] = useState<Map<string, ActivityType>>(new Map())
   const timeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map())
 
-  const triggerRoomActivity = useCallback((roomId: string, type: 'join' | 'leave', duration: number = 1500) => {
+  const triggerRoomActivity = useCallback((roomId: string, type: 'join' | 'leave' | 'reset', duration: number = 1500) => {
     // Clear existing timeout for this room
     const existingTimeout = timeoutsRef.current.get(roomId)
     if (existingTimeout) {

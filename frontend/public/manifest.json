@@ -45,22 +45,6 @@
     }
   ],
   "categories": ["games", "entertainment", "finance"],
-  "screenshots": [
-    {
-      "src": "/screenshot-1.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Drop Game Room"
-    },
-    {
-      "src": "/screenshot-2.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Room List View"
-    }
-  ],
   "shortcuts": [
     {
       "name": "Join Quick Game",

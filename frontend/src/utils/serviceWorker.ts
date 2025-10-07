@@ -29,17 +29,11 @@ function registerValidSW(swUrl: string, config?: Config) {
           if (installingWorker.state === 'installed') {
             if (navigator.serviceWorker.controller) {
               // New content is available; please refresh
-              console.log(
-                'New content is available and will be used when all tabs are closed.'
-              )
-              
               if (config?.onUpdate) {
                 config.onUpdate(registration)
               }
             } else {
               // Content is cached for offline use
-              console.log('Content is cached for offline use.')
-              
               if (config?.onSuccess) {
                 config.onSuccess(registration)
               }
@@ -77,7 +71,6 @@ function checkValidServiceWorker(swUrl: string, config?: Config) {
       }
     })
     .catch(() => {
-      console.log('No internet connection found. App is running in offline mode.')
       if (config?.onOffline) {
         config.onOffline()
       }
@@ -104,12 +97,6 @@ export function register(config?: Config) {
         // This is running on localhost. Check if a service worker still exists or not
         checkValidServiceWorker(swUrl, config)
 
-        // Add some additional logging to localhost
-        navigator.serviceWorker.ready.then(() => {
-          console.log(
-            'This web app is being served cache-first by a service worker.'
-          )
-        })
       } else {
         // Is not localhost. Just register service worker
         registerValidSW(swUrl, config)
@@ -118,14 +105,12 @@ export function register(config?: Config) {
 
     // Listen for online/offline events
     window.addEventListener('online', () => {
-      console.log('Back online')
       if (config?.onOnline) {
         config.onOnline()
       }
     })
 
     window.addEventListener('offline', () => {
-      console.log('App is offline')
       if (config?.onOffline) {
         config.onOffline()
       }

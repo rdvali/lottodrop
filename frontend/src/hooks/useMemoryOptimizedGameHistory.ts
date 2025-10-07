@@ -137,8 +137,8 @@ export const useMemoryOptimizedGameHistory = (filters: GameHistoryFilters): Memo
     if (performanceWithMemory && 'measureUserAgentSpecificMemory' in performanceWithMemory) {
       // Modern browsers with memory measurement support
       performanceWithMemory.measureUserAgentSpecificMemory?.()
-        .then((result: MemoryMeasurement) => {
-          console.log('Memory after cleanup:', result);
+        .then((_result: MemoryMeasurement) => {
+          // Memory measurement completed
         })
         .catch(() => {
           // Silently ignore if not supported

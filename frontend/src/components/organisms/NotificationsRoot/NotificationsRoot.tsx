@@ -46,7 +46,6 @@ export const NotificationsRoot: React.FC<NotificationsRootProps> = ({
 
     // Check if we've seen this recently
     if (dedupeWindow.current.has(dedupeKey)) {
-      console.log('[NotificationsRoot] Duplicate notification filtered:', dedupeKey);
       return null;
     }
 
@@ -83,8 +82,6 @@ export const NotificationsRoot: React.FC<NotificationsRootProps> = ({
   const handleMultiRoundCompleted = useCallback((data: any) => {
     if (!user || data.userId !== user.id) return;
 
-    console.log('[NotificationsRoot] Multi-round completed:', data);
-
     const newNotifications: RoundResultData[] = [];
 
     data.rounds.forEach((round: any) => {
@@ -108,8 +105,6 @@ export const NotificationsRoot: React.FC<NotificationsRootProps> = ({
   const handlePersonalRoundCompleted = useCallback((data: any) => {
     if (!user || data.userId !== user.id) return;
 
-    console.log('[NotificationsRoot] Personal round completed:', data);
-
     const notification = createNotification(data);
 
     if (notification && !processedIds.current.has(notification.roundId)) {
@@ -121,8 +116,6 @@ export const NotificationsRoot: React.FC<NotificationsRootProps> = ({
   // Handle global game completed (for winner announcements)
   const handleGlobalGameCompleted = useCallback((data: any) => {
     if (!user) return;
-
-    console.log('[NotificationsRoot] Global game completed:', data);
 
     // Check if current user is among winners
     let currentUserWon = false;

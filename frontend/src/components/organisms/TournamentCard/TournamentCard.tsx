@@ -10,46 +10,71 @@ export interface TournamentCardProps {
   onView?: (roomId: string) => void
   isJoined?: boolean
   className?: string
-  activityType?: 'join' | 'leave' | null
+  activityType?: 'join' | 'leave' | 'reset' | null
 }
 
 const TournamentCard = ({ room, onJoin, onView, isJoined = false, className, activityType }: TournamentCardProps) => {
-  const isWaiting = room.status === 'waiting'
+  const isWaiting = room.status?.toLowerCase() === 'waiting'
   const isFull = room.currentParticipants >= room.maxParticipants
   const canJoin = isWaiting && !isFull && !isJoined
   const [playerCountChange, setPlayerCountChange] = useState<'increment' | 'decrement' | null>(null)
   const prevParticipantsRef = useRef(room.currentParticipants)
   const [isAnimating, setIsAnimating] = useState(false)
+  const isInitialMount = useRef(true) // Track if this is the very first render
 
-  // Detect participant count changes
+  // Detect participant count changes and trigger BOTH number animation AND border glow
   useEffect(() => {
+    // Skip animation on initial mount/remount - only trigger for real-time changes
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      prevParticipantsRef.current = room.currentParticipants // CRITICAL: Update ref on first mount
+      return
+    }
+
     if (prevParticipantsRef.current !== room.currentParticipants) {
       if (room.currentParticipants > prevParticipantsRef.current) {
         setPlayerCountChange('increment')
+        setIsAnimating(true)
+
+        // Trigger join animation for 2 seconds
+        const animTimeout = setTimeout(() => {
+          setIsAnimating(false)
+        }, 2000)
+
+        // Clear number animation after 800ms
+        const countTimeout = setTimeout(() => {
+          setPlayerCountChange(null)
+        }, 800)
+
+        prevParticipantsRef.current = room.currentParticipants
+
+        return () => {
+          clearTimeout(animTimeout)
+          clearTimeout(countTimeout)
+        }
       } else {
         setPlayerCountChange('decrement')
+        setIsAnimating(true)
+
+        // Trigger leave animation for 1.8 seconds
+        const animTimeout = setTimeout(() => {
+          setIsAnimating(false)
+        }, 1800)
+
+        // Clear number animation after 800ms
+        const countTimeout = setTimeout(() => {
+          setPlayerCountChange(null)
+        }, 800)
+
+        prevParticipantsRef.current = room.currentParticipants
+
+        return () => {
+          clearTimeout(animTimeout)
+          clearTimeout(countTimeout)
+        }
       }
-      prevParticipantsRef.current = room.currentParticipants
-
-      // Clear animation class after animation completes
-      const timeout = setTimeout(() => {
-        setPlayerCountChange(null)
-      }, 800)
-
-      return () => clearTimeout(timeout)
     }
-  }, [room.currentParticipants])
-
-  // Handle activity type animation
-  useEffect(() => {
-    if (activityType) {
-      setIsAnimating(true)
-      const timeout = setTimeout(() => {
-        setIsAnimating(false)
-      }, activityType === 'join' ? 1500 : 1200)
-      return () => clearTimeout(timeout)
-    }
-  }, [activityType])
+  }, [room.currentParticipants, room.name])
 
   const getStatusBadge = () => {
     switch (room.status) {
@@ -88,43 +113,152 @@ const TournamentCard = ({ room, onJoin, onView, isJoined = false, className, act
     }
   }
 
-  // Join/leave animation styles
+  // Join/leave animation styles - triggered by participant count changes
   const getAnimationStyle = () => {
-    if (!isAnimating || !activityType) return {}
+    if (!isAnimating) {
+      return {}
+    }
 
-    if (activityType === 'join') {
+    // Join effect when count increases
+    if (playerCountChange === 'increment') {
       return {
-        animation: 'joinPulse 1.5s ease-out',
-        boxShadow: '0 0 30px rgba(124, 58, 237, 0.3)',
-        borderColor: 'rgba(124, 58, 237, 0.4)',
-      }
-    } else {
-      return {
-        animation: 'leavePulse 1.2s ease-out',
-        boxShadow: '0 0 25px rgba(255, 107, 71, 0.3)',
-        borderColor: 'rgba(255, 107, 71, 0.4)',
+        animation: 'joinPulse 2s ease-out',
+        border: '2px solid rgba(167, 85, 247, 0.7)',
+        outline: '1px solid rgba(167, 85, 247, 0.4)',
+        outlineOffset: '1px',
+        backgroundColor: 'rgba(167, 85, 247, 0.08)',
       }
     }
+
+    // Leave effect when count decreases
+    if (playerCountChange === 'decrement') {
+      return {
+        animation: 'leavePulse 1.8s ease-out',
+        border: '2px solid rgba(185, 28, 28, 0.7)',
+        outline: '1px solid rgba(185, 28, 28, 0.4)',
+        outlineOffset: '1px',
+        backgroundColor: 'rgba(185, 28, 28, 0.08)',
+      }
+    }
+
+    return {}
   }
 
   return (
     <>
       <style>{`
         @keyframes joinPulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.02); }
+          0% {
+            transform: scale(1);
+            box-shadow:
+              0 0 15px 3px rgba(167, 85, 247, 0.3),
+              0 0 30px 6px rgba(167, 85, 247, 0.2),
+              0 0 45px 9px rgba(167, 85, 247, 0.15),
+              0 0 60px 12px rgba(167, 85, 247, 0.08),
+              inset 0 0 15px rgba(167, 85, 247, 0.15);
+          }
+          50% {
+            transform: scale(1.02);
+            box-shadow:
+              0 0 20px 4px rgba(167, 85, 247, 0.5),
+              0 0 40px 8px rgba(167, 85, 247, 0.35),
+              0 0 60px 12px rgba(167, 85, 247, 0.25),
+              0 0 80px 16px rgba(167, 85, 247, 0.15),
+              inset 0 0 20px rgba(167, 85, 247, 0.2);
+          }
+          100% {
+            transform: scale(1);
+            box-shadow:
+              0 0 15px 3px rgba(167, 85, 247, 0.3),
+              0 0 30px 6px rgba(167, 85, 247, 0.2),
+              0 0 45px 9px rgba(167, 85, 247, 0.15),
+              0 0 60px 12px rgba(167, 85, 247, 0.08),
+              inset 0 0 15px rgba(167, 85, 247, 0.15);
+          }
         }
         @keyframes leavePulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(0.98); }
+          0% {
+            transform: scale(1);
+            box-shadow:
+              0 0 15px 3px rgba(185, 28, 28, 0.3),
+              0 0 30px 6px rgba(185, 28, 28, 0.2),
+              0 0 45px 9px rgba(185, 28, 28, 0.15),
+              0 0 60px 12px rgba(185, 28, 28, 0.08),
+              inset 0 0 15px rgba(185, 28, 28, 0.15);
+          }
+          50% {
+            transform: scale(0.98);
+            box-shadow:
+              0 0 20px 4px rgba(185, 28, 28, 0.5),
+              0 0 40px 8px rgba(185, 28, 28, 0.35),
+              0 0 60px 12px rgba(185, 28, 28, 0.25),
+              0 0 80px 16px rgba(185, 28, 28, 0.15),
+              inset 0 0 20px rgba(185, 28, 28, 0.2);
+          }
+          100% {
+            transform: scale(1);
+            box-shadow:
+              0 0 15px 3px rgba(185, 28, 28, 0.3),
+              0 0 30px 6px rgba(185, 28, 28, 0.2),
+              0 0 45px 9px rgba(185, 28, 28, 0.15),
+              0 0 60px 12px rgba(185, 28, 28, 0.08),
+              inset 0 0 15px rgba(185, 28, 28, 0.15);
+          }
         }
         @keyframes countUp {
           0%, 100% { transform: translateY(0); color: inherit; }
-          50% { transform: translateY(-4px); color: #7c3aed; }
+          50% { transform: translateY(-4px); color: #A755F7; }
         }
         @keyframes countDown {
           0%, 100% { transform: translateY(0); color: inherit; }
-          50% { transform: translateY(4px); color: #ff6b47; }
+          50% { transform: translateY(4px); color: #B91C1C; }
+        }
+        .glow-wrapper {
+          position: relative;
+          overflow: visible;
+        }
+        .glow-wrapper::before {
+          content: '';
+          position: absolute;
+          top: -4px;
+          left: -4px;
+          right: -4px;
+          bottom: -4px;
+          border-radius: 1rem;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+          pointer-events: none;
+          z-index: 0;
+        }
+        .glow-wrapper > div {
+          position: relative;
+          z-index: 1;
+        }
+        .glow-wrapper.glow-active-join::before {
+          opacity: 0.8;
+          animation: glowPulseJoin 2s ease-out;
+          background: linear-gradient(135deg,
+            rgba(167, 85, 247, 0.15) 0%,
+            rgba(167, 85, 247, 0.05) 50%,
+            rgba(167, 85, 247, 0.15) 100%);
+        }
+        .glow-wrapper.glow-active-leave::before {
+          opacity: 0.8;
+          animation: glowPulseLeave 1.8s ease-out;
+          background: linear-gradient(135deg,
+            rgba(185, 28, 28, 0.15) 0%,
+            rgba(185, 28, 28, 0.05) 50%,
+            rgba(185, 28, 28, 0.15) 100%);
+        }
+        @keyframes glowPulseJoin {
+          0%, 100% { opacity: 0; }
+          10%, 90% { opacity: 1; }
+          50% { opacity: 1; transform: scale(1.05); }
+        }
+        @keyframes glowPulseLeave {
+          0%, 100% { opacity: 0; }
+          10%, 90% { opacity: 1; }
+          50% { opacity: 1; transform: scale(1.05); }
         }
       `}</style>
       <motion.div
@@ -132,11 +266,16 @@ const TournamentCard = ({ room, onJoin, onView, isJoined = false, className, act
         animate={cardAnimation.animate}
         whileHover={cardAnimation.hover}
         transition={{ duration: 0.3, ease: 'easeOut' as const }}
+        className={clsx(
+          'glow-wrapper',
+          isAnimating && playerCountChange === 'increment' && 'glow-active-join',
+          isAnimating && playerCountChange === 'decrement' && 'glow-active-leave'
+        )}
       >
         <Card
           hoverable
           className={clsx(
-            'relative overflow-hidden transition-all duration-300',
+            'relative transition-all duration-300',
             isJoined && 'ring-2 ring-primary',
             className
           )}

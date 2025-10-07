@@ -89,7 +89,6 @@ const OptimizedProfile = () => {
   // Preload components on mount for better UX
   useEffect(() => {
     preloadGameHistoryComponents();
-    console.log('Game history components preloaded');
   }, []);
 
   // Load transactions only when tab is accessed
@@ -156,14 +155,11 @@ const OptimizedProfile = () => {
 
   // Performance monitoring in development
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Profile Performance Stats:', {
-        gamesCount: games.length,
-        memoryUsage: memoryUsage.estimatedSize,
-        hasNextPage,
-        loading: gamesLoading
-      });
-    }
+    // Performance stats available in development
+    void games.length
+    void memoryUsage
+    void hasNextPage
+    void gamesLoading
   }, [games.length, memoryUsage, hasNextPage, gamesLoading]);
 
   // Handle errors
