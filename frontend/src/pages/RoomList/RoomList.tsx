@@ -71,14 +71,28 @@ const RoomList = () => {
     return () => clearInterval(interval)
   }, [user, updateJoinedRooms]) // Re-run when user changes
 
+  // Helper function to map backend status values to frontend status values
+  const mapBackendStatus = (backendStatus: string): 'waiting' | 'in_progress' | 'completed' => {
+    switch (backendStatus) {
+      case 'WAITING': return 'waiting'
+      case 'ACTIVE': return 'in_progress'
+      case 'COMPLETED': return 'completed'
+      case 'RESETTING': return 'in_progress' // Treat RESETTING as in_progress during transition
+      default: return 'waiting'
+    }
+  }
+
   // Socket listeners
   useEffect(() => {
     const handleRoomStatusUpdate = (data: RoomStatusUpdateData) => {
+      // Map backend status to frontend status
+      const mappedStatus = mapBackendStatus(data.status as string)
+
       setRooms(prev => prev.map(room =>
         room.id === data.roomId
           ? {
               ...room,
-              status: data.status,
+              status: mappedStatus,
               ...(data.participantCount !== undefined && { currentParticipants: data.participantCount })
             }
           : room
@@ -134,26 +148,23 @@ const RoomList = () => {
         }
       }
 
-      // CRITICAL FIX: Only refresh room data if the current user was a participant
-      // This prevents button flickering for non-participants
-      // SECURITY FIX: Only check userId to prevent username collision bugs
-      const userWasParticipant = user && data.winners?.some(winner =>
-        winner.userId === user.id
-      )
+      // FIX: Don't differentiate between winners/losers - use unified approach
+      // Update room status locally to 'completed' immediately for all users
+      // The room-status-update event will handle the transition to 'waiting' after reset (10s later)
+      setRooms(prev => prev.map(room =>
+        room.id === data.roomId
+          ? { ...room, status: 'completed', currentParticipants: 0 }
+          : room
+      ))
 
-      if (userWasParticipant) {
-        // Only participants need fresh room data after game completion
-        roomAPI.getRooms().then(roomsData => {
-          setRooms(roomsData)
-          updateJoinedRooms(roomsData)
-        }).catch(() => {})
-      } else {
-        // For non-participants, only update the specific room status without refetching
-        setRooms(prev => prev.map(room =>
-          room.id === data.roomId
-            ? { ...room, status: 'completed' as const, currentParticipants: 0 }
-            : room
-        ))
+      // If current user was in this room, clear them from joinedRooms
+      // The participant data will be refreshed via room-status-update when room resets
+      if (user && joinedRooms.has(data.roomId)) {
+        setJoinedRooms(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(data.roomId)
+          return newSet
+        })
       }
     }
 

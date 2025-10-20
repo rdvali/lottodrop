@@ -157,6 +157,9 @@ export class ScreenReaderUtils {
     }, 1000);
   }
 
+  // Alias for compatibility with WinnerReveal component
+  static announceToScreenReader = ScreenReaderUtils.announce;
+
   static describeElement(element: HTMLElement, description: string): void {
     const id = element.id || `described-${Date.now()}`;
     element.id = id;
@@ -434,4 +437,12 @@ export function prefersReducedMotion(): boolean {
 // High contrast detection
 export function prefersHighContrast(): boolean {
   return window.matchMedia('(prefers-contrast: high)').matches;
+}
+
+// Standalone function export for convenience (WinnerReveal compatibility)
+export const announceToScreenReader = ScreenReaderUtils.announce;
+
+// Format currency for screen readers
+export const formatCurrency = (amount: number): string => {
+  return `${amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}`
 }

@@ -5,11 +5,11 @@ import { roomAPI } from '@services/api'
 import { socketService } from '@services/socket'
 import { Card, Button, Badge, Spinner, PlayerCardSkeleton, JoinRoomButton } from '@components/atoms'
 import { Modal } from '@components/organisms'
-import { 
-  VRFWinnerSelection, 
-  CountdownTimer, 
+import {
+  WinnerReveal,
+  CountdownTimer,
   Celebration,
-  ParticleBackground 
+  ParticleBackground
 } from '@components/animations'
 import { PlayerTransitions } from '@components/animations/PlayerTransitions'
 import { useAuth } from '@contexts/AuthContext'
@@ -82,14 +82,15 @@ const GameRoom = () => {
 
   const [previousPrizePool, setPreviousPrizePool] = useState<number>(0)
   const [platformFeeData, setPlatformFeeData] = useState<{ amount: number, rate: number }>({ amount: 0, rate: 0.1 })
+  const [vrfData, setVrfData] = useState<{ seed?: string, proof?: string }>({})
   const [recentPlayerAction, setRecentPlayerAction] = useState<{
     type: 'join' | 'leave'
     userId: string
     timestamp: number
   } | null>(null)
-  
+
   const isParticipant = participants.some(p => p.userId === user?.id)
-  
+
   // Refs to track current state values in socket handlers
   const participantsRef = useRef(participants)
   const countdownRef = useRef(countdown)
@@ -121,15 +122,13 @@ const GameRoom = () => {
   useEffect(() => {
     userRef.current = user
   }, [user])
-  
+
   useEffect(() => {
     animatingRef.current = animating
-    // Removed: console.log('[GameRoom] animating state changed to:', animating)
   }, [animating])
-  
+
   useEffect(() => {
     winnersRef.current = winners
-    // Removed: console.log('[GameRoom] winners state changed to:', winners)
   }, [winners])
   
   // Show modal only for NEW winners that haven't been shown yet
@@ -297,7 +296,8 @@ const GameRoom = () => {
             name: data.room.name,
             type: data.room.type.toLowerCase(),
             status: data.room.status === 'WAITING' ? 'waiting' :
-                    data.room.status === 'ACTIVE' ? 'in_progress' : 'completed',
+                    data.room.status === 'ACTIVE' ? 'in_progress' :
+                    data.room.status === 'RESETTING' ? 'in_progress' : 'completed',
             entryFee,
             prizePool,
             currentParticipants,
@@ -454,9 +454,7 @@ const GameRoom = () => {
     }
 
     const handleAnimationStart = (data: any) => {
-      // Removed: console.log('[GameRoom] animation-start event received:', data)
       if (data.roomId === roomId) {
-        // Removed: console.log('[GameRoom] Setting animating to true and countdown to null')
         setAnimating(true)
         setCountdown(null)
       }
@@ -517,11 +515,14 @@ const GameRoom = () => {
           rate: platformFee && totalPrize ? platformFee / totalPrize : 0.1
         })
 
+        // Extract and store VRF data
+        setVrfData({
+          seed: data.vrfSeed || data.seed,
+          proof: data.vrfProof || data.proof
+        })
+
         // Don't automatically show modal here - let the useEffect handle it
         // This ensures each client controls their own modal state
-        
-        // Animation can continue running in the background
-        // setAnimating(false) // Don't stop animation here
         
         // Get current values
         const currentUser = userRef.current
@@ -568,6 +569,59 @@ const GameRoom = () => {
       }
     }
 
+    const handleRoomStatusUpdate = (data: any) => {
+      if (data.roomId === roomId) {
+        // Update room status when backend emits status changes (including RESETTING)
+        setRoom(prev => {
+          if (!prev) return null
+          return {
+            ...prev,
+            status: data.status === 'RESETTING' ? 'in_progress' :
+                    data.status === 'WAITING' ? 'waiting' :
+                    data.status === 'ACTIVE' ? 'in_progress' : 'completed'
+          }
+        })
+
+        // FIX: Always update modal data refs, even if modal not yet open
+        // This prevents race condition where events arrive before modal opens
+        const mappedStatus = data.status === 'RESETTING' ? 'in_progress' :
+                            data.status === 'WAITING' ? 'waiting' :
+                            data.status === 'ACTIVE' ? 'in_progress' : 'completed'
+
+        if (modalWinnerDataRef.current) {
+          modalWinnerDataRef.current.roomStatus = mappedStatus
+        }
+        if (backupModalDataRef.current) {
+          backupModalDataRef.current.roomStatus = mappedStatus
+        }
+        setModalWinnerData(prev => prev ? { ...prev, roomStatus: mappedStatus } : prev)
+      }
+    }
+
+    const handleRoomReadyForJoins = (data: any) => {
+      if (data.roomId === roomId) {
+        // Room is now ready to accept joins after reset
+        // Ensure room status is set to waiting
+        setRoom(prev => {
+          if (!prev) return null
+          return {
+            ...prev,
+            status: 'waiting'
+          }
+        })
+
+        // FIX: Always update modal data with waiting status, even if modal not yet open
+        // This ensures button will show correct status when modal opens
+        if (modalWinnerDataRef.current) {
+          modalWinnerDataRef.current.roomStatus = 'waiting'
+        }
+        if (backupModalDataRef.current) {
+          backupModalDataRef.current.roomStatus = 'waiting'
+        }
+        setModalWinnerData(prev => prev ? { ...prev, roomStatus: 'waiting' } : prev)
+      }
+    }
+
     socketService.onRoomState(handleRoomState)
     socketService.onUserJoined(handleUserJoined)
     socketService.onUserLeft(handleUserLeft)
@@ -576,6 +630,8 @@ const GameRoom = () => {
     socketService.onAnimationStart(handleAnimationStart)
     socketService.onGameCompleted(handleGameCompleted)
     socketService.onBalanceUpdated(handleBalanceUpdated)
+    socketService.onRoomStatusUpdate(handleRoomStatusUpdate)
+    socketService.onRoomReadyForJoins(handleRoomReadyForJoins)
 
     return () => {
       socketService.offRoomState(handleRoomState)
@@ -586,6 +642,8 @@ const GameRoom = () => {
       socketService.offAnimationStart(handleAnimationStart)
       socketService.offGameCompleted(handleGameCompleted)
       socketService.offBalanceUpdated(handleBalanceUpdated)
+      socketService.offRoomStatusUpdate(handleRoomStatusUpdate)
+      socketService.offRoomReadyForJoins(handleRoomReadyForJoins)
     }
   }, [roomId, user?.id]) // Simplified dependencies with refs for stale closures
 
@@ -1013,17 +1071,18 @@ const GameRoom = () => {
                   {/* Full-screen VRF animation container */}
                   <div className="relative z-10 w-full h-full flex items-center justify-center px-4">
                     <div className="w-full max-w-md">
-                      <VRFWinnerSelection
-                        participants={participants}
+                      <WinnerReveal
                         winners={winners}
-                        isAnimating={animating}
-                        duration={7}
-                        onAnimationComplete={() => {
+                        prizePool={room.prizePool}
+                        seed={vrfData.seed}
+                        proof={vrfData.proof}
+                        onComplete={() => {
                           setAnimating(false)
                           // Notify backend that animation is complete to trigger winner processing
                           socketService.emit('animation-complete', roomId)
                           // Modal will be shown by useEffect when animating becomes false and winners exist
                         }}
+                        onClose={() => setAnimating(false)}
                       />
                     </div>
                   </div>
@@ -1060,17 +1119,18 @@ const GameRoom = () => {
                   className="mb-8"
                 >
                   <Card className="border border-primary/30 bg-gradient-to-br from-secondary-bg to-secondary-bg/50 shadow-2xl">
-                    <VRFWinnerSelection
-                      participants={participants}
+                    <WinnerReveal
                       winners={winners}
-                      isAnimating={animating}
-                      duration={7}
-                      onAnimationComplete={() => {
+                      prizePool={room.prizePool}
+                      seed={vrfData.seed}
+                      proof={vrfData.proof}
+                      onComplete={() => {
                         setAnimating(false)
                         // Notify backend that animation is complete to trigger winner processing
                         socketService.emit('animation-complete', roomId)
                         // Modal will be shown by useEffect when animating becomes false and winners exist
                       }}
+                      onClose={() => setAnimating(false)}
                     />
                   </Card>
                 </motion.div>
@@ -1131,6 +1191,10 @@ const GameRoom = () => {
           message="Congratulations!"
           prize={userWinner?.prize}
           duration={2500}
+          onComplete={() => {
+            // Auto-reset celebration trigger when animation completes
+            setShowCelebration(false)
+          }}
         />
 
         {/* Winner Announcement Modal */}
@@ -1151,12 +1215,8 @@ const GameRoom = () => {
             // Don't return null here - let the modal render with a fallback message
           }
 
-          // Trigger celebration when modal opens if user won
-          const userWon = user && activeModalData?.winners?.some(w => w.userId === user.id)
-          if (userWon && !showCelebration) {
-            setShowCelebration(true)
-            setTimeout(() => setShowCelebration(false), 2500)
-          }
+          // FIX: Celebration is already triggered when game completes (lines 540, 553)
+          // No need to trigger again when modal opens - this prevents double-triggering
 
           return (
             <Modal
@@ -1247,6 +1307,7 @@ const GameRoom = () => {
                 disabled={!user || (user && user.balance < (activeModalData?.entryFee || room?.entryFee || 0))}
               />
             </div>
+
 
             {/* Balance warning if insufficient */}
             {user && user.balance < (activeModalData?.entryFee || room?.entryFee || 0) && (

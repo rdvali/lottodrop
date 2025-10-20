@@ -27,7 +27,9 @@ export enum RoomStatus {
   WAITING = 'WAITING',
   ACTIVE = 'ACTIVE',
   COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED'
+  CANCELLED = 'CANCELLED',
+  // FIX: Add RESETTING status to prevent joins during round transition
+  RESETTING = 'RESETTING'
 }
 
 export interface Room {

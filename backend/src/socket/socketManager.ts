@@ -234,11 +234,22 @@ export class SocketManager {
             });
           }
         }
-        
-        // Reset room after short delay to allow proper winner display
+
+        // FIX: Emit RESETTING status to frontend (without database update)
+        // Database doesn't have RESETTING enum, so we only emit the event
+        // This signals the frontend that room is transitioning to next round
+        console.log(`[Room Status] Emitting RESETTING status for room ${roomId} (frontend-only)`);
+        this.io.emit('room-status-update', {
+          roomId: roomId,
+          status: 'RESETTING',
+          message: 'Room is preparing for the next round...'
+        });
+
+        // Reset room after 10 seconds to match frontend countdown
+        // This ensures the countdown accurately represents backend processing time
         setTimeout(async () => {
           await this.resetRoomForNextRound(roomId);
-        }, 2000); // 2 seconds to display winner - frontend handles persistent display
+        }, 10000); // 10 seconds - matches frontend safety countdown for perfect synchronization
       } catch (error) {
         console.error('CRITICAL: Error processing winner result:', error);
         // Emit error immediately to prevent hanging
@@ -839,6 +850,16 @@ export class SocketManager {
             resetForNewRound: true
           });
           console.log(`[Room Reset] Broadcasted global status update: WAITING for room ${roomId} (${roomInfo.name})`);
+
+          // FIX: Emit room-ready-for-joins event to signal frontend that room is truly ready
+          // This tells the frontend to enable the "Play Again" button after safety countdown completes
+          this.io.to(roomId).emit('room-ready-for-joins', {
+            roomId: roomId,
+            message: 'Room is ready to accept new players',
+            roomName: roomInfo.name,
+            timestamp: Date.now()
+          });
+          console.log(`[Room Reset] Emitted room-ready-for-joins event for room ${roomId}`);
         }
 
       } catch (error) {

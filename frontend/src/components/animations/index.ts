@@ -1,4 +1,5 @@
 export * from './VRFWinnerSelection'
+export * from './WinnerReveal'
 export * from './ParticleBackground'
 export * from './CountdownTimer'
 export * from './CoinFlip'

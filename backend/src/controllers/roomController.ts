@@ -55,9 +55,11 @@ export const getRooms = async (req: Request, res: Response) => {
   try {
     const { type, status } = req.query;
 
-    // Show both WAITING and ACTIVE rooms (ACTIVE = countdown in progress)
+    // FIX: Show WAITING, ACTIVE, and COMPLETED rooms
+    // COMPLETED rooms are shown during the 10-second reset transition period
+    // This prevents rooms from disappearing during the reset, ensuring consistent UX for all users
     let query = `
-      SELECT 
+      SELECT
         r.*,
         COUNT(DISTINCT rp.user_id) as current_players,
         COALESCE(SUM(rp.bet_amount), 0) as current_prize_pool,
@@ -80,7 +82,7 @@ export const getRooms = async (req: Request, res: Response) => {
       LEFT JOIN game_rounds gr ON gr.room_id = r.id AND gr.completed_at IS NULL AND gr.archived_at IS NULL
       LEFT JOIN round_participants rp ON rp.round_id = gr.id
       LEFT JOIN users u ON u.id = rp.user_id
-      WHERE r.status IN ('WAITING', 'ACTIVE')
+      WHERE r.status IN ('WAITING', 'ACTIVE', 'COMPLETED')
     `;
     const params: any[] = [];
     let paramIndex = 1;
@@ -231,6 +233,46 @@ export const joinRoom = async (req: Request, res: Response) => {
         [roundResult.rows[0].id, userId]
       );
       isAlreadyParticipant = participantCheck.rows.length > 0;
+    }
+
+    // FIX: Block joins during RESETTING status or if not WAITING
+    // RESETTING = transition period between rounds (10s countdown on frontend)
+    if (room.status === RoomStatus.RESETTING) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        error: 'Room is preparing for the next round. Please wait.',
+        countdown: true // Indicate this is a countdown-related rejection
+      });
+    }
+
+    // If room is COMPLETED, check if enough time has passed (server-side countdown validation)
+    if (room.status === RoomStatus.COMPLETED) {
+      // Get the most recent completed round to check timing
+      const completedRoundResult = await client.query(
+        `SELECT completed_at FROM game_rounds
+         WHERE room_id = $1 AND completed_at IS NOT NULL
+         ORDER BY completed_at DESC LIMIT 1`,
+        [roomId]
+      );
+
+      if (completedRoundResult.rows.length > 0) {
+        const completedAt = new Date(completedRoundResult.rows[0].completed_at);
+        const now = new Date();
+        const elapsedSeconds = (now.getTime() - completedAt.getTime()) / 1000;
+
+        // FIX: Enforce 10-second countdown server-side
+        const MIN_COUNTDOWN_SECONDS = 10;
+
+        if (elapsedSeconds < MIN_COUNTDOWN_SECONDS) {
+          const remainingSeconds = Math.ceil(MIN_COUNTDOWN_SECONDS - elapsedSeconds);
+          await client.query('ROLLBACK');
+          return res.status(400).json({
+            error: `Please wait ${remainingSeconds} seconds before joining the next round.`,
+            countdown: true,
+            remainingSeconds: remainingSeconds
+          });
+        }
+      }
     }
 
     // If room is not WAITING and user is not already a participant, block entry

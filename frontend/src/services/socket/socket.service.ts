@@ -174,6 +174,10 @@ class SocketService {
     this.socket?.on('room-status-update', callback)
   }
 
+  onRoomReadyForJoins(callback: (data: any) => void): void {
+    this.socket?.on('room-ready-for-joins', callback)
+  }
+
   // Notification event listeners
   onNotificationNew(callback: NotificationNewCallback): void {
     this.socket?.on('notification:new', callback)
@@ -305,6 +309,14 @@ class SocketService {
       this.socket?.off('room-status-update', callback)
     } else {
       this.socket?.off('room-status-update')
+    }
+  }
+
+  offRoomReadyForJoins(callback?: (...args: any[]) => void): void {
+    if (callback) {
+      this.socket?.off('room-ready-for-joins', callback)
+    } else {
+      this.socket?.off('room-ready-for-joins')
     }
   }
 

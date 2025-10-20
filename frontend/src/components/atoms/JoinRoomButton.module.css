@@ -56,6 +56,19 @@
   opacity: 0.8;
 }
 
+/* FIX: Countdown active state - button disabled during safety countdown */
+.countdownActive {
+  cursor: not-allowed !important;
+  pointer-events: none; /* Prevent all click interactions */
+  filter: grayscale(0.3); /* Slightly desaturate to indicate disabled */
+  opacity: 0.6 !important;
+}
+
+.countdownActive:hover {
+  transform: none !important; /* Disable hover lift effect */
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important; /* Reset to default shadow */
+}
+
 /* Spinner */
 .spinner {
   position: absolute;
