@@ -335,3 +335,6 @@ export interface ChangePasswordForm {
   newPassword: string
   confirmPassword: string
 }
+
+// Audio types - re-export from audio.types.ts
+export * from './audio.types'

@@ -1,0 +1,75 @@
+{
+  "groups": {
+    "master": {
+      "volume": 0.8
+    },
+    "sfx": {
+      "volume": 1.0
+    },
+    "music": {
+      "volume": 0.6
+    }
+  },
+  "assets": {
+    "countdown.tick": [
+      "/audio/sfx/count_tick.ogg",
+      "/audio/sfx/count_tick.mp3"
+    ],
+    "countdown.go": [
+      "/audio/sfx/count_go.ogg",
+      "/audio/sfx/count_go.mp3"
+    ],
+    "round.start": [
+      "/audio/sfx/round_start.ogg",
+      "/audio/sfx/round_start.mp3"
+    ],
+    "reveal.riser": [
+      "/audio/sfx/reveal_riser.ogg",
+      "/audio/sfx/reveal_riser.mp3"
+    ],
+    "reveal.tick": [
+      "/audio/sfx/reveal_tick.ogg",
+      "/audio/sfx/reveal_tick.mp3"
+    ],
+    "result.win": [
+      "/audio/sfx/win_fanfare.ogg",
+      "/audio/sfx/win_fanfare.mp3"
+    ],
+    "result.lose": [
+      "/audio/sfx/lose_sting.ogg",
+      "/audio/sfx/lose_sting.mp3"
+    ],
+    "button.click": [
+      "/audio/sfx/button_click.ogg",
+      "/audio/sfx/button_click.mp3"
+    ],
+    "button.hover": [
+      "/audio/sfx/button_hover.ogg",
+      "/audio/sfx/button_hover.mp3"
+    ],
+    "notification.sound": [
+      "/audio/sfx/notification.ogg",
+      "/audio/sfx/notification.mp3"
+    ],
+    "balance.update": [
+      "/audio/sfx/balance_update.ogg",
+      "/audio/sfx/balance_update.mp3"
+    ],
+    "join.room": [
+      "/audio/sfx/join_room.ogg",
+      "/audio/sfx/join_room.mp3"
+    ],
+    "leave.room": [
+      "/audio/sfx/leave_room.ogg",
+      "/audio/sfx/leave_room.mp3"
+    ]
+  },
+  "preload": [
+    "countdown.tick",
+    "countdown.go",
+    "round.start",
+    "reveal.riser",
+    "result.win",
+    "result.lose"
+  ]
+}

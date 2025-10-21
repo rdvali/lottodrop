@@ -24,6 +24,7 @@ import { announceToScreenReader, formatCurrency } from '../../utils/accessibilit
 import { detectDeviceCapability } from '../../utils/deviceDetection'
 import { createPerformanceMonitor } from '../../utils/performanceMonitor'
 import { useAuth } from '../../contexts/AuthContext'
+import { audioService } from '../../services/audio/AudioService'
 
 export interface GameHistory {
   won: boolean
@@ -109,6 +110,10 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
 
     // Gathering → Computing after 2s
     if (loadingPhase === 'gathering') {
+      // DISABLED: Start tension riser audio
+      // console.log('[WinnerReveal] Starting VRF reveal riser (looping)')
+      // audioService.play('reveal.riser', { loop: true }).catch(err => console.warn('Audio playback failed:', err))
+
       timers.push(setTimeout(() => {
         setLoadingPhase('computing')
       }, 2000))
@@ -161,30 +166,55 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
         'HighRoller', 'JackpotHunter', 'BetMaster', 'FortuneSeeker'
       ]
 
-      // Phase 1: Rapid cycling (100ms × 5 cycles)
+      // Phase 1: Rapid cycling (100ms × 5 cycles) - DISABLED sounds
+      console.log('[WinnerReveal] Climax sequence: Rapid phase (5 cycles @ 100ms)')
       for (let i = 0; i < 5; i++) {
         setCyclingName(mockNames[i % mockNames.length])
+        // DISABLED: audioService.playRandom(['reveal.tick', 'reveal.drum']).catch(err => console.warn('Audio playback failed:', err))
         await delay(100)
       }
 
       // Phase 2: Slow down (200ms × 3 cycles)
+      console.log('[WinnerReveal] Climax sequence: Slow phase (3 cycles @ 200ms)')
       for (let i = 0; i < 3; i++) {
         setCyclingName(mockNames[(i + 5) % mockNames.length])
+        // DISABLED: audioService.playRandom(['reveal.tick', 'reveal.drum']).catch(err => console.warn('Audio playback failed:', err))
         await delay(200)
       }
 
       // Phase 3: Final deceleration (400ms × 2 cycles)
+      console.log('[WinnerReveal] Climax sequence: Final deceleration (2 cycles @ 400ms)')
       for (let i = 0; i < 2; i++) {
         setCyclingName(mockNames[(i + 8) % mockNames.length])
+        // DISABLED: audioService.playRandom(['reveal.tick', 'reveal.drum']).catch(err => console.warn('Audio playback failed:', err))
         await delay(400)
       }
 
       // Phase 4: Land on actual winner's name (800ms dramatic pause)
-      setCyclingName(winner.username)
-      await delay(800)
+      // DISABLED: Stop tension riser with fade-out FIRST
+      // console.log('[WinnerReveal] Stopping riser with 200ms fade-out')
+      // audioService.stop('reveal.riser', { fadeOut: 200 }) // Smooth 200ms fade-out
 
-      // Phase 5: Start the explosion/reveal animation
-      // (this will be handled by the main animation sequence useEffect)
+      // Wait for fade-out to complete, then play drum
+      await delay(250) // 200ms fade + 50ms buffer
+      // DISABLED: console.log('[WinnerReveal] Playing DRUM sound - winner revealed!')
+      // DISABLED: audioService.play('reveal.drum').catch(err => console.warn('Audio playback failed:', err))
+      setCyclingName(winner.username)
+      await delay(550) // Remaining time to total 800ms
+
+      // Phase 5: Skip winner card animation and go directly to Result Modal
+      // DISABLED: Play result sound based on whether user won or lost
+      await delay(100) // Small buffer
+      // DISABLED: if (isWinner) {
+      //   console.log('[WinnerReveal] Playing WIN sound for winner')
+      //   audioService.play('result.win').catch(err => console.warn('Audio playback failed:', err))
+      // } else if (user && winner) {
+      //   console.log('[WinnerReveal] Playing LOSE sound for participant')
+      //   audioService.play('result.lose').catch(err => console.warn('Audio playback failed:', err))
+      // }
+
+      // Complete animation immediately - skip explosion/winner card
+      onComplete?.()
     }
 
     runClimaxSequence()
@@ -281,7 +311,7 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
     setPhase('pop')
     await delay(600)
 
-    // Explosion Phase (2000-2800ms) - NEW: 60-particle burst + radial lines
+    // Explosion Phase (2000-2800ms) - Visual burst (no sound)
     setPhase('explosion')
     await delay(800)
 
@@ -293,11 +323,27 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
     setPhase('settle')
     await delay(300)
 
-    // Complete
+    // Complete - Play result sound now that user has seen full visual reveal
     setPhase('complete')
+
+    // Small delay to ensure all previous sounds have finished
+    await delay(100)
+
+    // ADDED: Play result sound synchronized with visual reveal completion
+    // This ensures audio plays when user SEES the result, not when socket event arrives
+    // The riser was already stopped and faded out during the climax sequence (1900ms ago)
+    if (isWinner) {
+      console.log('[WinnerReveal] Playing WIN sound for winner')
+      audioService.play('result.win').catch(err => console.warn('Audio playback failed:', err))
+    } else if (user && winner) {
+      // User is not the winner but was a participant (lost)
+      console.log('[WinnerReveal] Playing LOSE sound for participant')
+      audioService.play('result.lose').catch(err => console.warn('Audio playback failed:', err))
+    }
+
     triggerConfetti()
     onComplete?.()
-  }, [triggerConfetti, onComplete])
+  }, [triggerConfetti, onComplete, isWinner, user, winner])
 
   // Fast animation timeline (for repeat losers) - Still includes new phases but shorter
   const runFastAnimation = useCallback(async () => {
@@ -324,9 +370,22 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
     await delay(200)
 
     setPhase('complete')
+
+    // Small delay to ensure all previous sounds have finished
+    await delay(50)
+
+    // ADDED: Play result sound synchronized with visual reveal completion
+    if (isWinner) {
+      console.log('[WinnerReveal-Fast] Playing WIN sound for winner')
+      audioService.play('result.win').catch(err => console.warn('Audio playback failed:', err))
+    } else if (user && winner) {
+      console.log('[WinnerReveal-Fast] Playing LOSE sound for participant')
+      audioService.play('result.lose').catch(err => console.warn('Audio playback failed:', err))
+    }
+
     triggerConfetti()
     onComplete?.()
-  }, [triggerConfetti, onComplete])
+  }, [triggerConfetti, onComplete, isWinner, user, winner])
 
   // Skip to end (UX Modification F)
   const skipToEnd = useCallback(() => {
@@ -353,39 +412,33 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
       return
     }
 
-    // If in 'selecting-climax', wait for climax sequence to complete (2.3s total)
-    // Then start the explosion/reveal animation
+    // If in 'selecting-climax', the climax sequence handles completion directly
+    // No need to start additional animation phases
     if (loadingPhase === 'selecting-climax') {
-      const climaxDuration = 500 + 600 + 800 + 800 // Total climax sequence time
-
-      const timer = setTimeout(() => {
-        if (effectiveVariant === 'reduced-motion') {
-          setPhase('complete')
-          onComplete?.()
-        } else if (effectiveVariant === 'fast') {
-          runFastAnimation()
-        } else {
-          runStandardAnimation()
-        }
-      }, climaxDuration)
-
-      return () => clearTimeout(timer)
+      // Climax sequence calls onComplete() directly - do nothing here
+      return
     }
 
-    // If winner data arrived before reaching 'selecting' phase, start immediately
+    // If winner data arrived before reaching 'selecting' phase, skip animation
+    // and complete immediately (go directly to Result Modal)
     if (loadingPhase === 'gathering' || loadingPhase === 'computing') {
-      if (effectiveVariant === 'reduced-motion') {
-        setPhase('complete')
-        onComplete?.()
-      } else if (effectiveVariant === 'fast') {
-        runFastAnimation()
-      } else {
-        runStandardAnimation()
-      }
+      // DISABLED: Play result sound
+      // const playResultSound = async () => {
+      //   if (isWinner) {
+      //     console.log('[WinnerReveal-EarlyWinner] Playing WIN sound')
+      //     await audioService.play('result.win').catch(err => console.warn('Audio playback failed:', err))
+      //   } else if (user && winner) {
+      //     console.log('[WinnerReveal-EarlyWinner] Playing LOSE sound')
+      //     await audioService.play('result.lose').catch(err => console.warn('Audio playback failed:', err))
+      //   }
+      //   onComplete?.()
+      // }
+      // playResultSound()
+      onComplete?.()
     }
 
     // If still in 'selecting' phase, wait for climax sequence to trigger
-  }, [winner, winners.length, loadingPhase, effectiveVariant, runFastAnimation, runStandardAnimation, onComplete])
+  }, [winner, winners.length, loadingPhase, effectiveVariant, onComplete, isWinner, user])
 
   // Show enhanced multi-phase loading state while waiting for winners data
   if (!winner || !winners.length) {

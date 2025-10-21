@@ -1,0 +1,116 @@
+{
+  "groups": {
+    "master": {
+      "volume": 0.7
+    }
+  },
+  "assets": {
+    "countdown.tick_3": ["/sounds/countdown/tick_3.ogg", "/sounds/countdown/tick_3.mp3"],
+    "countdown.tick_2": ["/sounds/countdown/tick_2.ogg", "/sounds/countdown/tick_2.mp3"],
+    "countdown.tick_1": ["/sounds/countdown/tick_1.ogg", "/sounds/countdown/tick_1.mp3"],
+    "countdown.go": ["/sounds/countdown/go.ogg", "/sounds/countdown/go.mp3"],
+
+    "round.start": ["/sounds/round/start.ogg", "/sounds/round/start.mp3"],
+
+    "reveal.riser": ["/sounds/reveal/riser.ogg", "/sounds/reveal/riser.mp3"],
+    "reveal.tick": ["/sounds/reveal/tick.ogg", "/sounds/reveal/tick.mp3"],
+    "reveal.drum": ["/sounds/reveal/drum.ogg", "/sounds/reveal/drum.mp3"],
+    "reveal.suspense": ["/sounds/reveal/suspense_pulse_full_5_5s.ogg", "/sounds/reveal/suspense_pulse_full_5_5s.mp3"],
+
+    "result.win": ["/sounds/result/win.ogg", "/sounds/result/win.mp3"],
+    "result.lose": ["/sounds/result/lose.ogg", "/sounds/result/lose.mp3"],
+
+    "ui.button_click": ["/sounds/ui/button_click.ogg", "/sounds/ui/button_click.mp3"],
+    "ui.hover": ["/sounds/ui/hover.ogg", "/sounds/ui/hover.mp3"]
+  },
+  "durations": {
+    "countdown.tick_3": 0.20,
+    "countdown.tick_2": 0.20,
+    "countdown.tick_1": 0.20,
+    "countdown.go": 0.8,
+    "round.start": 0.7,
+    "reveal.riser": 2.3,
+    "reveal.tick": 0.05,
+    "reveal.drum": 0.25,
+    "reveal.suspense": 5.5,
+    "result.win": 1.0,
+    "result.lose": 0.8,
+    "ui.button_click": 0.05,
+    "ui.hover": 0.08
+  },
+  "types": {
+    "countdown.tick_3": "tick",
+    "countdown.tick_2": "tick",
+    "countdown.tick_1": "tick",
+    "countdown.go": "chime",
+    "round.start": "whoosh",
+    "reveal.riser": "riser",
+    "reveal.tick": "click",
+    "reveal.drum": "thump",
+    "reveal.suspense": "ambient",
+    "result.win": "sparkle_up",
+    "result.lose": "soft_down",
+    "ui.button_click": "click",
+    "ui.hover": "hover"
+  },
+  "preload": [
+    "countdown.tick_3",
+    "countdown.tick_2",
+    "countdown.tick_1",
+    "countdown.go",
+    "round.start",
+    "reveal.riser",
+    "reveal.tick",
+    "reveal.drum",
+    "reveal.suspense",
+    "result.win",
+    "result.lose"
+  ],
+  "metadata": {
+    "version": "2.0.0",
+    "description": "LottoDrop Game Audio Assets - Duration-aware sequencing with 13 sounds",
+    "totalAssets": 13,
+    "totalFiles": 26,
+    "format": "OGG (primary), MP3 (fallback)",
+    "latencyCompensation": -0.08,
+    "targetSpecs": {
+      "channels": "mono",
+      "sampleRate": "44.1kHz",
+      "compression": "OGG Vorbis / MP3",
+      "lufsTarget": "-18 to -20 LUFS"
+    },
+    "phases": {
+      "countdown": {
+        "description": "Escalating tick sounds with energetic burst",
+        "sounds": ["tick_3", "tick_2", "tick_1", "go"],
+        "timing": "1000ms intervals, go at 0ms",
+        "durations": [0.20, 0.20, 0.20, 0.8]
+      },
+      "roundStart": {
+        "description": "Subtle whoosh when round begins",
+        "sounds": ["start"],
+        "timing": "Triggered on round-status:active",
+        "durations": [0.7]
+      },
+      "reveal": {
+        "description": "Tension riser with random tick/drum during VRF generation",
+        "sounds": ["riser", "tick", "drum"],
+        "timing": "Riser: loops until winner, Tick/Drum: random during cycling, Drum: winner lock",
+        "durations": [2.3, 0.05, 0.25],
+        "notes": "explosion sound removed - no longer needed"
+      },
+      "result": {
+        "description": "Win fanfare or lose tone",
+        "sounds": ["win", "lose"],
+        "timing": "Win: 1.0s, Lose: 0.8s",
+        "durations": [1.0, 0.8]
+      },
+      "ui": {
+        "description": "Button interactions",
+        "sounds": ["button_click", "hover"],
+        "timing": "On click/hover events",
+        "durations": [0.05, 0.08]
+      }
+    }
+  }
+}

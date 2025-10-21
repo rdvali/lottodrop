@@ -1,0 +1,25 @@
+{
+  "name": "audio-generator",
+  "version": "1.0.0",
+  "description": "Futuristic Casino Sound Pack Generator for LottoDrop",
+  "main": "generateSounds.js",
+  "type": "module",
+  "scripts": {
+    "generate": "node generateSounds.js"
+  },
+  "keywords": [
+    "audio",
+    "generator",
+    "tone.js",
+    "lotto",
+    "casino",
+    "sound"
+  ],
+  "author": "Revaz",
+  "license": "ISC",
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "ffmpeg-static": "^5.2.0",
+    "fluent-ffmpeg": "^2.1.3"
+  }
+}

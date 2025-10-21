@@ -8,6 +8,11 @@ import { NotificationProvider, useNotifications } from '@contexts/NotificationCo
 import { ModalProvider } from './providers'
 import { useModal } from '@hooks/useModal'
 import { socketService } from '@services/socket'
+import { audioService } from '@services/audio/AudioService'
+import audioManifest from './config/audioManifest.json'
+import { useAudioManager } from '@hooks/useAudioManager'
+import EnableSoundBanner from '@components/audio/EnableSoundBanner'
+import SoundToggleButton from '@components/audio/SoundToggleButton'
 import { Spinner } from '@components/atoms'
 import { SEO } from '@components/SEO'
 import { performanceMonitor } from '@utils/performance'
@@ -54,7 +59,28 @@ const AppContent = () => {
   const { user, logout } = useAuth()
   const { authModalOpen, openAuthModal, closeAuthModal } = useModal()
   const { state: notificationState } = useNotifications()
-  
+  const {
+    isEnabled: audioEnabled,
+    audioState,
+    showBanner,
+    toggleAudio,
+    enableAudio,
+    dismissBanner,
+  } = useAudioManager()
+
+  // Initialize audio service
+  useEffect(() => {
+    const initAudio = async () => {
+      try {
+        await audioService.init(audioManifest as any)
+      } catch (error) {
+        console.error('Failed to initialize audio service:', error)
+      }
+    }
+
+    initAudio()
+  }, [])
+
   // Check URL params for login request (for backward compatibility)
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -146,10 +172,22 @@ const AppContent = () => {
         isOpen={authModalOpen}
         onClose={closeAuthModal}
       />
-      
+
       <NotificationCenter />
       <NotificationToastContainer />
       <NotificationsRoot />
+
+      {/* Audio UI Components */}
+      <EnableSoundBanner
+        isVisible={showBanner}
+        onEnable={enableAudio}
+        onDismiss={dismissBanner}
+      />
+      <SoundToggleButton
+        isEnabled={audioEnabled}
+        audioState={audioState}
+        onToggle={toggleAudio}
+      />
     </>
   )
 }

@@ -886,8 +886,9 @@ export class SocketManager {
 
   public startGameForRoom(roomId: string, countdownSeconds: number) {
     console.log(`[SocketManager] Starting game for room ${roomId} with ${countdownSeconds}s countdown`);
-    
+
     this.io.to(roomId).emit('game-starting', {
+      roomId: roomId,
       message: 'Minimum players reached! Game starting...',
       countdown: countdownSeconds
     });

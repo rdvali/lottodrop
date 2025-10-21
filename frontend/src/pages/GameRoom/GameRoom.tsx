@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import type { Room, Participant, Winner } from '../../types'
 import { roomAPI } from '@services/api'
 import { socketService } from '@services/socket'
+import { audioService } from '@services/audio/AudioService'
 import { Card, Button, Badge, Spinner, PlayerCardSkeleton, JoinRoomButton } from '@components/atoms'
 import { Modal } from '@components/organisms'
 import {
@@ -111,12 +112,14 @@ const GameRoom = () => {
       setShowFullScreenCountdown(true)
     }
 
+    // REMOVED: Countdown audio now scheduled precisely using Web Audio API in handleGameStarting
+    // This prevents React state update delays (50-200ms) that caused late audio playback
+
     // Reset interaction state when countdown resets
     if (countdown === null) {
       setShowFullScreenCountdown(false)
       setHasUserInteracted(false)
     }
-    // Removed: console.log('[GameRoom] countdown state changed to:', countdown)
   }, [countdown, isMobile, showFullScreenCountdown, hasUserInteracted])
   
   useEffect(() => {
@@ -135,6 +138,7 @@ const GameRoom = () => {
   // This effect only triggers when we get new winners, independent of room status changes
   useEffect(() => {
     // Don't process new winners if modal data is locked (modal is currently open)
+    // WinnerReveal animation disabled, so no need to check !animating
     if (winners.length > 0 && !modalDataLocked) {
       // Create a unique identifier for this set of winners
       const winnersId = winners.map(w => w.userId).join('-')
@@ -176,7 +180,7 @@ const GameRoom = () => {
         setShowWinnerModal(true)
       }
     }
-  }, [winners, currentRoundWinners, modalDataLocked]) // CRITICAL: No room dependency to prevent modal data reset on status change
+  }, [winners, currentRoundWinners, modalDataLocked, animating]) // CRITICAL: No room dependency to prevent modal data reset on status change
 
   // Removed auto-close functionality - modal now requires manual close
 
@@ -429,11 +433,11 @@ const GameRoom = () => {
       }
     }
 
-    const handleGameStarting = (data: any) => {
-      // Removed: console.log('[GameRoom] game-starting event received:', data)
+    const handleGameStarting = async (data: any) => {
+      console.log('[GameRoom] handleGameStarting event received:', data)
       if (data.roomId === roomId) {
         const countdownValue = data.countdown || 30
-        // Removed: console.log('[GameRoom] Setting countdown to:', countdownValue)
+        console.log('[GameRoom] Countdown value:', countdownValue)
         setCountdown(countdownValue)
         showToast({
           type: 'success',
@@ -442,14 +446,37 @@ const GameRoom = () => {
           message: 'Game is starting!',
           priority: 2
         })
+
+        // REMOVED: Duplicate audio initialization
+        // Audio is already enabled when user joins room (handleJoinRoom)
+        // No need to enable it again here
+      } else {
+        console.log('[GameRoom] handleGameStarting ignored - different roomId')
       }
     }
 
     const handleCountdown = (data: any) => {
-      // Removed: console.log('[GameRoom] countdown event received:', data)
+      console.log('[GameRoom] countdown event received:', data)
       if (data.roomId === roomId) {
-        // Removed: console.log('[GameRoom] Setting countdown to:', data.countdown)
-        setCountdown(data.countdown)
+        const countdownValue = data.countdown
+        console.log('[GameRoom] Setting countdown to:', countdownValue)
+        setCountdown(countdownValue)
+
+        // FRAME-PERFECT: Play sound EXACTLY when countdown value changes
+        // Sounds ONLY on: 3, 2, 1, and 0 (GO)
+        if (countdownValue === 3) {
+          console.log('[GameRoom] Playing tick_3 (countdown shows 3)')
+          audioService.play('countdown.tick_3').catch(err => console.warn('Audio playback failed:', err))
+        } else if (countdownValue === 2) {
+          console.log('[GameRoom] Playing tick_2 (countdown shows 2)')
+          audioService.play('countdown.tick_2').catch(err => console.warn('Audio playback failed:', err))
+        } else if (countdownValue === 1) {
+          console.log('[GameRoom] Playing tick_1 (countdown shows 1)')
+          audioService.play('countdown.tick_1').catch(err => console.warn('Audio playback failed:', err))
+        } else if (countdownValue === 0) {
+          console.log('[GameRoom] Playing GO (countdown shows 0)')
+          audioService.play('countdown.go').catch(err => console.warn('Audio playback failed:', err))
+        }
       }
     }
 
@@ -457,6 +484,10 @@ const GameRoom = () => {
       if (data.roomId === roomId) {
         setAnimating(true)
         setCountdown(null)
+
+        // Play suspense sound when animation starts (countdown ends and reveal begins)
+        console.log('[GameRoom] Playing suspense sound for winner reveal animation')
+        audioService.play('reveal.suspense').catch(err => console.warn('Audio playback failed:', err))
       }
     }
 
@@ -527,14 +558,16 @@ const GameRoom = () => {
         // Get current values
         const currentUser = userRef.current
 
+        // REMOVED: Result sounds (win/lose) moved to WinnerReveal component
+        // This ensures audio plays when user SEES the visual reveal, not when socket event arrives
+        // Prevents audio-visual desynchronization (sounds were playing before visual reveal completed)
+
         // Handle single winner format (backward compatibility)
         if (data.isMultiWinner === false && data.winnerId === currentUser?.id && currentUser) {
-          // Removed: console.log(`[GameRoom] User won single winner prize: ${data.winnerAmount}`)
           setShowCelebration(true)
 
           // Optimistic balance update for immediate UI feedback
           const newBalance = currentUser.balance + data.winnerAmount
-          // Removed: console.log(`[GameRoom] Optimistically updating balance: ${currentUser.balance} + ${data.winnerAmount} = ${newBalance}`)
           updateBalance(newBalance, 'optimistic')
         }
 
@@ -542,12 +575,10 @@ const GameRoom = () => {
         if (data.winners && Array.isArray(data.winners)) {
           const userWinner = data.winners.find((w: Winner) => w.userId === currentUser?.id)
           if (userWinner && currentUser) {
-            // Removed: console.log(`[GameRoom] User won prize: ${userWinner.prize}`)
             setShowCelebration(true)
 
             // Optimistic balance update for immediate UI feedback
             const newBalance = currentUser.balance + userWinner.prize
-            // Removed: console.log(`[GameRoom] Optimistically updating balance: ${currentUser.balance} + ${userWinner.prize} = ${newBalance}`)
             updateBalance(newBalance, 'optimistic')
 
             // Socket event will provide authoritative balance update
@@ -678,8 +709,18 @@ const GameRoom = () => {
       const newBalance = originalBalance - entryFee
       // Removed: console.log(`[GameRoom] Deducting entry fee: ${originalBalance} - ${entryFee} = ${newBalance}`)
       updateBalance(newBalance, 'optimistic')
-      
+
       await roomAPI.joinRoom(room.id)
+
+      // Resume audio context for browser autoplay policies
+      // DON'T force-enable audio - respect user's preference (they may have it off)
+      try {
+        await audioService.resumeContext()
+        console.log('[GameRoom] Audio context resumed - respecting user preference')
+      } catch (error) {
+        console.warn('[GameRoom] Failed to resume audio context:', error)
+      }
+
       showToast({
         type: 'success',
         subtype: 'system_alert',
@@ -687,10 +728,10 @@ const GameRoom = () => {
         message: 'Successfully joined the room!',
         priority: 2
       })
-      
+
       // Balance is already updated optimistically
       // Socket events will provide authoritative balance if different
-      
+
     } catch (error: any) {
       // Rollback optimistic update on failure
       rollbackBalance()
@@ -1032,6 +1073,7 @@ const GameRoom = () => {
         </AnimatePresence>
 
         {/* Responsive VRF Winner Selection Animation System */}
+        {/* Shows VRF selection animation only, then goes directly to Result Modal */}
         <AnimatePresence>
           {animating && (
             <>
@@ -1077,10 +1119,14 @@ const GameRoom = () => {
                         seed={vrfData.seed}
                         proof={vrfData.proof}
                         onComplete={() => {
-                          setAnimating(false)
-                          // Notify backend that animation is complete to trigger winner processing
-                          socketService.emit('animation-complete', roomId)
-                          // Modal will be shown by useEffect when animating becomes false and winners exist
+                          // Delay setting animating to false to allow exit animation to complete
+                          // This prevents overlap between WinnerReveal exit and Result Modal entrance
+                          setTimeout(() => {
+                            setAnimating(false)
+                            // Notify backend that animation is complete to trigger winner processing
+                            socketService.emit('animation-complete', roomId)
+                            // Modal will be shown by useEffect when animating becomes false and winners exist
+                          }, 600) // 600ms allows AnimatePresence exit animation to complete
                         }}
                         onClose={() => setAnimating(false)}
                       />
@@ -1125,10 +1171,14 @@ const GameRoom = () => {
                       seed={vrfData.seed}
                       proof={vrfData.proof}
                       onComplete={() => {
-                        setAnimating(false)
-                        // Notify backend that animation is complete to trigger winner processing
-                        socketService.emit('animation-complete', roomId)
-                        // Modal will be shown by useEffect when animating becomes false and winners exist
+                        // Delay setting animating to false to allow exit animation to complete
+                        // This prevents overlap between WinnerReveal exit and Result Modal entrance
+                        setTimeout(() => {
+                          setAnimating(false)
+                          // Notify backend that animation is complete to trigger winner processing
+                          socketService.emit('animation-complete', roomId)
+                          // Modal will be shown by useEffect when animating becomes false and winners exist
+                        }, 600) // 600ms allows AnimatePresence exit animation to complete
                       }}
                       onClose={() => setAnimating(false)}
                     />
@@ -1346,7 +1396,7 @@ const GameRoom = () => {
               </div>
             </div>
 
-            {/* Winners List - Collapsible/Compact */}
+            {/* Winners List - Collapsed by default */}
             <details className="bg-secondary-bg/50 rounded-lg">
               <summary className="cursor-pointer p-2 text-xs text-gray-400 uppercase tracking-wider text-center hover:text-gray-300">
                 View All Winners ({activeModalData?.winners?.length || 0})
