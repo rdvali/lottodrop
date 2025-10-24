@@ -107,7 +107,7 @@ const RoomList = () => {
     // Handle user joined event - informational only
     // Participant count is updated via room-status-update event (authoritative from database)
     // Animations are triggered by TournamentCard detecting count changes from room-status-update
-    const handleUserJoined = (data: { userId: string; username?: string; roomId: string }) => {
+    const handleUserJoined = (_data: { userId: string; username?: string; roomId: string }) => {
       // NOTE: Do NOT modify participant count here to avoid double increment
       // The room-status-update event provides the authoritative count from the database
       // This event is kept for potential future use (notifications, user-specific actions, etc.)

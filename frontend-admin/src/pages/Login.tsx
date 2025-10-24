@@ -114,21 +114,9 @@ const Login: React.FC = () => {
         <div className="login-card">
           <div className="login-header">
             <div className="logo">
-              <svg width="48" height="48" viewBox="0 0 40 40" fill="none">
-                <defs>
-                  <linearGradient id="adminGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" style={{ stopColor: '#2563eb', stopOpacity: 1 }} />
-                    <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
-                  </linearGradient>
-                </defs>
-                <rect x="8" y="8" width="24" height="24" rx="4" fill="#0F172A" transform="rotate(45 20 20)"/>
-                <rect x="8" y="8" width="24" height="24" rx="4" fill="url(#adminGradient)" opacity="0.2" transform="rotate(45 20 20)"/>
-                <path d="M20 8 L30 20 L20 32 L10 20 Z" fill="url(#adminGradient)" opacity="0.8"/>
-                <circle cx="20" cy="20" r="5" fill="url(#adminGradient)"/>
-              </svg>
+              <img src="/drop-icon.svg" alt="LottoDrop Logo" width="80" height="80" />
             </div>
             <h1>Admin Portal</h1>
-            <p>LottoDrop Management System</p>
           </div>
 
           <form onSubmit={handleSubmit} className="login-form">
@@ -145,7 +133,7 @@ const Login: React.FC = () => {
                   id="email"
                   value={email}
                   onChange={handleEmailChange}
-                  placeholder="admin@lottodrop.com"
+                  placeholder="user@example.com"
                   autoComplete="email"
                   className={`form-input ${errors.email ? 'form-input-error' : ''}`}
                   aria-invalid={errors.email ? 'true' : 'false'}
@@ -208,7 +196,7 @@ const Login: React.FC = () => {
               ) : (
                 <>
                   <LockIcon className="btn-icon" />
-                  <span className="btn-text">Access Admin Panel</span>
+                  <span className="btn-text">Log In</span>
                 </>
               )}
             </button>
@@ -216,15 +204,6 @@ const Login: React.FC = () => {
               Click to sign in to the admin panel
             </div>
           </form>
-
-          <div className="login-footer">
-            <p>Authorized Personnel Only</p>
-            <div className="login-help">
-              <p className="text-xs text-tertiary">
-                Having trouble? Contact your system administrator.
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

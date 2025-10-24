@@ -109,8 +109,9 @@ STEP 5: REPORT
 
 ## 🏗️ Technical Context
 
-### Current Stack (Verified Sept 2025)
+### Current Stack (Updated October 2025)
 - **Frontend**: React 19.1.1, TypeScript 5.9.2, Vite 7.1.5, TailwindCSS
+- **Admin Portal**: React 19.1.1, TypeScript 4.9.5, Create React App 5.0.1
 - **Backend**: Node.js 18+, Express 5.1.0, Socket.IO 4.8.1
 - **Database**: PostgreSQL 15+ with pg 8.16.3 driver, Redis (ioredis 5.7.0)
 - **Authentication**: JWT (jsonwebtoken 9.0.2) + bcrypt 6.0.0
@@ -121,8 +122,9 @@ STEP 5: REPORT
 ### Project Structure
 ```
 LottoDrop/
-├── frontend/          # React 19 + Vite application
+├── frontend/          # React 19 + Vite application (Main Platform)
 │   ├── public/        # Static assets + robots.txt + PWA manifest
+│   │   └── drop-icon.svg  # LottoDrop purple water drop logo
 │   ├── src/
 │   │   ├── components/  # Atomic design (atoms/molecules/organisms)
 │   │   ├── contexts/    # React contexts (Auth, Socket, Theme)
@@ -132,6 +134,16 @@ LottoDrop/
 │   │   └── types/       # TypeScript definitions
 │   ├── nginx-site.conf  # Production nginx config with security
 │   └── Dockerfile       # Multi-stage build
+├── frontend-admin/    # Admin dashboard (Port 81)
+│   ├── public/
+│   │   └── drop-icon.svg  # Shared purple logo
+│   ├── src/
+│   │   ├── components/  # Sidebar, FilterSection, Card
+│   │   ├── contexts/    # AuthContext
+│   │   ├── pages/       # Dashboard, Users, Rooms, Rounds, Transactions, Login
+│   │   ├── styles/      # design-system.css (purple theme)
+│   │   └── utils/       # API helpers
+│   └── Dockerfile       # Multi-stage build with nginx
 ├── backend/           # Express 5 API + WebSocket
 │   ├── src/
 │   │   ├── controllers/ # Route handlers
@@ -139,7 +151,6 @@ LottoDrop/
 │   │   ├── utils/       # Helpers & middleware
 │   │   └── types/       # TypeScript interfaces
 │   └── Dockerfile       # Node.js production image
-├── admin-panel/       # Admin dashboard (frontend-admin)
 ├── shared/           # Shared types/utilities
 ├── database/         # SQL schemas and migrations
 └── docker-compose.yml # Multi-container orchestration
@@ -155,7 +166,7 @@ LottoDrop/
    - SQL injection prevention via parameterized queries
    - Container security with non-root users
 4. **Performance Optimized**:
-   - Bundle splitting (largest: 241KB)
+   - Bundle splitting (largest: 241KB frontend, 110KB admin)
    - 60fps animations with Framer Motion
    - <100ms API response times
    - Aggressive caching strategy (1yr for assets)
@@ -164,6 +175,46 @@ LottoDrop/
    - PWA manifest for mobile installation
    - WCAG 2.1 AA compliance
    - Meta tags for social sharing
+6. **Admin Portal**:
+   - Modern purple branding with CSS design system
+   - Comprehensive user management
+   - Real-time transaction monitoring
+   - Game room and rounds management
+   - Advanced filtering and search capabilities
+
+## 🎨 Design System (October 2025)
+
+### Purple Brand Color Palette
+```css
+/* Primary Purple Colors */
+--purple-600: #9D4EDD;  /* Primary Brand Purple */
+--purple-500: #A855F7;  /* Light Purple */
+--purple-400: #C084FC;  /* Accent Purple */
+--purple-800: #6A4C93;  /* Dark Purple */
+
+/* Background Colors */
+--dark-bg-primary: #1A1A2E;    /* Primary Background */
+--dark-bg-secondary: #2D2D44;  /* Secondary Background */
+--dark-bg-tertiary: #3a3a52;   /* Tertiary Background */
+
+/* Border & Effects */
+--dark-border: rgba(157, 78, 221, 0.2);       /* Purple border */
+--dark-border-hover: rgba(157, 78, 221, 0.4); /* Purple hover border */
+--shadow-glow: 0 0 20px rgba(157, 78, 221, 0.3); /* Purple glow effect */
+```
+
+### Admin Portal Styling Architecture
+- **CSS Variables**: Comprehensive design token system in `design-system.css`
+- **Consistent Theming**: All pages use purple gradients and CSS variables
+- **Responsive Design**: Mobile-first with breakpoints at 640px, 768px, 1024px
+- **Dark Theme**: Default dark mode optimized for extended use
+- **Accessibility**: High contrast support, focus states, keyboard navigation
+
+### Logo Assets
+- **Primary Logo**: `drop-icon.svg` - Purple water drop with sparkle effect
+- **Gradient**: Linear gradient from #9D4EDD → #C77DFF → #7B2CBF
+- **Usage**: Shared across frontend and admin portal
+- **Dimensions**: 512x512px with 96px border radius
 
 ## 🎯 Agent Collaboration Patterns
 
@@ -205,17 +256,78 @@ Validation: Elite Product Owner
 4. **PRIORITIZE security** - Gaming platform = high security requirements
 5. **MAINTAIN performance** - 60fps animations, <100ms responses
 6. **ENSURE compliance** - GLI-19, PCI DSS, responsible gaming
+7. **USE CSS VARIABLES** - Never hardcode colors in admin portal
+8. **RESPECT SPECIFICITY** - Use `!important` only when necessary for overrides
 
-## 🚀 Recent Updates (Sept 26, 2025)
+## 🚀 Recent Updates
 
-### Fixed Issues
+### October 2025 - Admin Portal Redesign 🎨
+
+#### Major UI/UX Improvements
+1. **Logo Replacement**
+   - Replaced lottery ball logo with purple water drop (`drop-icon.svg`)
+   - Consistent branding across login page and dashboard
+   - 36px × 36px in sidebar, 80px × 80px in login
+
+2. **Login Page Redesign**
+   - Purple gradient background with glass-morphism effect
+   - Fixed CSS specificity issues with input padding
+   - Optimized form spacing (1rem gap, 0.5rem button margin)
+   - Changed button text: "Access Admin Panel" → "Log In"
+   - Updated placeholder: admin@lottodrop.com → user@example.com
+   - Removed subtitle for cleaner design
+
+3. **Purple Theme Implementation**
+   - Updated `design-system.css` with comprehensive purple color system
+   - Changed primary color from teal (#14B8A6) to purple (#9D4EDD)
+   - Implemented gradient: `linear-gradient(135deg, #9D4EDD, #A855F7)`
+   - Updated all accent colors, borders, and shadows
+
+4. **Table Styling Consistency** ✅ COMPLETE
+   - **Users Page**: Converted hardcoded colors to CSS variables
+   - **Rooms Page**: Replaced all teal colors with purple
+   - **Rounds Page**: Fixed CSS specificity for round-id and prize-pool colors
+   - **Dashboard Page**: Updated stat cards and chart cards to purple theme
+   - **Transactions Page**: Already properly styled (used as reference)
+
+5. **CSS Architecture Improvements**
+   - Migrated from hardcoded colors to CSS variables throughout
+   - Fixed CSS specificity issues with `.table .cell` pattern
+   - Added `!important` flags strategically for color overrides
+   - Responsive design optimizations for mobile (320px-1024px)
+
+#### Technical Details
+```css
+/* Key CSS Fixes Applied */
+.rounds-table .round-id {
+  color: #9D4EDD !important;  /* Override td default color */
+}
+
+.login-form .form-input {
+  padding: 0 4.5rem !important;  /* Override design-system */
+}
+
+.nav-item-active {
+  background: rgba(157, 78, 221, 0.1);  /* Purple instead of blue */
+}
+```
+
+#### Deployment Stats
+- Build Time: ~11-13 seconds per deployment
+- CSS Bundle Size: 18.99KB (gzipped)
+- Zero TypeScript errors (ESLint warnings only for unused API_URL)
+- All 5 Docker containers healthy and running
+
+### September 2025 - Foundation
+
+#### Fixed Issues
 - ✅ TypeScript errors in RoomList.tsx (removed unused state)
 - ✅ TypeScript errors in TournamentCard.tsx (Framer Motion ease typing)
 - ✅ TypeScript errors in useRoomActivity.ts (unused parameter)
 - ✅ robots.txt serving issue (nginx configuration fixed)
 - ✅ SEO optimization with proper meta tags and crawl directives
 
-### Infrastructure Improvements
+#### Infrastructure Improvements
 - Enhanced nginx security configuration
 - Optimized Docker multi-stage builds
 - Improved caching strategies
@@ -230,13 +342,15 @@ Validation: Elite Product Owner
 - Unit test coverage >80%
 - No console.logs in production
 - Proper type definitions
+- CSS variables for all theme colors
 
 ### Performance
 - Lighthouse score >90
 - FCP <1.5s
 - TTI <3.5s
-- Bundle size <500KB initial
+- Bundle size <500KB initial (frontend), <200KB (admin)
 - 60fps animations
+- Optimized Docker builds (<15s)
 
 ### Security
 - All inputs sanitized
@@ -244,6 +358,14 @@ Validation: Elite Product Owner
 - XSS prevention
 - CORS properly configured
 - Secrets in environment variables
+- JWT authentication with secure cookies
+
+### Design Consistency
+- All admin pages use purple theme (#9D4EDD)
+- CSS variables for maintainability
+- Consistent spacing with rem units
+- Responsive breakpoints standardized
+- Accessible color contrasts (WCAG AA)
 
 ## 🎮 Gaming-Specific Requirements
 
@@ -263,7 +385,7 @@ Validation: Elite Product Owner
 ### User Experience
 - Instant game feedback
 - Clear winning indicators
-- Smooth animations
+- Smooth animations (60fps)
 - Mobile responsive
 - Accessible controls
 
@@ -281,9 +403,17 @@ Validation: Elite Product Owner
 ### When fixing bugs:
 1. Reproduce with Manual QA Tester
 2. Analyze root cause with relevant technical agent
-3. Implement fix
+3. Implement fix with proper CSS specificity
 4. Verify fix doesn't break other features
 5. Document in completion report
+
+### When styling admin pages:
+1. ALWAYS use CSS variables from design-system.css
+2. NEVER hardcode colors (#1e293b, #334155, etc.)
+3. Use `.parent .child` pattern for specificity
+4. Apply `!important` only when overriding design-system
+5. Test on multiple screen sizes (320px, 768px, 1024px)
+6. Ensure purple branding (#9D4EDD) is consistent
 
 ### When optimizing performance:
 1. Profile with React Frontend Expert or Gaming Finance Backend
@@ -301,28 +431,51 @@ lottodrop-frontend    # Port 80  - React app with nginx
 lottodrop-backend     # Port 3001 - Express API + WebSocket
 lottodrop-postgres    # Port 5432 - PostgreSQL 15
 lottodrop-redis       # Port 6379 - Redis cache & pub/sub
-lottodrop-admin       # Port 81  - Admin panel
+lottodrop-admin       # Port 81  - Admin panel with nginx
+```
+
+### Container Health Status (October 2025)
+```
+lottodrop-admin:    Up 27 hours   (healthy) - Recently updated
+lottodrop-frontend: Up 2 days     (healthy)
+lottodrop-backend:  Up 2 days     (healthy)
+lottodrop-postgres: Up 4 weeks    (healthy)
+lottodrop-redis:    Up 3 weeks    (healthy)
 ```
 
 ### Key Configuration Files
 - `docker-compose.yml` - Container orchestration
 - `docker-compose.override.yml` - Development overrides
 - `frontend/nginx-site.conf` - Production nginx with security headers
+- `frontend-admin/Dockerfile` - Multi-stage build (Node 18 + Nginx Alpine)
 - `frontend/public/robots.txt` - SEO crawler directives
 - `.env` files - Environment variables (never commit!)
 
 ### Deployment Commands
 ```bash
-# Build and deploy frontend
+# Build and deploy admin panel
+docker-compose build frontend-admin
+docker-compose up -d frontend-admin
+
+# Build and deploy main frontend
 docker-compose build frontend
 docker-compose up -d frontend
 
 # View logs
-docker logs lottodrop-frontend --tail 50
+docker logs lottodrop-admin --tail 50
 
 # Check container health
 docker ps | grep lottodrop
+
+# Access admin panel
+http://localhost:81
 ```
+
+### Build Performance
+- Frontend Admin: 11-13 seconds
+- Frontend Main: 12-15 seconds
+- Backend: 8-10 seconds
+- Total deployment time: <2 minutes
 
 ## 🔄 Continuous Improvement
 
@@ -332,6 +485,36 @@ docker ps | grep lottodrop
 - Monitor performance metrics via Docker logs
 - Track user feedback and iterate
 - Run TypeScript checks before deployment
+- Verify CSS consistency across admin pages
+- Test responsive design on multiple devices
+
+## 📋 Common CSS Specificity Patterns
+
+### Problem: Generic Selector Overrides Specific Styling
+```css
+/* ❌ WRONG - Gets overridden */
+.cell { color: #9D4EDD; }
+.table td { color: #E2E8F0; }  /* This wins */
+
+/* ✅ CORRECT - Higher specificity */
+.table .cell { color: #9D4EDD !important; }
+```
+
+### Problem: Design System Variable Conflict
+```css
+/* ❌ WRONG - Design system wins */
+.form-input { padding: 0 4.5rem; }
+
+/* ✅ CORRECT - Parent scoping with !important */
+.login-form .form-input { padding: 0 4.5rem !important; }
+```
+
+### Best Practices
+1. Use `.parent .child` pattern for higher specificity
+2. Add `!important` when overriding design-system.css
+3. Always use CSS variables for colors
+4. Test in compiled CSS, not just source files
+5. Verify with `curl` or browser DevTools
 
 ## 📋 Remember
 
@@ -344,10 +527,20 @@ You are building a **production-grade gaming platform** that handles real money.
 
 **USE THE AGENTS** - They are your domain experts. Their collective expertise ensures success.
 
+### Admin Portal Checklist
+When working on admin portal:
+- ✅ Use CSS variables from design-system.css
+- ✅ Maintain purple branding consistency
+- ✅ Test CSS specificity (check compiled output)
+- ✅ Verify responsive design (mobile, tablet, desktop)
+- ✅ Deploy and verify in Docker container
+- ✅ Check all pages for visual consistency
+
 ---
 
-*Configuration Version: 1.1.0*
-*Last Updated: September 26, 2025*
+*Configuration Version: 1.2.0*
+*Last Updated: October 22, 2025*
 *Project: LottoDrop - Real-time Lottery Gaming Platform*
 *Production URL: https://lottodrop.net*
 *Docker Status: All 5 containers healthy and running*
+*Latest: Admin Portal redesigned with purple branding (Oct 2025)*

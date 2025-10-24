@@ -56,7 +56,6 @@ export interface TimingReport {
 
 class AudioTimingDebugger {
   private enabled = false
-  private sessionStartTime = 0
   private sequenceStartTime = 0
   private currentSequence = ''
   private events: TimingEvent[] = []
@@ -109,7 +108,6 @@ class AudioTimingDebugger {
     if (!this.enabled) return
 
     this.currentSequence = sequenceName
-    this.sessionStartTime = performance.now()
     this.sequenceStartTime = performance.now()
     this.events = []
 
@@ -371,7 +369,6 @@ class AudioTimingDebugger {
    */
   clear(): void {
     this.events = []
-    this.sessionStartTime = 0
     this.sequenceStartTime = 0
     this.currentSequence = ''
   }

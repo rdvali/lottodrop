@@ -72,12 +72,12 @@
 }
 
 .filter-tab:hover {
-  background: #334155;
+  background: var(--bg-tertiary);
   color: #fff;
 }
 
 .filter-tab.active {
-  background: linear-gradient(135deg, #14B8A6, #2DD4BF);
+  background: linear-gradient(135deg, #9D4EDD, #A855F7);
   color: #fff;
   border-color: transparent;
 }
@@ -111,7 +111,7 @@
 
 .rounds-table td {
   padding: 1rem;
-  color: #E2E8F0;
+  color: var(--text-secondary);
   font-size: 0.95rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -120,9 +120,9 @@
   background: rgba(255, 255, 255, 0.02);
 }
 
-.round-id {
+.rounds-table .round-id {
   font-family: 'Courier New', monospace;
-  color: #14B8A6;
+  color: #9D4EDD !important;
   font-weight: 600;
 }
 
@@ -144,8 +144,8 @@
   color: #A78BFA;
 }
 
-.prize-pool {
-  color: #14B8A6;
+.rounds-table .prize-pool {
+  color: #9D4EDD !important;
   font-weight: 600;
   font-size: 1rem;
 }
@@ -157,7 +157,7 @@
 }
 
 .no-winner {
-  color: #64748B;
+  color: var(--text-tertiary);
 }
 
 .badge {
@@ -179,7 +179,7 @@
 
 .view-details-btn {
   padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, #14B8A6, #2DD4BF);
+  background: linear-gradient(135deg, #9D4EDD, #A855F7);
   border: none;
   border-radius: 6px;
   color: #fff;
@@ -219,7 +219,7 @@
 }
 
 .pagination-btn:hover:not(:disabled) {
-  background: #334155;
+  background: var(--bg-tertiary);
 }
 
 .pagination-btn:disabled {
@@ -329,7 +329,7 @@
 }
 
 .detail-section h3 {
-  color: #14B8A6;
+  color: #9D4EDD;
   font-size: 1.1rem;
   font-weight: 600;
   margin-bottom: 1rem;
@@ -364,7 +364,7 @@
 }
 
 .detail-item .highlight {
-  color: #14B8A6;
+  color: #9D4EDD;
   font-weight: 600;
   font-size: 1.1rem;
 }
@@ -409,7 +409,7 @@
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background: #334155;
+  background: var(--bg-tertiary);
 }
 
 .participant-info {
@@ -447,7 +447,7 @@
 }
 
 .winnings {
-  background: linear-gradient(135deg, #14B8A6, #2DD4BF);
+  background: linear-gradient(135deg, #9D4EDD, #A855F7);
   color: #fff;
   padding: 0.5rem 1rem;
   border-radius: 6px;
@@ -468,7 +468,7 @@
   width: 40px;
   height: 40px;
   border: 3px solid rgba(20, 184, 166, 0.2);
-  border-top-color: #14B8A6;
+  border-top-color: #9D4EDD;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }

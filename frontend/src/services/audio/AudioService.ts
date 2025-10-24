@@ -26,8 +26,6 @@ import type {
   AudioEventListener,
   AudioEventType,
   AudioFormatSupport,
-  AudioContextState,
-  HTMLAudioState,
 } from '../../types/audio.types'
 
 // Storage keys
@@ -46,7 +44,7 @@ const DEFAULT_CONFIG = {
   LATENCY_COMPENSATION: 80, // milliseconds - pre-trigger audio for sync (updated from 30ms)
   DEBOUNCE_THRESHOLD: 100, // milliseconds - prevent double-triggers
   DEBUG_TIMING: true, // Enable timing debug logs
-} as const
+}
 
 class AudioService {
   // Service state
@@ -663,7 +661,7 @@ class AudioService {
    */
   stopAll(): void {
     if (this.usingWebAudioAPI) {
-      this.activeSourceNodes.forEach((sources, key) => {
+      this.activeSourceNodes.forEach((sources, _key) => {
         sources.forEach(source => {
           try {
             source.stop()
@@ -762,6 +760,19 @@ class AudioService {
         throw error
       }
     }
+  }
+
+  /**
+   * Gets the current time of the audio context in seconds.
+   * Useful for scheduling sounds at precise times or syncing animations with audio.
+   *
+   * @returns Current audio context time, or 0 if context not initialized
+   * @example
+   * const startTime = audioService.getCurrentTime()
+   * audioService.play('tick', { scheduleTime: startTime + 1.5 })
+   */
+  getCurrentTime(): number {
+    return this.audioContext?.currentTime || 0
   }
 
   /**

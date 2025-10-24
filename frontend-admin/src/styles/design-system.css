@@ -29,31 +29,31 @@ body {
 
 /* Design System Variables */
 :root {
-  /* Professional Blue Color System */
-  --blue-50: #eff6ff;
-  --blue-100: #dbeafe;
-  --blue-200: #bfdbfe;
-  --blue-300: #93c5fd;
-  --blue-400: #60a5fa;
-  --blue-500: #3b82f6;  /* Primary Brand Blue */
-  --blue-600: #2563eb;  /* Primary Hover */
-  --blue-700: #1d4ed8;  /* Primary Active */
-  --blue-800: #1e40af;
-  --blue-900: #1e3a8a;
-  --blue-950: #172554;
+  /* LottoDrop Purple Color System */
+  --purple-50: #faf5ff;
+  --purple-100: #f3e8ff;
+  --purple-200: #e9d5ff;
+  --purple-300: #d8b4fe;
+  --purple-400: #c084fc;  /* Accent Purple */
+  --purple-500: #a855f7;  /* Light Purple */
+  --purple-600: #9d4edd;  /* Primary Brand Purple */
+  --purple-700: #7c3aed;
+  --purple-800: #6a4c93;  /* Dark Purple */
+  --purple-900: #581c87;
+  --purple-950: #3b0764;
 
-  /* Semantic Colors */
-  --primary-50: var(--blue-50);
-  --primary-100: var(--blue-100);
-  --primary-200: var(--blue-200);
-  --primary-300: var(--blue-300);
-  --primary-400: var(--blue-400);
-  --primary-500: var(--blue-500);
-  --primary-600: var(--blue-600);
-  --primary-700: var(--blue-700);
-  --primary-800: var(--blue-800);
-  --primary-900: var(--blue-900);
-  --primary-950: var(--blue-950);
+  /* Semantic Colors - Purple Theme */
+  --primary-50: var(--purple-50);
+  --primary-100: var(--purple-100);
+  --primary-200: var(--purple-200);
+  --primary-300: var(--purple-300);
+  --primary-400: var(--purple-400);
+  --primary-500: var(--purple-500);
+  --primary-600: var(--purple-600);
+  --primary-700: var(--purple-700);
+  --primary-800: var(--purple-800);
+  --primary-900: var(--purple-900);
+  --primary-950: var(--purple-950);
 
   /* Success Colors */
   --success-50: #ecfdf5;
@@ -104,14 +104,14 @@ body {
   --gray-900: #111827;
   --gray-950: #030712;
 
-  /* Dark Theme Variables */
-  --dark-bg-primary: #0f172a;    /* slate-900 */
-  --dark-bg-secondary: #1e293b;  /* slate-800 */
-  --dark-bg-tertiary: #334155;   /* slate-700 */
-  --dark-bg-card: #1e293b;
-  --dark-bg-hover: #334155;
-  --dark-border: #334155;
-  --dark-border-hover: #475569;
+  /* Dark Theme Variables - LottoDrop */
+  --dark-bg-primary: #1A1A2E;    /* LottoDrop Primary BG */
+  --dark-bg-secondary: #2D2D44;  /* LottoDrop Secondary BG */
+  --dark-bg-tertiary: #3a3a52;   /* Slightly lighter */
+  --dark-bg-card: #2D2D44;
+  --dark-bg-hover: #3a3a52;
+  --dark-border: rgba(157, 78, 221, 0.2);   /* Purple border */
+  --dark-border-hover: rgba(157, 78, 221, 0.4);
 
   /* Light Theme Variables (for future light mode) */
   --light-bg-primary: #ffffff;
@@ -153,7 +153,7 @@ body {
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
   --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
-  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
+  --shadow-glow: 0 0 20px rgba(157, 78, 221, 0.3);        /* Purple glow */
   --shadow-glow-success: 0 0 20px rgba(16, 185, 129, 0.3);
   --shadow-glow-danger: 0 0 20px rgba(239, 68, 68, 0.3);
 

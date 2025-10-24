@@ -12,7 +12,7 @@
  * @author LottoDrop Development Team
  */
 
-import type { AudioPlayOptions } from '../../types/audio.types'
+import type { AudioPlayOptions, AudioPlayResult } from '../../types/audio.types'
 import { audioService } from './AudioService'
 
 /**
@@ -34,7 +34,7 @@ const recentlyPlayed = new Map<string, number>()
  * @param key - Sound key from manifest
  * @param scheduleTime - Absolute time in audioContext.currentTime (seconds)
  * @param options - Playback options
- * @returns Promise that resolves when playback starts
+ * @returns Promise that resolves with AudioPlayResult containing duration and timing info
  *
  * @example
  * ```typescript
@@ -47,7 +47,7 @@ export async function playScheduled(
   key: string,
   scheduleTime: number,
   options: AudioPlayOptions = {}
-): Promise<void> {
+): Promise<AudioPlayResult> {
   // Get the audio context from the service
   const audioContext = (audioService as any).audioContext
 
@@ -104,7 +104,7 @@ export async function stopWithFade(key: string, fadeOutDuration: number): Promis
  * @param key - Sound key to play
  * @param options - Playback options
  * @param threshold - Debounce threshold in milliseconds (default: 100ms)
- * @returns Promise that resolves when playback starts (or immediately if debounced)
+ * @returns Promise that resolves with AudioPlayResult (duration: 0 if debounced)
  *
  * @example
  * ```typescript
@@ -116,13 +116,19 @@ export async function playDebounced(
   key: string,
   options: AudioPlayOptions = {},
   threshold: number = DEBOUNCE_THRESHOLD_MS
-): Promise<void> {
+): Promise<AudioPlayResult> {
   const now = Date.now()
   const lastPlayed = recentlyPlayed.get(key) || 0
 
   if (now - lastPlayed < threshold) {
     console.warn(`[AudioServiceEnhancements] Debounced duplicate play: ${key} (${now - lastPlayed}ms since last play)`)
-    return Promise.resolve()
+    // Return a dummy result indicating the sound was debounced
+    return Promise.resolve({
+      key,
+      duration: 0,
+      scheduledTime: undefined,
+      endTime: undefined
+    })
   }
 
   recentlyPlayed.set(key, now)
@@ -146,7 +152,7 @@ export async function playDebounced(
  * @param key - Sound key to play
  * @param options - Playback options
  * @param debugContext - Optional context string for the log
- * @returns Promise that resolves when playback starts
+ * @returns Promise that resolves with AudioPlayResult containing duration and timing info
  *
  * @example
  * ```typescript
@@ -158,7 +164,7 @@ export async function playDebug(
   key: string,
   options: AudioPlayOptions = {},
   debugContext?: string
-): Promise<void> {
+): Promise<AudioPlayResult> {
   const debugEnabled = import.meta.env.DEV || localStorage.getItem('lottodrop_audio_debug') === 'true'
 
   if (!debugEnabled) {
@@ -168,7 +174,7 @@ export async function playDebug(
   const startTime = performance.now()
 
   try {
-    await audioService.play(key, options)
+    const result = await audioService.play(key, options)
 
     const elapsed = performance.now() - startTime
     const contextStr = debugContext ? ` (${debugContext})` : ''
@@ -178,6 +184,8 @@ export async function playDebug(
       'color: #36CFC9; font-weight: bold;',
       'color: inherit;'
     )
+
+    return result
   } catch (error) {
     const elapsed = performance.now() - startTime
     const contextStr = debugContext ? ` (${debugContext})` : ''

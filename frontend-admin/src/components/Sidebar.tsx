@@ -136,18 +136,7 @@ const Sidebar: React.FC = () => {
       <div className={`sidebar ${isMobileMenuOpen ? 'sidebar-mobile-open' : ''}`}>
         <div className="sidebar-header">
           <div className="logo">
-            <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
-              <defs>
-                <linearGradient id="sidebarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style={{ stopColor: '#2563eb', stopOpacity: 1 }} />
-                  <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
-                </linearGradient>
-              </defs>
-              <rect x="8" y="8" width="24" height="24" rx="4" fill="#0F172A" transform="rotate(45 20 20)"/>
-              <rect x="8" y="8" width="24" height="24" rx="4" fill="url(#sidebarGradient)" opacity="0.2" transform="rotate(45 20 20)"/>
-              <path d="M20 8 L30 20 L20 32 L10 20 Z" fill="url(#sidebarGradient)" opacity="0.8"/>
-              <circle cx="20" cy="20" r="5" fill="url(#sidebarGradient)"/>
-            </svg>
+            <img src="/drop-icon.svg" alt="LottoDrop Logo" width="36" height="36" />
           </div>
           <div className="logo-text">
             <span className="logo-main">LottoDrop</span>

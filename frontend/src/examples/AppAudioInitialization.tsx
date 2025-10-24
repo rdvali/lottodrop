@@ -229,12 +229,20 @@ export function App() {
 
 /**
  * Example 5: With React Router and lazy loading
+ *
+ * Best Practice: Import components directly to avoid barrel export issues
+ * Note: React.lazy() requires default exports, so we import the actual component file
  */
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, ComponentType } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
-const GameRoom = lazy(() => import('../pages/GameRoom'))
-const Home = lazy(() => import('../pages/Home'))
+// Direct component imports for lazy loading (bypasses barrel exports)
+const GameRoom: React.LazyExoticComponent<ComponentType<any>> = lazy(() =>
+  import('../pages/GameRoom/GameRoom')
+)
+const RoomList: React.LazyExoticComponent<ComponentType<any>> = lazy(() =>
+  import('../pages/RoomList/RoomList')
+)
 
 export function AppWithRouter() {
   useEffect(() => {
@@ -251,7 +259,7 @@ export function AppWithRouter() {
     <BrowserRouter>
       <Suspense fallback={<LoadingSpinner />}>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<RoomList />} />
           <Route path="/room/:roomId" element={<GameRoom />} />
         </Routes>
       </Suspense>

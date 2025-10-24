@@ -14,7 +14,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import confetti from 'canvas-confetti'
 import type { Winner } from '../../types'
 import { useCountUp } from '../../hooks/useCountUp'
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion'
@@ -24,7 +23,6 @@ import { announceToScreenReader, formatCurrency } from '../../utils/accessibilit
 import { detectDeviceCapability } from '../../utils/deviceDetection'
 import { createPerformanceMonitor } from '../../utils/performanceMonitor'
 import { useAuth } from '../../contexts/AuthContext'
-import { audioService } from '../../services/audio/AudioService'
 
 export interface GameHistory {
   won: boolean
@@ -70,7 +68,7 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
   const [loadingPhase, setLoadingPhase] = useState<LoadingPhase>('gathering')
   const [cyclingName, setCyclingName] = useState<string>('')
   const [isWinner, setIsWinner] = useState(false)
-  const [canSkip, setCanSkip] = useState(false)
+  const [canSkip, _setCanSkip] = useState(false)
   const [animationStartTime] = useState(Date.now())
 
   // Refs
@@ -276,117 +274,6 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
     }
   }, [phase, winner])
 
-  // Trigger confetti (Visual Design Fix 4)
-  const triggerConfetti = useCallback(() => {
-    if (!isWinner || effectiveVariant === 'reduced-motion') return
-
-    const isMobile = window.innerWidth < 768
-    const particleCount = isMobile ? 40 : 60
-
-    confetti({
-      particleCount,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#FFD700', '#9D4EDD', '#A855F7'], // 3-color system only
-      zIndex: 10001
-    })
-  }, [isWinner, effectiveVariant])
-
-  // Standard animation timeline (Extended to 3.5s for dramatic effect)
-  const runStandardAnimation = useCallback(async () => {
-    // Focus Phase (0-300ms)
-    setPhase('focus')
-    await delay(300)
-
-    // Spark Phase (300-800ms)
-    setPhase('spark')
-    setCanSkip(true) // Allow skipping after 50% (UX Modification F)
-    await delay(500)
-
-    // Anticipation Phase (800-1400ms) - NEW: Camera zoom + glow intensification
-    setPhase('anticipation')
-    await delay(600)
-
-    // Pop Phase (1400-2000ms) - Winner reveal with screen shake
-    setPhase('pop')
-    await delay(600)
-
-    // Explosion Phase (2000-2800ms) - Visual burst (no sound)
-    setPhase('explosion')
-    await delay(800)
-
-    // Count-up Phase (2800-3200ms)
-    setPhase('countup')
-    await delay(400)
-
-    // Settle Phase (3200-3500ms)
-    setPhase('settle')
-    await delay(300)
-
-    // Complete - Play result sound now that user has seen full visual reveal
-    setPhase('complete')
-
-    // Small delay to ensure all previous sounds have finished
-    await delay(100)
-
-    // ADDED: Play result sound synchronized with visual reveal completion
-    // This ensures audio plays when user SEES the result, not when socket event arrives
-    // The riser was already stopped and faded out during the climax sequence (1900ms ago)
-    if (isWinner) {
-      console.log('[WinnerReveal] Playing WIN sound for winner')
-      audioService.play('result.win').catch(err => console.warn('Audio playback failed:', err))
-    } else if (user && winner) {
-      // User is not the winner but was a participant (lost)
-      console.log('[WinnerReveal] Playing LOSE sound for participant')
-      audioService.play('result.lose').catch(err => console.warn('Audio playback failed:', err))
-    }
-
-    triggerConfetti()
-    onComplete?.()
-  }, [triggerConfetti, onComplete, isWinner, user, winner])
-
-  // Fast animation timeline (for repeat losers) - Still includes new phases but shorter
-  const runFastAnimation = useCallback(async () => {
-    setPhase('focus')
-    await delay(150)
-
-    setPhase('spark')
-    setCanSkip(true)
-    await delay(200)
-
-    setPhase('anticipation')
-    await delay(250)
-
-    setPhase('pop')
-    await delay(300)
-
-    setPhase('explosion')
-    await delay(300)
-
-    setPhase('countup')
-    await delay(200)
-
-    setPhase('settle')
-    await delay(200)
-
-    setPhase('complete')
-
-    // Small delay to ensure all previous sounds have finished
-    await delay(50)
-
-    // ADDED: Play result sound synchronized with visual reveal completion
-    if (isWinner) {
-      console.log('[WinnerReveal-Fast] Playing WIN sound for winner')
-      audioService.play('result.win').catch(err => console.warn('Audio playback failed:', err))
-    } else if (user && winner) {
-      console.log('[WinnerReveal-Fast] Playing LOSE sound for participant')
-      audioService.play('result.lose').catch(err => console.warn('Audio playback failed:', err))
-    }
-
-    triggerConfetti()
-    onComplete?.()
-  }, [triggerConfetti, onComplete, isWinner, user, winner])
-
   // Skip to end (UX Modification F)
   const skipToEnd = useCallback(() => {
     if (isWinner) return // Winners cannot skip
@@ -438,7 +325,7 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
     }
 
     // If still in 'selecting' phase, wait for climax sequence to trigger
-  }, [winner, winners.length, loadingPhase, effectiveVariant, onComplete, isWinner, user])
+  }, [winner, winners.length, loadingPhase, onComplete])
 
   // Show enhanced multi-phase loading state while waiting for winners data
   if (!winner || !winners.length) {

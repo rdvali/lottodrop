@@ -9,7 +9,7 @@
 }
 
 .content-section {
-  background: #0f172a !important;
+  background: var(--bg-primary) !important;
 }
 
 .section-header {
@@ -18,7 +18,7 @@
 
 /* Filter Section Styles */
 .filter-section {
-  background: #0f172a !important;
+  background: var(--bg-primary) !important;
   padding: 1rem;
   border-radius: 8px;
   margin-bottom: 1rem;
@@ -90,7 +90,7 @@
   margin-bottom: 2rem;
   flex-wrap: wrap;
   align-items: center;
-  background-color: #0f172a !important;
+  background-color: var(--bg-primary) !important;
   padding: 1rem;
   border-radius: 8px;
 }
@@ -108,22 +108,22 @@
 .input-search {
   width: 100%;
   padding: 0.75rem 1rem;
-  background: #1E293B;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.95rem;
   transition: all 0.3s ease;
 }
 
 .input-search:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.2);
-  background: #334155;
+  border-color: var(--border-hover);
+  background: var(--bg-tertiary);
 }
 
 .input-search::placeholder {
-  color: #64748B;
+  color: var(--text-tertiary);
 }
 
 .input-icon {
@@ -144,10 +144,10 @@
 
 .filter-tabs .btn-ghost {
   padding: 0.75rem 1.5rem;
-  background: #1E293B;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #94A3B8;
+  color: var(--text-secondary);
   font-size: 0.95rem;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -155,27 +155,27 @@
 }
 
 .filter-tabs .btn-ghost:hover {
-  background: #334155;
-  color: #fff;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .filter-tabs .btn-ghost.btn-active {
-  background: linear-gradient(135deg, #14B8A6, #2DD4BF);
+  background: linear-gradient(135deg, #9D4EDD, #A855F7);
   color: #fff;
   border-color: transparent;
 }
 
 /* Table Container - Matching Rounds Page */
 .table-container {
-  background: #0f172a !important;
+  background: var(--bg-primary) !important;
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border);
 }
 
 .table-wrapper {
   overflow-x: auto;
-  background: #0f172a !important;
+  background: var(--bg-primary) !important;
 }
 
 .table-container .table {
@@ -184,30 +184,30 @@
 }
 
 .table-container .table thead {
-  background: #1e293b !important;
+  background: var(--bg-secondary) !important;
 }
 
 .table-container .table th {
   padding: 1rem !important;
   text-align: left;
-  color: #94A3B8 !important;
+  color: var(--text-secondary) !important;
   font-weight: 600 !important;
   font-size: 0.9rem !important;
   text-transform: uppercase;
   letter-spacing: 0.5px !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-bottom: 1px solid var(--border) !important;
   background: transparent !important;
 }
 
 .table-container .table td {
   padding: 1rem !important;
-  color: #E2E8F0 !important;
+  color: var(--text-primary) !important;
   font-size: 0.95rem !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-bottom: 1px solid var(--border) !important;
 }
 
 .table-container .table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.02) !important;
+  background: var(--bg-hover) !important;
 }
 
 /* Users Table */

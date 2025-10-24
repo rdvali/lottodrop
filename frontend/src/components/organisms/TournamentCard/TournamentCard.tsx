@@ -13,7 +13,7 @@ export interface TournamentCardProps {
   activityType?: 'join' | 'leave' | 'reset' | null
 }
 
-const TournamentCard = ({ room, onJoin, onView, isJoined = false, className, activityType }: TournamentCardProps) => {
+const TournamentCard = ({ room, onJoin, onView, isJoined = false, className, activityType: _activityType }: TournamentCardProps) => {
   const isWaiting = room.status?.toLowerCase() === 'waiting'
   const isFull = room.currentParticipants >= room.maxParticipants
   const canJoin = isWaiting && !isFull && !isJoined

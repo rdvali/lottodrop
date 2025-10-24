@@ -49,15 +49,16 @@ export const Example2_SequentialCountdown: React.FC = () => {
   const playCountdown = async () => {
     setStatus('Playing countdown...')
 
-    const ctx = audioService.audioContext
-    if (!ctx) {
+    // Use public getCurrentTime() method instead of accessing private audioContext
+    let time = audioService.getCurrentTime()
+
+    if (time === 0) {
       setStatus('Audio context not available')
       return
     }
 
     // Method A: Manual sequencing with endTime
-    let time = ctx.currentTime
-
+    // This demonstrates precise Web Audio API scheduling
     const tick3 = await audioService.play('countdown.tick_3', {
       scheduleTime: time
     })
@@ -79,12 +80,12 @@ export const Example2_SequentialCountdown: React.FC = () => {
     const go = await audioService.play('countdown.go', {
       scheduleTime: time
     })
-    setStatus(`Go scheduled at ${time.toFixed(3)}s`)
+    setStatus(`Go! scheduled at ${time.toFixed(3)}s`)
 
     // Wait for entire sequence to complete
     setTimeout(() => {
       setStatus('Countdown complete!')
-    }, (go.endTime! - ctx.currentTime) * 1000)
+    }, (go.endTime! - audioService.getCurrentTime()) * 1000)
   }
 
   return (

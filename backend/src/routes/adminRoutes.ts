@@ -25,6 +25,13 @@ import {
   getAllTransactions,
   getTransactionDetails
 } from '../controllers/transactionController';
+import {
+  getKPIs,
+  getRevenueAnalytics,
+  getUserAnalytics,
+  getTopRooms,
+  exportAnalytics
+} from '../controllers/analyticsController';
 
 const router = Router();
 
@@ -58,5 +65,12 @@ router.post('/rounds/:roundId/cancel', cancelRound);
 // Transaction management routes
 router.get('/transactions', getAllTransactions);
 router.get('/transactions/:transactionId', getTransactionDetails);
+
+// Analytics routes
+router.get('/analytics/kpis', getKPIs);
+router.get('/analytics/revenue', getRevenueAnalytics);
+router.get('/analytics/users', getUserAnalytics);
+router.get('/analytics/top-rooms', getTopRooms);
+router.get('/analytics/export', exportAnalytics);
 
 export default router;

@@ -32,7 +32,7 @@ interface GameRoomAudioIntegrationProps {
 }
 
 export function GameRoomAudioIntegration({
-  roomId,
+  roomId: _roomId,
   userId,
   isParticipant,
 }: GameRoomAudioIntegrationProps) {

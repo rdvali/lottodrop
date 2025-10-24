@@ -1,0 +1,29 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark background circle -->
+  <rect width="64" height="64" rx="12" fill="#1A1A2E"/>
+
+  <defs>
+    <linearGradient id="dropGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9D4EDD"/>
+      <stop offset="50%" stop-color="#C77DFF"/>
+      <stop offset="100%" stop-color="#7B2CBF"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Drop shape with glow effect -->
+  <path d="M32 8C32 8 18 22 18 36C18 43.732 24.268 50 32 50C39.732 50 46 43.732 46 36C46 22 32 8 32 8Z"
+        fill="url(#dropGradient)"
+        filter="url(#glow)"/>
+
+  <!-- Sparkle/Star in the center -->
+  <path d="M32 28L34.5 33L39 36L34.5 39L32 44L29.5 39L25 36L29.5 33L32 28Z"
+        fill="white"
+        opacity="0.95"/>
+</svg>

@@ -175,7 +175,7 @@
 }
 
 .nav-item-active {
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(157, 78, 221, 0.1);
   color: var(--primary-400);
   font-weight: var(--font-semibold);
 }
