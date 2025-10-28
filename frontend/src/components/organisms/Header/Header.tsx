@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Avatar, Badge, Button, Logo } from '@components/atoms'
-import { useNotifications } from '@contexts/NotificationContext'
 import { formatCurrency } from '../../../utils/currencyUtils'
 import { useBalanceVisibility } from '@contexts/BalanceVisibilityContext'
+import { useAudioManager } from '@hooks/useAudioManager'
 
 // Eye icon (balance visible)
 const EyeIcon = () => (
@@ -21,6 +21,20 @@ const EyeOffIcon = () => (
   </svg>
 )
 
+// Sound On icon
+const SoundOnIcon = () => (
+  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+  </svg>
+)
+
+// Sound Off icon
+const SoundOffIcon = () => (
+  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
+  </svg>
+)
+
 export interface HeaderProps {
   user?: {
     id: string
@@ -29,14 +43,31 @@ export interface HeaderProps {
   }
   onLogin?: () => void
   onLogout?: () => void
-  notificationCount?: number
 }
 
-const Header = ({ user, onLogin, onLogout, notificationCount = 0 }: HeaderProps) => {
+const Header = ({ user, onLogin, onLogout }: HeaderProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const { toggleNotificationCenter } = useNotifications()
   const { isVisible: balanceVisible, toggleVisibility: toggleBalanceVisibility } = useBalanceVisibility()
+  const { isEnabled: audioEnabled, toggleAudio } = useAudioManager()
+  const userMenuRef = useRef<HTMLDivElement>(null)
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false)
+      }
+    }
+
+    if (userMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [userMenuOpen])
   
   return (
     <header className="bg-secondary-bg border-b border-primary/10 sticky top-0 z-50">
@@ -96,32 +127,20 @@ const Header = ({ user, onLogin, onLogout, notificationCount = 0 }: HeaderProps)
                   </div>
                 </div>
                 
-                {/* Notifications */}
+                {/* Sound Toggle */}
                 <button
-                  className="relative p-2 text-gray-400 hover:text-text-primary"
-                  onClick={() => toggleNotificationCenter()}
-                  data-notification-button
-                  aria-label="Open notifications"
+                  className="relative p-2 text-gray-400 hover:text-text-primary transition-colors"
+                  onClick={toggleAudio}
+                  aria-label={audioEnabled ? 'Disable sound' : 'Enable sound'}
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                  {notificationCount > 0 && (
-                    <Badge
-                      variant="danger"
-                      size="sm"
-                      className="absolute -top-1 -right-1 min-w-[20px] h-5"
-                    >
-                      {notificationCount}
-                    </Badge>
-                  )}
+                  {audioEnabled ? <SoundOnIcon /> : <SoundOffIcon />}
                 </button>
                 
                 {/* User Menu */}
-                <div className="relative">
+                <div className="relative" ref={userMenuRef}>
                   <button
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                    className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
                     aria-label="User menu"
                     aria-expanded={userMenuOpen}
                   >

@@ -10,7 +10,6 @@ export interface MainLayoutProps {
   }
   onLogin?: () => void
   onLogout?: () => void
-  notificationCount?: number
 }
 
 const MainLayout = ({
@@ -18,7 +17,6 @@ const MainLayout = ({
   user,
   onLogin,
   onLogout,
-  notificationCount,
 }: MainLayoutProps) => {
   return (
     <div className="min-h-screen flex flex-col bg-primary-bg">
@@ -26,7 +24,6 @@ const MainLayout = ({
         user={user}
         onLogin={onLogin}
         onLogout={onLogout}
-        notificationCount={notificationCount}
       />
       
       <main className="flex-1">

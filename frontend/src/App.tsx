@@ -14,7 +14,6 @@ import { audioService } from '@services/audio/AudioService'
 import audioManifest from './config/audioManifest.json'
 import { useAudioManager } from '@hooks/useAudioManager'
 import EnableSoundBanner from '@components/audio/EnableSoundBanner'
-import SoundToggleButton from '@components/audio/SoundToggleButton'
 import { Spinner } from '@components/atoms'
 import { SEO } from '@components/SEO'
 import { performanceMonitor } from '@utils/performance'
@@ -64,10 +63,7 @@ const AppContent = () => {
   const { authModalOpen, openAuthModal, closeAuthModal } = useModal()
   const { state: notificationState } = useNotifications()
   const {
-    isEnabled: audioEnabled,
-    audioState,
     showBanner,
-    toggleAudio,
     enableAudio,
     dismissBanner,
   } = useAudioManager()
@@ -144,7 +140,6 @@ const AppContent = () => {
         user={user || undefined}
         onLogin={handleLogin}
         onLogout={handleLogout}
-        notificationCount={notificationState?.unreadCount || 0}
       >
         <Suspense fallback={<PageLoader />}>
           <Routes>
@@ -188,11 +183,6 @@ const AppContent = () => {
         isVisible={showBanner}
         onEnable={enableAudio}
         onDismiss={dismissBanner}
-      />
-      <SoundToggleButton
-        isEnabled={audioEnabled}
-        audioState={audioState}
-        onToggle={toggleAudio}
       />
     </>
   )
