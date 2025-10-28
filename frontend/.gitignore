@@ -157,4 +157,7 @@ storybook-static/
 
 # Analytics
 .firebase/
-.firebaserc
+.firebaserc# Playwright E2E Testing
+test-results/
+playwright-report/
+playwright/.cache/

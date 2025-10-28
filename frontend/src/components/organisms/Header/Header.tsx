@@ -2,6 +2,24 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Avatar, Badge, Button, Logo } from '@components/atoms'
 import { useNotifications } from '@contexts/NotificationContext'
+import { formatCurrency } from '../../../utils/currencyUtils'
+import { useBalanceVisibility } from '@contexts/BalanceVisibilityContext'
+
+// Eye icon (balance visible)
+const EyeIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>
+)
+
+// EyeOff icon (balance hidden)
+const EyeOffIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+    <line x1="1" y1="1" x2="23" y2="23"/>
+  </svg>
+)
 
 export interface HeaderProps {
   user?: {
@@ -18,6 +36,7 @@ const Header = ({ user, onLogin, onLogout, notificationCount = 0 }: HeaderProps)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const { toggleNotificationCenter } = useNotifications()
+  const { isVisible: balanceVisible, toggleVisibility: toggleBalanceVisibility } = useBalanceVisibility()
   
   return (
     <header className="bg-secondary-bg border-b border-primary/10 sticky top-0 z-50">
@@ -56,11 +75,24 @@ const Header = ({ user, onLogin, onLogout, notificationCount = 0 }: HeaderProps)
               <>
                 {/* Balance */}
                 <div className="hidden sm:block">
-                  <div className="bg-primary/10 px-4 py-2 rounded-lg">
+                  <div className="bg-primary/10 px-4 py-2 rounded-lg flex items-center gap-2">
                     <span className="text-sm text-gray-400">Balance:</span>
-                    <span className="ml-2 font-bold text-text-primary">
-                      ${user.balance.toLocaleString()}
+                    <span
+                      className="font-bold text-text-primary transition-opacity duration-150"
+                      aria-live="polite"
+                      aria-atomic="true"
+                    >
+                      {balanceVisible ? formatCurrency(user.balance) : <span aria-label="Hidden" className="font-bold text-lg">••••••</span>}
                     </span>
+                    <button
+                      onClick={toggleBalanceVisibility}
+                      className="text-primary/70 hover:text-primary transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-primary/50 rounded p-1 flex-shrink-0 -mr-1"
+                      aria-label={balanceVisible ? 'Hide balance' : 'Show balance'}
+                      aria-pressed={!balanceVisible}
+                      type="button"
+                    >
+                      {balanceVisible ? <EyeIcon /> : <EyeOffIcon />}
+                    </button>
                   </div>
                 </div>
                 
@@ -178,9 +210,26 @@ const Header = ({ user, onLogin, onLogout, notificationCount = 0 }: HeaderProps)
             </Link>
             {user && (
               <div className="mt-4 pt-4 border-t border-primary/10">
-                <div className="text-sm text-gray-400">Balance:</div>
-                <div className="font-bold text-text-primary">
-                  ${user.balance.toLocaleString()}
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <div className="text-sm text-gray-400">Balance:</div>
+                    <div
+                      className="font-bold text-text-primary transition-opacity duration-150"
+                      aria-live="polite"
+                      aria-atomic="true"
+                    >
+                      {balanceVisible ? formatCurrency(user.balance) : <span aria-label="Hidden" className="font-bold text-lg">••••••</span>}
+                    </div>
+                  </div>
+                  <button
+                    onClick={toggleBalanceVisibility}
+                    className="text-primary/70 hover:text-primary transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-primary/50 rounded p-2 min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0"
+                    aria-label={balanceVisible ? 'Hide balance' : 'Show balance'}
+                    aria-pressed={!balanceVisible}
+                    type="button"
+                  >
+                    {balanceVisible ? <EyeIcon /> : <EyeOffIcon />}
+                  </button>
                 </div>
               </div>
             )}

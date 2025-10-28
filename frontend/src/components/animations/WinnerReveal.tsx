@@ -80,6 +80,14 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
   const prefersReducedMotion = usePrefersReducedMotion()
   const { user } = useAuth()
 
+  // Store latest callbacks in refs (CRITICAL: prevents effect restart loop)
+  const onCompleteRef = useRef(onComplete)
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCompleteRef.current = onComplete
+    onCloseRef.current = onClose
+  }, [onComplete, onClose])
+
   // Device capability detection
   const deviceProfile = useRef(detectDeviceCapability())
 
@@ -154,6 +162,9 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
   useEffect(() => {
     if (!winner || loadingPhase !== 'selecting') return
 
+    // Track if this effect is still mounted
+    let isMounted = true
+
     // Trigger dramatic climax sequence
     const runClimaxSequence = async () => {
       setLoadingPhase('selecting-climax')
@@ -167,6 +178,7 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
       // Phase 1: Rapid cycling (100ms × 5 cycles) - DISABLED sounds
       console.log('[WinnerReveal] Climax sequence: Rapid phase (5 cycles @ 100ms)')
       for (let i = 0; i < 5; i++) {
+        if (!isMounted) return
         setCyclingName(mockNames[i % mockNames.length])
         // DISABLED: audioService.playRandom(['reveal.tick', 'reveal.drum']).catch(err => console.warn('Audio playback failed:', err))
         await delay(100)
@@ -175,6 +187,7 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
       // Phase 2: Slow down (200ms × 3 cycles)
       console.log('[WinnerReveal] Climax sequence: Slow phase (3 cycles @ 200ms)')
       for (let i = 0; i < 3; i++) {
+        if (!isMounted) return
         setCyclingName(mockNames[(i + 5) % mockNames.length])
         // DISABLED: audioService.playRandom(['reveal.tick', 'reveal.drum']).catch(err => console.warn('Audio playback failed:', err))
         await delay(200)
@@ -183,6 +196,7 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
       // Phase 3: Final deceleration (400ms × 2 cycles)
       console.log('[WinnerReveal] Climax sequence: Final deceleration (2 cycles @ 400ms)')
       for (let i = 0; i < 2; i++) {
+        if (!isMounted) return
         setCyclingName(mockNames[(i + 8) % mockNames.length])
         // DISABLED: audioService.playRandom(['reveal.tick', 'reveal.drum']).catch(err => console.warn('Audio playback failed:', err))
         await delay(400)
@@ -195,28 +209,41 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
 
       // Wait for fade-out to complete, then play drum
       await delay(250) // 200ms fade + 50ms buffer
+      if (!isMounted) return
+
       // DISABLED: console.log('[WinnerReveal] Playing DRUM sound - winner revealed!')
       // DISABLED: audioService.play('reveal.drum').catch(err => console.warn('Audio playback failed:', err))
       setCyclingName(winner.username)
       await delay(550) // Remaining time to total 800ms
 
-      // Phase 5: Skip winner card animation and go directly to Result Modal
-      // DISABLED: Play result sound based on whether user won or lost
-      await delay(100) // Small buffer
-      // DISABLED: if (isWinner) {
-      //   console.log('[WinnerReveal] Playing WIN sound for winner')
-      //   audioService.play('result.win').catch(err => console.warn('Audio playback failed:', err))
-      // } else if (user && winner) {
-      //   console.log('[WinnerReveal] Playing LOSE sound for participant')
-      //   audioService.play('result.lose').catch(err => console.warn('Audio playback failed:', err))
-      // }
+      // Phase 5: Complete the sequence
+      // Wait a bit to let any final visual effects settle
+      await delay(500)
 
-      // Complete animation immediately - skip explosion/winner card
-      onComplete?.()
+      if (!isMounted) {
+        console.log('[WinnerReveal] Component unmounted during climax sequence')
+        return
+      }
+
+      console.log('[WinnerReveal] Climax sequence complete, calling onComplete()')
+      onCompleteRef.current?.()
     }
 
-    runClimaxSequence()
-  }, [winner, loadingPhase])
+    // Start the async sequence
+    runClimaxSequence().catch(err => {
+      console.error('[WinnerReveal] Error in climax sequence:', err)
+      // Call onComplete even on error to prevent infinite waiting
+      if (isMounted) {
+        onCompleteRef.current?.()
+      }
+    })
+
+    // Cleanup function to prevent state updates on unmounted component
+    return () => {
+      isMounted = false
+      console.log('[WinnerReveal] Climax sequence effect cleanup - component unmounting')
+    }
+  }, [winner, loadingPhase, isWinner, user])  // onComplete NOT in deps - using ref instead
 
   // Count-up animation for prize
   const { formatted: prizeFormatted } = useCountUp({
@@ -238,24 +265,32 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
     }
   }, [])
 
+  // Skip to end (UX Modification F) - MUST be declared before keyboard handler
+  const skipToEnd = useCallback(() => {
+    if (isWinner) return // Winners cannot skip
+
+    setPhase('complete')
+    onCompleteRef.current?.()
+  }, [isWinner])  // onComplete NOT in deps - using ref
+
   // Keyboard event handlers (UX Modification B)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose?.()
+        onCloseRef.current?.()
       }
       if (e.key === ' ' && canSkip && !isWinner) {
         e.preventDefault()
         skipToEnd()
       }
       if (e.key === 'Enter' && phase === 'complete') {
-        onClose?.()
+        onCloseRef.current?.()
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [phase, canSkip, isWinner, onClose])
+  }, [phase, canSkip, isWinner, skipToEnd])  // onClose NOT in deps - using ref
 
   // Focus management (UX Modification B)
   useEffect(() => {
@@ -274,22 +309,19 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
     }
   }, [phase, winner])
 
-  // Skip to end (UX Modification F)
-  const skipToEnd = useCallback(() => {
-    if (isWinner) return // Winners cannot skip
-
-    setPhase('complete')
-    onComplete?.()
-  }, [isWinner, onComplete])
-
   // Touch interaction handler (UX Modification C)
   const handleBackgroundTap = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget && phase === 'complete') {
       if (Date.now() - animationStartTime > 1950) {
-        onClose?.()
+        onCloseRef.current?.()
       }
     }
-  }, [phase, animationStartTime, onClose])
+  }, [phase, animationStartTime])  // onClose NOT in deps - using ref
+
+  // Stable close handler for button clicks
+  const handleClose = useCallback(() => {
+    onCloseRef.current?.()
+  }, [])
 
   // Animation sequence
   useEffect(() => {
@@ -303,12 +335,15 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
     // No need to start additional animation phases
     if (loadingPhase === 'selecting-climax') {
       // Climax sequence calls onComplete() directly - do nothing here
+      console.log('[WinnerReveal] In selecting-climax phase, waiting for climax sequence to complete')
       return
     }
 
     // If winner data arrived before reaching 'selecting' phase, skip animation
     // and complete immediately (go directly to Result Modal)
     if (loadingPhase === 'gathering' || loadingPhase === 'computing') {
+      console.log('[WinnerReveal] Early winner data arrival, completing immediately after 500ms delay')
+
       // DISABLED: Play result sound
       // const playResultSound = async () => {
       //   if (isWinner) {
@@ -321,11 +356,20 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
       //   onComplete?.()
       // }
       // playResultSound()
-      onComplete?.()
+
+      // Add delay to allow exit animations to complete
+      // This prevents frozen animation bug (BUG-021)
+      const timer = setTimeout(() => {
+        console.log('[WinnerReveal] Early completion timer fired, calling onComplete()')
+        onCompleteRef.current?.()
+      }, 500)
+
+      return () => clearTimeout(timer)
     }
 
     // If still in 'selecting' phase, wait for climax sequence to trigger
-  }, [winner, winners.length, loadingPhase, onComplete])
+    console.log('[WinnerReveal] In selecting phase, waiting for climax sequence to be triggered')
+  }, [winner, winners.length, loadingPhase, isWinner, user])  // onComplete NOT in deps - using ref
 
   // Show enhanced multi-phase loading state while waiting for winners data
   if (!winner || !winners.length) {
@@ -633,7 +677,7 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
           </p>
           <button
             ref={closeButtonRef}
-            onClick={onClose}
+            onClick={handleClose}
             data-winner-close
             className="w-full px-6 py-3 bg-[var(--color-primary)] text-white font-semibold rounded-lg hover:opacity-90 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-highlight-1)] focus-visible:outline-offset-2"
           >
@@ -939,7 +983,7 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
               >
                 <button
                   ref={closeButtonRef}
-                  onClick={onClose}
+                  onClick={handleClose}
                   data-winner-close
                   className="px-8 py-3 bg-[var(--color-primary)] text-white font-semibold rounded-lg hover:opacity-90 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-highlight-1)] focus-visible:outline-offset-2"
                   style={{ minWidth: '120px', minHeight: '48px' }} // 16px touch target minimum

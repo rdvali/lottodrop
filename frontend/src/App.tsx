@@ -5,6 +5,8 @@ import { MainLayout } from '@components/templates'
 import { AuthModal, NotificationCenter, NotificationToastContainer, NotificationsRoot } from '@components/organisms'
 import { AuthProvider, useAuth } from '@contexts/AuthContext'
 import { NotificationProvider, useNotifications } from '@contexts/NotificationContext'
+import { WinnerResultsProvider } from '@contexts/WinnerResultsContext'
+import { BalanceVisibilityProvider } from '@contexts/BalanceVisibilityContext'
 import { ModalProvider } from './providers'
 import { useModal } from '@hooks/useModal'
 import { socketService } from '@services/socket'
@@ -16,6 +18,8 @@ import SoundToggleButton from '@components/audio/SoundToggleButton'
 import { Spinner } from '@components/atoms'
 import { SEO } from '@components/SEO'
 import { performanceMonitor } from '@utils/performance'
+import { ErrorBoundary } from '@components/error/ErrorBoundary'
+import { GameRoomErrorFallback } from '@components/error/GameRoomErrorFallback'
 
 // Lazy load pages for code splitting
 const RoomList = lazy(() => import('@pages/RoomList/RoomList'))
@@ -159,7 +163,9 @@ const AppContent = () => {
               path="/room/:roomId"
               element={
                 <ProtectedRoute>
-                  <GameRoom />
+                  <ErrorBoundary fallback={GameRoomErrorFallback}>
+                    <GameRoom />
+                  </ErrorBoundary>
                 </ProtectedRoute>
               }
             />
@@ -197,13 +203,17 @@ function App() {
   return (
     <HelmetProvider>
       <AuthProvider>
-        <NotificationProvider>
-          <ModalProvider>
-            <BrowserRouter>
-              <AppContent />
-            </BrowserRouter>
-          </ModalProvider>
-        </NotificationProvider>
+        <BalanceVisibilityProvider>
+          <NotificationProvider>
+            <WinnerResultsProvider>
+              <ModalProvider>
+                <BrowserRouter>
+                  <AppContent />
+                </BrowserRouter>
+              </ModalProvider>
+            </WinnerResultsProvider>
+          </NotificationProvider>
+        </BalanceVisibilityProvider>
       </AuthProvider>
     </HelmetProvider>
   )

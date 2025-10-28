@@ -7,14 +7,17 @@ import { TournamentCard, RoomJoinConfirmationModal, NotificationCenter } from '@
 import { Button, Badge, CardSkeleton } from '@components/atoms'
 import { ParticleBackground } from '@components/animations'
 import { useAuth } from '@contexts/AuthContext'
+import { useBalanceVisibility } from '@contexts/BalanceVisibilityContext'
 import { useModal } from '@hooks/useModal'
 import { useRoomActivityManager } from '@hooks/useRoomActivity'
+import { formatCurrency } from '@utils/currencyUtils'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 
 const RoomList = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { isVisible: balanceVisible } = useBalanceVisibility()
   const { openAuthModal } = useModal()
   const { roomActivities, triggerRoomActivity } = useRoomActivityManager()
   const [rooms, setRooms] = useState<Room[]>([])
@@ -31,6 +34,13 @@ const RoomList = () => {
     if (user) {
       const userJoinedRooms = new Set<string>()
       roomsData.forEach(room => {
+        // CRITICAL: Only check 'waiting' or 'in_progress' rooms to avoid stale participant data
+        // When a room is 'completed', participants array may contain stale data until backend clears it
+        // This prevents re-adding users to joinedRooms after game completion
+        if (room.status !== 'waiting' && room.status !== 'in_progress') {
+          return // Skip completed/unknown status rooms
+        }
+
         // Check if current user is in the participants list
         // CRITICAL FIX: Only check userId to prevent username collision bugs
         // Safety check: ensure participants array exists and is valid
@@ -93,10 +103,27 @@ const RoomList = () => {
           ? {
               ...room,
               status: mappedStatus,
-              ...(data.participantCount !== undefined && { currentParticipants: data.participantCount })
+              ...(data.participantCount !== undefined && {
+                currentParticipants: data.participantCount,
+                // Calculate prize pool in real-time (fixes BUG-027)
+                prizePool: data.participantCount * room.entryFee
+              })
             }
           : room
       ))
+
+      // INSTANT FIX: Clear "Joined" state immediately when room becomes completed
+      // This fires BEFORE global-game-completed, making the visual update instant
+      if (mappedStatus === 'completed') {
+        setJoinedRooms(prev => {
+          if (prev.has(data.roomId)) {
+            const newSet = new Set(prev)
+            newSet.delete(data.roomId)
+            return newSet
+          }
+          return prev
+        })
+      }
 
       // Trigger reset animation if room is resetting for a new round
       if (data.resetForNewRound) {
@@ -148,24 +175,30 @@ const RoomList = () => {
         }
       }
 
-      // FIX: Don't differentiate between winners/losers - use unified approach
-      // Update room status locally to 'completed' immediately for all users
-      // The room-status-update event will handle the transition to 'waiting' after reset (10s later)
+      // FIX: Update room status AND clear participants array to prevent stale data
+      // This ensures the polling interval doesn't re-add users based on stale participants
       setRooms(prev => prev.map(room =>
         room.id === data.roomId
-          ? { ...room, status: 'completed', currentParticipants: 0 }
+          ? {
+              ...room,
+              status: 'completed',
+              currentParticipants: 0,
+              participants: [] // CRITICAL: Clear participants array immediately
+            }
           : room
       ))
 
-      // If current user was in this room, clear them from joinedRooms
-      // The participant data will be refreshed via room-status-update when room resets
-      if (user && joinedRooms.has(data.roomId)) {
-        setJoinedRooms(prev => {
+      // CRITICAL FIX: Always try to remove room from joinedRooms when game completes
+      // Don't check joinedRooms.has() because of stale closure (joinedRooms not in dependency array)
+      // Using functional update ensures we're working with current state
+      setJoinedRooms(prev => {
+        if (prev.has(data.roomId)) {
           const newSet = new Set(prev)
           newSet.delete(data.roomId)
           return newSet
-        })
-      }
+        }
+        return prev // No change if room not in Set
+      })
     }
 
     socketService.onRoomStatusUpdate(handleRoomStatusUpdate)
@@ -307,7 +340,7 @@ const RoomList = () => {
             <div className="text-right">
               <p className="text-sm text-gray-400">Your Balance</p>
               <p className="text-2xl font-bold text-success">
-                ${user.balance.toLocaleString()}
+                {balanceVisible ? formatCurrency(user.balance) : <span className="font-bold text-2xl">••••••</span>}
               </p>
             </div>
           </div>

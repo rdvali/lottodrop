@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import clsx from 'clsx'
 
@@ -10,6 +10,17 @@ export interface CountdownTimerProps {
   className?: string
 }
 
+/**
+ * Server-Authoritative Countdown Timer
+ *
+ * Fixes: BUG-009, BUG-015
+ *
+ * Problem: Component ran independent local timer that drifted from server time
+ * Solution: Directly display server-provided `seconds` value, no local timer
+ *
+ * The server emits countdown events every ~1000ms with the current value.
+ * We trust the server's value and display it immediately.
+ */
 const CountdownTimer = ({
   seconds,
   onComplete,
@@ -17,42 +28,36 @@ const CountdownTimer = ({
   showProgress = true,
   className,
 }: CountdownTimerProps) => {
-  const [timeLeft, setTimeLeft] = useState(seconds)
   const [isComplete, setIsComplete] = useState(false)
+  const previousSecondsRef = useRef<number>(seconds)
+  const initialSecondsRef = useRef<number>(seconds)
+  const completedRef = useRef(false)
 
-  // Reset when seconds prop changes
+  // Track initial value for progress calculation
   useEffect(() => {
-    setTimeLeft(seconds)
-    setIsComplete(false)
+    if (seconds > previousSecondsRef.current) {
+      // New countdown started (seconds increased)
+      initialSecondsRef.current = seconds
+      setIsComplete(false)
+      completedRef.current = false
+    }
+    previousSecondsRef.current = seconds
   }, [seconds])
 
-  // Simple countdown effect - just decrement the timeLeft that we display
+  // Trigger completion when countdown reaches 0
   useEffect(() => {
-    // Don't start timer if already complete or no time
-    if (timeLeft <= 0) {
-      if (!isComplete && timeLeft === 0) {
-        setIsComplete(true)
-        // Show GO! for 1 second then call onComplete
-        setTimeout(() => {
-          onComplete?.()
-        }, 1000)
-      }
-      return
+    if (seconds === 0 && !completedRef.current) {
+      setIsComplete(true)
+      completedRef.current = true
+
+      // Show GO! for 1 second then call onComplete
+      const timer = setTimeout(() => {
+        onComplete?.()
+      }, 1000)
+
+      return () => clearTimeout(timer)
     }
-
-    // Simple interval timer
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timer)
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [timeLeft, isComplete, onComplete])
+  }, [seconds, onComplete])
 
   const sizes = {
     sm: { container: 'w-24 h-24', text: 'text-2xl', ring: 3 },
@@ -63,13 +68,17 @@ const CountdownTimer = ({
 
   const sizeConfig = sizes[size]
   const circumference = 2 * Math.PI * 45
-  const progress = ((seconds - timeLeft) / seconds) * circumference
 
-  // Simple color based on time remaining (adjusted for 5 second countdown)
+  // Progress based on server-provided countdown value (fixes BUG-009)
+  const initialSeconds = initialSecondsRef.current
+  const elapsed = initialSeconds - seconds
+  const progress = (elapsed / initialSeconds) * circumference
+
+  // Color based on server time remaining (fixes BUG-009)
   const getColor = () => {
-    if (timeLeft > 3) return '#10B981' // Green (5-4)
-    if (timeLeft > 1) return '#F59E0B' // Yellow (3-2)
-    return '#EF4444' // Red (1-0)
+    if (seconds > 3) return '#10B981' // Green (>3)
+    if (seconds > 1) return '#F59E0B' // Yellow (2-3)
+    return '#EF4444' // Red (0-1)
   }
 
   return (
@@ -119,9 +128,9 @@ const CountdownTimer = ({
                 className={clsx('font-bold', sizeConfig.text)}
                 style={{ color: getColor() }}
               >
-                {timeLeft}
+                {seconds}
               </div>
-              {timeLeft <= 2 && timeLeft > 0 && (
+              {seconds <= 2 && seconds > 0 && (
                 <div className="text-xs text-gray-400 mt-1">
                   Get Ready!
                 </div>
@@ -141,7 +150,7 @@ const CountdownTimer = ({
         </div>
 
         {/* Simple pulse for last 2 seconds */}
-        {timeLeft <= 2 && timeLeft > 0 && (
+        {seconds <= 2 && seconds > 0 && (
           <motion.div
             className="absolute inset-0 rounded-full border-2"
             style={{ borderColor: getColor() }}
@@ -158,7 +167,7 @@ const CountdownTimer = ({
       </div>
 
       {/* Simple glow for last 2 seconds */}
-      {timeLeft <= 2 && timeLeft > 0 && (
+      {seconds <= 2 && seconds > 0 && (
         <motion.div
           className="absolute inset-0 rounded-full"
           animate={{

@@ -49,7 +49,7 @@ export const RoundResultNotification: React.FC<RoundResultNotificationProps> = (
   };
 
   const handleNavigate = () => {
-    navigate(`/room/${data.roomId}`);
+    navigate('/profile'); // Navigate to profile page to see game history
     handleDismiss();
   };
 

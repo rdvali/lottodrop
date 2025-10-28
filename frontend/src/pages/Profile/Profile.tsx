@@ -14,12 +14,15 @@ import { GameHistoryPagination } from '../../components/profile/GameHistoryPagin
 import { useGameHistoryCache } from '../../hooks/useGameHistoryCache'
 import toast from 'react-hot-toast'
 import { dateFormatters } from '../../utils/dateUtils'
+import { formatCurrency } from '../../utils/currencyUtils'
+import { useBalanceVisibility } from '@contexts/BalanceVisibilityContext'
 
 type TabType = 'games' | 'transactions' | 'settings'
 
 const Profile = () => {
   const navigate = useNavigate()
   const { user, updateBalance: _updateBalance } = useAuth() // eslint-disable-line @typescript-eslint/no-unused-vars
+  const { isVisible: balanceVisible } = useBalanceVisibility()
   const [activeTab, setActiveTab] = useState<TabType>('games')
   const [gameHistory, setGameHistory] = useState<GameHistory[]>([])
   const [pagination, setPagination] = useState<PaginationData>({
@@ -240,7 +243,7 @@ const Profile = () => {
           <div className="text-right">
             <p className="text-sm text-gray-400 mb-1">Current Balance</p>
             <p className="text-3xl font-bold text-success">
-              ${(user.balance || 0).toLocaleString()}
+              {balanceVisible ? formatCurrency(user.balance || 0) : <span className="font-bold text-3xl">••••••</span>}
             </p>
           </div>
         </div>
@@ -385,17 +388,17 @@ const Profile = () => {
                         <div className="flex items-center gap-4">
                           <div className="text-right">
                             <p className="text-sm text-gray-400">Bet Amount</p>
-                            <p className="font-semibold">${(game.betAmount || game.entryFee || 0).toFixed(2)}</p>
+                            <p className="font-semibold">{formatCurrency(game.betAmount || game.entryFee || 0)}</p>
                           </div>
                           <div className="text-right">
                             <p className="text-sm text-gray-400">Prize Pool</p>
-                            <p className="font-semibold text-info">${(game.prizePool || 0).toFixed(2)}</p>
+                            <p className="font-semibold text-info">{formatCurrency(game.prizePool || 0)}</p>
                           </div>
                           {(game.wonAmount > 0 || game.prize) && (
                             <div className="text-right">
                               <p className="text-sm text-gray-400">Won Amount</p>
                               <p className="font-semibold text-success">
-                                ${(game.wonAmount || game.prize || 0).toFixed(2)}
+                                {formatCurrency(game.wonAmount || game.prize || 0)}
                               </p>
                             </div>
                           )}
@@ -443,7 +446,7 @@ const Profile = () => {
                         }`}
                       >
                         {transaction.type === 'deposit' || transaction.type === 'winnings' ? '+' : '-'}
-                        ${Math.abs(transaction.amount || 0).toLocaleString()}
+                        {formatCurrency(Math.abs(transaction.amount || 0))}
                       </p>
                       {getTransactionBadge(transaction.type)}
                     </div>

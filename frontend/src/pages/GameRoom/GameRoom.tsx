@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { Room, Participant, Winner } from '../../types'
 import { roomAPI } from '@services/api'
@@ -15,8 +15,10 @@ import {
 import { PlayerTransitions } from '@components/animations/PlayerTransitions'
 import { useAuth } from '@contexts/AuthContext'
 import { useNotifications } from '@contexts/NotificationContext'
+import { useWinnerResults } from '@contexts/WinnerResultsContext'
 import { useModal } from '@hooks/useModal'
 import { useIsMobile } from '@hooks/useResponsive'
+import { useGameStateMachine } from '@hooks/useGameStateMachine'
 import { motion, AnimatePresence } from 'framer-motion'
 import clsx from 'clsx'
 
@@ -27,7 +29,21 @@ const GameRoom = () => {
   const { openAuthModal } = useModal()
   const { showToast } = useNotifications()
   const isMobile = useIsMobile()
-  
+
+  // Initialize game state machine (fixes BUG-001, BUG-003, BUG-004)
+  const gameStateMachine = useGameStateMachine()
+
+  // Winner results context (fixes BUG-005, BUG-012, BUG-017)
+  const winnerResults = useWinnerResults()
+
+  // Operation locking to prevent race conditions (fixes BUG-006)
+  const [isJoining, setIsJoining] = useState(false)
+  const [isLeaving, setIsLeaving] = useState(false)
+  const operationInProgress = isJoining || isLeaving
+
+  // Event idempotency tracking (fixes BUG-007)
+  const processedEventsRef = useRef<Set<string>>(new Set())
+
   const [room, setRoom] = useState<Room | null>(null)
   const [participants, setParticipants] = useState<Participant[]>([])
   const [loading, setLoading] = useState(true)
@@ -36,50 +52,14 @@ const GameRoom = () => {
   const [winners, setWinners] = useState<Winner[]>([])
   const [showLeaveModal, setShowLeaveModal] = useState(false)
   const [showCelebration, setShowCelebration] = useState(false)
-  const [showWinnerModal, setShowWinnerModal] = useState(false)
-  const [currentRoundWinners, setCurrentRoundWinners] = useState<string | null>(null) // Track which round's winners we've shown
-  const [modalDataLocked, setModalDataLocked] = useState(false) // CRITICAL: Prevents modal data from being overwritten while modal is open
   const [showFullScreenCountdown, setShowFullScreenCountdown] = useState(false)
   const [hasUserInteracted, setHasUserInteracted] = useState(false) // Track if user has interacted with countdown
 
-  // Separate modal data state - persists independently of room state
-  const [modalWinnerData, setModalWinnerData] = useState<{
-    winners: Winner[]
-    prizePool: number
-    platformFeeAmount?: number
-    platformFeeRate?: number
-    roundId: string | null
-    timestamp?: number // Add timestamp to track when data was captured
-    wasParticipant?: boolean // Track if user was a participant when modal opened
-    roomStatus?: 'waiting' | 'in_progress' | 'completed' // Track room status for Join Room button
-    entryFee?: number // Store entry fee for Join Room button
-  } | null>(null)
-
-  // Use ref to ensure modal data persists across re-renders
-  const modalWinnerDataRef = useRef<{
-    winners: Winner[]
-    prizePool: number
-    platformFeeAmount?: number
-    platformFeeRate?: number
-    roundId: string | null
-    timestamp: number // Add timestamp to track when data was captured
-    wasParticipant: boolean // Track if user was a participant when modal opened
-    roomStatus?: 'waiting' | 'in_progress' | 'completed' // Track room status for Join Room button
-    entryFee?: number // Store entry fee for Join Room button
-  } | null>(null)
-
-  // Additional backup ref that's never cleared by room state changes
-  const backupModalDataRef = useRef<{
-    winners: Winner[]
-    prizePool: number
-    platformFeeAmount?: number
-    platformFeeRate?: number
-    roundId: string | null
-    timestamp: number // Add timestamp to track when data was captured
-    wasParticipant: boolean // Track if user was a participant when modal opened
-    roomStatus?: 'waiting' | 'in_progress' | 'completed' // Track room status for Join Room button
-    entryFee?: number // Store entry fee for Join Room button
-  } | null>(null)
+  // REMOVED: Modal data state - now managed by WinnerResultsContext (fixes BUG-005, BUG-012, BUG-017)
+  // - showWinnerModal → winnerResults.isModalOpen
+  // - modalWinnerData → winnerResults.currentResults
+  // - modalDataLocked → handled by context's persistence logic
+  // - modalWinnerDataRef / backupModalDataRef → no longer needed
 
   const [previousPrizePool, setPreviousPrizePool] = useState<number>(0)
   const [platformFeeData, setPlatformFeeData] = useState<{ amount: number, rate: number }>({ amount: 0, rate: 0.1 })
@@ -92,18 +72,57 @@ const GameRoom = () => {
 
   const isParticipant = participants.some(p => p.userId === user?.id)
 
+  // Component mount tracking to prevent state updates after unmount (fixes BUG-008)
+  const isMountedRef = useRef(true)
+
   // Refs to track current state values in socket handlers
   const participantsRef = useRef(participants)
   const countdownRef = useRef(countdown)
   const userRef = useRef(user)
   const animatingRef = useRef(animating)
   const winnersRef = useRef(winners)
-  
+
+  // Extract stable handler from state machine (CRITICAL: prevents infinite useEffect loop)
+  const stateMachineAnimationComplete = gameStateMachine.handleAnimationComplete
+
+  // Stable callback for WinnerReveal onComplete (fixes BUG-023: prevents useEffect restart loop)
+  const handleWinnerAnimationComplete = useCallback(() => {
+    console.log('[GameRoom] Winner animation complete callback triggered')
+    // Notify state machine that animation is complete
+    stateMachineAnimationComplete()
+
+    // Delay setting animating to false to allow exit animation to complete
+    setTimeout(() => {
+      setAnimating(false)
+      // Notify backend that animation is complete
+      if (roomId) {
+        socketService.emit('animation-complete', roomId)
+      }
+    }, 600)
+  }, [stateMachineAnimationComplete, roomId])
+
+  // Stable callback for Celebration onComplete (fixes BUG-024: frozen confetti particles)
+  const handleCelebrationComplete = useCallback(() => {
+    console.log('[GameRoom] Celebration animation complete, resetting trigger')
+    // Auto-reset celebration trigger when animation completes
+    setShowCelebration(false)
+  }, [])
+
+  // Set up component mount tracking (fixes BUG-008)
+  useEffect(() => {
+    isMountedRef.current = true
+
+    return () => {
+      console.log('[GameRoom] Component unmounting, setting isMountedRef to false')
+      isMountedRef.current = false
+    }
+  }, [])
+
   // Update refs when state changes
   useEffect(() => {
     participantsRef.current = participants
   }, [participants])
-  
+
   useEffect(() => {
     countdownRef.current = countdown
     // Trigger full-screen countdown on mobile when ≤ 5 seconds
@@ -134,71 +153,53 @@ const GameRoom = () => {
     winnersRef.current = winners
   }, [winners])
   
-  // Show modal only for NEW winners that haven't been shown yet
-  // This effect only triggers when we get new winners, independent of room status changes
+  // Show modal for new winners using WinnerResultsContext (fixes BUG-005, BUG-012, BUG-017)
+  // Context handles persistence independently of room state changes
   useEffect(() => {
-    // Don't process new winners if modal data is locked (modal is currently open)
-    // WinnerReveal animation disabled, so no need to check !animating
-    if (winners.length > 0 && !modalDataLocked) {
-      // Create a unique identifier for this set of winners
-      const winnersId = winners.map(w => w.userId).join('-')
-
-      // Only show modal if these are new winners we haven't shown yet
-      if (winnersId !== currentRoundWinners) {
-        setCurrentRoundWinners(winnersId)
-
-        // Use the actual prize pool from room state or calculate from participants
-        // The prize pool is the sum of all entry fees, not derived from winner prizes
-        const actualPrizePool = room?.prizePool ||
-          (participantsRef.current.length * (room?.entryFee || 0))
-
-        // Check if current user was a participant at the time of winning
-        const currentUser = userRef.current
-        const userWasParticipant = currentUser ? participantsRef.current.some(p => p.userId === currentUser.id) : false
-
-        // Store winner data separately for modal display - this persists until user closes modal
-        const winnerData = {
-          winners: [...winners], // Create a copy to avoid reference issues
-          prizePool: actualPrizePool || 0, // Use actual prize pool
-          platformFeeAmount: platformFeeData.amount || (actualPrizePool * (room?.platformFeeRate || 0.1)), // Use stored or calculate
-          platformFeeRate: platformFeeData.rate || room?.platformFeeRate || 0.1, // Use stored or default
-          roundId: winnersId,
-          timestamp: Date.now(), // Add timestamp to track when data was captured
-          wasParticipant: userWasParticipant, // Store participant status at time of modal opening
-          roomStatus: room?.status || 'waiting', // Store current room status
-          entryFee: room?.entryFee || 0 // Store entry fee for Join Room button
-        }
-
-        // Store in both state and ref for persistence
-        setModalWinnerData(winnerData)
-        modalWinnerDataRef.current = winnerData
-        // Also store in backup ref for extra safety
-        backupModalDataRef.current = winnerData
-
-        // Lock the modal data to prevent any updates while modal is open
-        setModalDataLocked(true)
-        setShowWinnerModal(true)
-      }
+    // Don't process if modal is already open or no winners
+    if (winners.length === 0 || winnerResults.isModalOpen) {
+      return
     }
-  }, [winners, currentRoundWinners, modalDataLocked, animating]) // CRITICAL: No room dependency to prevent modal data reset on status change
 
-  // Removed auto-close functionality - modal now requires manual close
+    // Create unique identifier for this set of winners
+    const winnersId = winners.map(w => w.userId).join('-')
 
-  // Reset winners state for new rounds (but preserve modal data until user dismisses)
-  // CRITICAL: This effect must NOT interfere with modal data persistence
+    // Check if we've already shown these winners
+    if (winnerResults.currentResults?.roundId === winnersId) {
+      return
+    }
+
+    // Prepare winner data for context
+    const currentUser = userRef.current
+    const userWasParticipant = currentUser ? participantsRef.current.some(p => p.userId === currentUser.id) : false
+    // Use previousPrizePool which persists after room resets (fixes BUG-026)
+    const actualPrizePool = previousPrizePool || room?.prizePool || 0
+
+    const winnerData = {
+      winners: [...winners],
+      prizePool: actualPrizePool,
+      platformFeeAmount: platformFeeData.amount,
+      platformFeeRate: platformFeeData.rate,
+      roundId: winnersId,
+      timestamp: Date.now(),
+      wasParticipant: userWasParticipant,
+      roomStatus: room?.status || 'waiting',
+      entryFee: room?.entryFee || 0,
+      vrfSeed: vrfData.seed,
+      vrfProof: vrfData.proof
+    }
+
+    // Set winner results in context - triggers modal opening
+    winnerResults.setWinnerResults(winnerData)
+  }, [winners, previousPrizePool, room?.prizePool, room?.status, room?.entryFee, platformFeeData, vrfData, winnerResults])
+
+  // Clear local winners state when room resets (context handles modal persistence)
   useEffect(() => {
-    // Only clear winners if modal data is NOT locked (i.e., modal is not open)
-    if (room?.status === 'waiting' && winners.length > 0 && !modalDataLocked) {
-      // Clear winners array for room state
+    if (room?.status === 'waiting' && winners.length > 0 && !winnerResults.isModalOpen) {
+      // Clear local winners array - context preserves modal data
       setWinners([])
-      // Also clear the current round winners tracker when room resets for a new round
-      // This allows the next round's winners to be properly displayed
-      setCurrentRoundWinners(null)
-
-      // CRITICAL: Never touch modalWinnerData, modalWinnerDataRef, currentRoundWinners, or showWinnerModal here
-      // These must ONLY be cleared when user manually closes the modal
     }
-  }, [room?.status, winners.length, modalDataLocked])
+  }, [room?.status, winners.length, winnerResults.isModalOpen])
 
 
   useEffect(() => {
@@ -207,10 +208,14 @@ const GameRoom = () => {
     const fetchRoom = async () => {
       try {
         const data = await roomAPI.getRoom(roomId)
+        if (!isMountedRef.current) return // Component unmounted during fetch
+
         setRoom(data)
         setParticipants(data.participants || [])
         socketService.joinRoom(roomId)
       } catch {
+        if (!isMountedRef.current) return // Component unmounted during error
+
         showToast({
           type: 'error',
           subtype: 'system_alert',
@@ -220,7 +225,9 @@ const GameRoom = () => {
         })
         navigate('/')
       } finally {
-        setLoading(false)
+        if (isMountedRef.current) {
+          setLoading(false)
+        }
       }
     }
 
@@ -233,26 +240,21 @@ const GameRoom = () => {
     }
   }, [roomId, navigate])
 
-  // Update modal data with new room status when it changes
+  // Update modal data with new room status when it changes (fixes BUG-005)
   useEffect(() => {
-    if (showWinnerModal && room) {
-      // Update room status in modal data refs when room status changes
-      if (modalWinnerDataRef.current) {
-        modalWinnerDataRef.current.roomStatus = room.status
-      }
-      if (backupModalDataRef.current) {
-        backupModalDataRef.current.roomStatus = room.status
-      }
-      // Also update state to trigger re-render
-      setModalWinnerData(prev => prev ? { ...prev, roomStatus: room.status } : prev)
+    if (winnerResults.isModalOpen && room?.status) {
+      // Update room status in context - this updates the Join Room button state
+      winnerResults.updateRoomStatus(room.status)
     }
-  }, [room?.status, showWinnerModal])
+  }, [room?.status, winnerResults])
 
   // Socket listeners
   useEffect(() => {
     if (!roomId) return
 
     const handleRoomState = (data: any) => {
+      if (!isMountedRef.current) return // Component unmounted (BUG-008)
+
       // CRITICAL: Never clear modal data during room state updates
       // Modal data must persist until user manually closes it
 
@@ -272,20 +274,29 @@ const GameRoom = () => {
       // Transform the room data from socket just like from API
       if (data.room) {
         const entryFee = parseFloat(data.room.bet_amount) || 0
-        const currentParticipants = data.room.currentPlayers || 
-                                   parseInt(data.room.current_players) || 
-                                   data.participants?.length || 0
-        
-        // Calculate prize pool - check multiple sources
+
+        // FIX BUG-029: Use transformedParticipants.length as primary source (most accurate)
+        // The actual participant list is the ground truth, not the server's count
+        const currentParticipants = transformedParticipants.length ||
+                                   data.room.currentPlayers ||
+                                   parseInt(data.room.current_players) ||
+                                   0
+
+        console.log(`[GameRoom] Participant count: transformedParticipants=${transformedParticipants.length}, currentPlayers=${data.room.currentPlayers}, current_players=${data.room.current_players}`)
+
+        // Prize pool: Prefer server value, fallback to client calculation (fixes BUG-028, BUG-029)
+        // Use the same currentParticipants calculation for consistency
         let prizePool = 0
         if (data.room.currentPrizePool !== undefined && data.room.currentPrizePool !== null) {
-          prizePool = typeof data.room.currentPrizePool === 'number' ? 
+          prizePool = typeof data.room.currentPrizePool === 'number' ?
             data.room.currentPrizePool : parseFloat(data.room.currentPrizePool)
         } else if (data.room.current_prize_pool) {
           prizePool = parseFloat(data.room.current_prize_pool)
-        } else if (currentParticipants > 0 && entryFee > 0) {
-          // Calculate based on participants if prize pool not provided
+        } else {
+          // Fallback: Calculate from currentParticipants (using actual participant array length)
+          // This handles edge cases where server count is stale but participant list is accurate
           prizePool = currentParticipants * entryFee
+          console.log(`[GameRoom] Prize pool calculated client-side: ${currentParticipants} × $${entryFee} = $${prizePool}`)
         }
         prizePool = isNaN(prizePool) ? 0 : prizePool
         
@@ -317,10 +328,22 @@ const GameRoom = () => {
           }
         })
       }
-      setParticipants(transformedParticipants)
+
+      // Only update participants if they've changed (fixes BUG-014 - participant flicker)
+      const currentParticipants = participantsRef.current
+      const hasChanged = currentParticipants.length !== transformedParticipants.length ||
+        transformedParticipants.some((newP: any) =>
+          !currentParticipants.find(p => p.userId === newP.userId)
+        )
+
+      if (hasChanged) {
+        setParticipants(transformedParticipants)
+      }
     }
 
     const handleUserJoined = (data: any) => {
+      if (!isMountedRef.current) return // Component unmounted (BUG-008)
+
       if (data.roomId === roomId) {
         // Check if user is already in participants (prevents duplicate adds)
         const currentParticipants = participantsRef.current
@@ -343,9 +366,8 @@ const GameRoom = () => {
             status: 'active' as const
           }]
           setParticipants(newParticipants)
-          
-          // Don't modify prize pool here - let room-state event handle it
-          // The backend sends the authoritative prize pool value
+
+          // FIX BUG-031: Update prize pool immediately so other users see the update
           setRoom(prev => {
             if (prev) {
               // Check if minimum players reached and countdown not started
@@ -361,11 +383,12 @@ const GameRoom = () => {
                 })
                 // Socket event will trigger countdown from backend
               }
-              
+
               return {
                 ...prev,
-                currentParticipants: newParticipants.length
-                // Don't modify prize pool - backend handles this via room-state event
+                currentParticipants: newParticipants.length,
+                // Calculate prize pool immediately (fixes BUG-031)
+                prizePool: newParticipants.length * prev.entryFee
               }
             }
             return null
@@ -381,6 +404,8 @@ const GameRoom = () => {
     }
 
     const handleUserLeft = (data: any) => {
+      if (!isMountedRef.current) return // Component unmounted (BUG-008)
+
       if (data.roomId === roomId) {
         // Check if user was actually in participants
         const currentParticipants = participantsRef.current
@@ -396,9 +421,8 @@ const GameRoom = () => {
           })
           const newParticipants = currentParticipants.filter(p => p.userId !== data.userId)
           setParticipants(newParticipants)
-          
-          // Don't modify prize pool here - let room-state event handle it
-          // The backend sends the authoritative prize pool value
+
+          // FIX BUG-031: Update prize pool immediately so other users see the update
           setRoom(prev => {
             if (prev) {
               // Check if we dropped below minimum during countdown
@@ -414,11 +438,12 @@ const GameRoom = () => {
                 })
                 setCountdown(null)
               }
-              
+
               return {
                 ...prev,
-                currentParticipants: newParticipants.length
-                // Don't modify prize pool - backend handles this via room-state event
+                currentParticipants: newParticipants.length,
+                // Calculate prize pool immediately (fixes BUG-031)
+                prizePool: newParticipants.length * prev.entryFee
               }
             }
             return null
@@ -434,11 +459,17 @@ const GameRoom = () => {
     }
 
     const handleGameStarting = async (data: any) => {
+      if (!isMountedRef.current) return // Component unmounted (BUG-008)
+
       console.log('[GameRoom] handleGameStarting event received:', data)
       if (data.roomId === roomId) {
         const countdownValue = data.countdown || 30
         console.log('[GameRoom] Countdown value:', countdownValue)
+
+        // Use state machine transition (fixes BUG-001)
+        gameStateMachine.handleGameStarting(countdownValue)
         setCountdown(countdownValue)
+
         showToast({
           type: 'success',
           subtype: 'game_result',
@@ -460,6 +491,9 @@ const GameRoom = () => {
       if (data.roomId === roomId) {
         const countdownValue = data.countdown
         console.log('[GameRoom] Setting countdown to:', countdownValue)
+
+        // Use state machine transition (fixes BUG-003)
+        gameStateMachine.handleCountdownTick(countdownValue)
         setCountdown(countdownValue)
 
         // FRAME-PERFECT: Play sound EXACTLY when countdown value changes
@@ -481,7 +515,11 @@ const GameRoom = () => {
     }
 
     const handleAnimationStart = (data: any) => {
+      if (!isMountedRef.current) return // Component unmounted (BUG-008)
+
       if (data.roomId === roomId) {
+        // Use state machine transition (fixes BUG-001, BUG-003)
+        gameStateMachine.handleAnimationStart()
         setAnimating(true)
         setCountdown(null)
 
@@ -492,18 +530,28 @@ const GameRoom = () => {
     }
 
     const handleGameCompleted = (data: any) => {
+      if (!isMountedRef.current) return // Component unmounted (BUG-008)
+
       // Removed: console.log('[GameRoom] game-completed event received:', data)
       // Removed: console.log('[GameRoom] Current roomId:', roomId)
       // Removed: console.log('[GameRoom] Event roomId:', data.roomId)
       // Removed: console.log('[GameRoom] RoomId match:', data.roomId === roomId)
-      
+
       if (data.roomId === roomId) {
+        // Idempotency check - prevent duplicate processing (fixes BUG-007)
+        const eventId = `game-completed-${data.roomId}-${data.roundId || Date.now()}`
+        if (processedEventsRef.current.has(eventId)) {
+          console.warn('[GameRoom] Duplicate game-completed event detected, skipping:', eventId)
+          return
+        }
+        processedEventsRef.current.add(eventId)
+
         // Removed: console.log('[GameRoom] Processing game-completed for matching room')
         // Removed: console.log('[GameRoom] Winners data:', data.winners)
-        
+
         // Transform the winners data based on the format received
         let winnersArray: Winner[] = []
-        
+
         if (data.isMultiWinner === false && data.winnerId) {
           // Single winner format
           // Removed: console.log('[GameRoom] Single winner format detected')
@@ -523,24 +571,18 @@ const GameRoom = () => {
             position: w.position || 1
           }))
         }
-        
+
         // Removed: console.log('[GameRoom] Setting transformed winners array:', winnersArray)
-        
+
+        // Use state machine transition (fixes BUG-001, BUG-004)
+        gameStateMachine.handleGameCompleted(winnersArray)
         setWinners(winnersArray)
 
         // Store platform fee data from the event
         const platformFee = data.platformFeeAmount || data.commissionAmount || 0
         const totalPrize = data.totalPrize || (winnersArray.reduce((sum, w) => sum + w.prize, 0) / 0.9) // Estimate if not provided
 
-        // Update modal data refs with platform fee information
-        if (modalWinnerDataRef.current) {
-          modalWinnerDataRef.current.platformFeeAmount = platformFee
-        }
-        if (backupModalDataRef.current) {
-          backupModalDataRef.current.platformFeeAmount = platformFee
-        }
-
-        // Store in state for next modal opening
+        // Store in state for modal opening via context
         setPlatformFeeData({
           amount: platformFee,
           rate: platformFee && totalPrize ? platformFee / totalPrize : 0.1
@@ -554,7 +596,7 @@ const GameRoom = () => {
 
         // Don't automatically show modal here - let the useEffect handle it
         // This ensures each client controls their own modal state
-        
+
         // Get current values
         const currentUser = userRef.current
 
@@ -566,9 +608,10 @@ const GameRoom = () => {
         if (data.isMultiWinner === false && data.winnerId === currentUser?.id && currentUser) {
           setShowCelebration(true)
 
-          // Optimistic balance update for immediate UI feedback
-          const newBalance = currentUser.balance + data.winnerAmount
-          updateBalance(newBalance, 'optimistic')
+          // REMOVED: Optimistic balance update (fixes BUG-020)
+          // Wait for authoritative balance-updated event from server
+          // const newBalance = currentUser.balance + data.winnerAmount
+          // updateBalance(newBalance, 'optimistic')
         }
 
         // Handle multi-winner format
@@ -577,11 +620,10 @@ const GameRoom = () => {
           if (userWinner && currentUser) {
             setShowCelebration(true)
 
-            // Optimistic balance update for immediate UI feedback
-            const newBalance = currentUser.balance + userWinner.prize
-            updateBalance(newBalance, 'optimistic')
-
-            // Socket event will provide authoritative balance update
+            // REMOVED: Optimistic balance update (fixes BUG-020)
+            // Wait for authoritative balance-updated event from server
+            // const newBalance = currentUser.balance + userWinner.prize
+            // updateBalance(newBalance, 'optimistic')
           }
         }
 
@@ -593,46 +635,49 @@ const GameRoom = () => {
     }
 
     const handleBalanceUpdated = (data: any) => {
+      if (!isMountedRef.current) return // Component unmounted (BUG-008)
+
       const currentUser = userRef.current
-      if (data.userId === currentUser?.id) {
+      // Type-safe comparison: Convert both to strings (fixes BUG-013)
+      const dataUserId = String(data.userId)
+      const currentUserId = String(currentUser?.id)
+
+      if (dataUserId === currentUserId && currentUser) {
         // Removed: console.log(`[GameRoom] Received balance update for user ${data.userId}: ${data.newBalance}`)
+        // Server balance is authoritative (fixes BUG-020 balance reconciliation)
         updateBalance(data.newBalance, 'socket')
+      } else if (data.userId && currentUser?.id && dataUserId !== currentUserId) {
+        console.warn('[GameRoom] Balance update userId mismatch:', {
+          eventUserId: dataUserId,
+          currentUserId: currentUserId
+        })
       }
     }
 
     const handleRoomStatusUpdate = (data: any) => {
       if (data.roomId === roomId) {
+        // Map backend status to frontend status
+        const mappedStatus = data.status === 'RESETTING' ? 'in_progress' :
+                            data.status === 'WAITING' ? 'waiting' :
+                            data.status === 'ACTIVE' ? 'in_progress' : 'completed'
+
         // Update room status when backend emits status changes (including RESETTING)
         setRoom(prev => {
           if (!prev) return null
           return {
             ...prev,
-            status: data.status === 'RESETTING' ? 'in_progress' :
-                    data.status === 'WAITING' ? 'waiting' :
-                    data.status === 'ACTIVE' ? 'in_progress' : 'completed'
+            status: mappedStatus
           }
         })
 
-        // FIX: Always update modal data refs, even if modal not yet open
-        // This prevents race condition where events arrive before modal opens
-        const mappedStatus = data.status === 'RESETTING' ? 'in_progress' :
-                            data.status === 'WAITING' ? 'waiting' :
-                            data.status === 'ACTIVE' ? 'in_progress' : 'completed'
-
-        if (modalWinnerDataRef.current) {
-          modalWinnerDataRef.current.roomStatus = mappedStatus
-        }
-        if (backupModalDataRef.current) {
-          backupModalDataRef.current.roomStatus = mappedStatus
-        }
-        setModalWinnerData(prev => prev ? { ...prev, roomStatus: mappedStatus } : prev)
+        // Update modal status in context (fixes BUG-005)
+        winnerResults.updateRoomStatus(mappedStatus)
       }
     }
 
     const handleRoomReadyForJoins = (data: any) => {
       if (data.roomId === roomId) {
         // Room is now ready to accept joins after reset
-        // Ensure room status is set to waiting
         setRoom(prev => {
           if (!prev) return null
           return {
@@ -641,15 +686,8 @@ const GameRoom = () => {
           }
         })
 
-        // FIX: Always update modal data with waiting status, even if modal not yet open
-        // This ensures button will show correct status when modal opens
-        if (modalWinnerDataRef.current) {
-          modalWinnerDataRef.current.roomStatus = 'waiting'
-        }
-        if (backupModalDataRef.current) {
-          backupModalDataRef.current.roomStatus = 'waiting'
-        }
-        setModalWinnerData(prev => prev ? { ...prev, roomStatus: 'waiting' } : prev)
+        // Update modal status in context (fixes BUG-005)
+        winnerResults.updateRoomStatus('waiting')
       }
     }
 
@@ -676,11 +714,18 @@ const GameRoom = () => {
       socketService.offRoomStatusUpdate(handleRoomStatusUpdate)
       socketService.offRoomReadyForJoins(handleRoomReadyForJoins)
     }
-  }, [roomId, user?.id]) // Simplified dependencies with refs for stale closures
+  }, [roomId]) // FIXED: Removed user?.id dependency to prevent memory leak (fixes BUG-002, BUG-007, BUG-021)
+  // All handlers use userRef.current instead of user?.id to prevent stale closures
 
   const handleJoinRoom = async () => {
     if (!room) return
-    
+
+    // Prevent concurrent operations (fixes BUG-006)
+    if (operationInProgress) {
+      console.warn('[GameRoom] Operation already in progress, ignoring join request')
+      return
+    }
+
     if (!user) {
       // Open auth modal directly without URL navigation
       openAuthModal()
@@ -701,16 +746,52 @@ const GameRoom = () => {
     // Store original balance for rollback if needed
     const originalBalance = user.balance
     const entryFee = room.entryFee
-    
+
     // Removed: console.log(`[GameRoom] Joining room - current balance: ${originalBalance}, entry fee: ${entryFee}`)
-    
+
+    // Set operation lock
+    setIsJoining(true)
+
     try {
       // Optimistic update: Immediately deduct entry fee from displayed balance
       const newBalance = originalBalance - entryFee
       // Removed: console.log(`[GameRoom] Deducting entry fee: ${originalBalance} - ${entryFee} = ${newBalance}`)
       updateBalance(newBalance, 'optimistic')
 
+      // Optimistic participant update (fixes BUG-019)
+      if (user) {
+        setParticipants(prev => {
+          // Check if already in list
+          if (prev.some(p => p.userId === user.id)) {
+            return prev
+          }
+          return [...prev, {
+            id: user.id,
+            userId: user.id,
+            username: user.username || user.email,
+            avatarUrl: undefined,
+            joinedAt: new Date().toISOString(),
+            status: 'active' as const
+          }]
+        })
+      }
+
       await roomAPI.joinRoom(room.id)
+      if (!isMountedRef.current) return // Component unmounted after API call (BUG-008)
+
+      // FIX BUG-030: Fetch fresh room data immediately after joining to ensure
+      // Prize Pool and Players counter display correct values
+      try {
+        const updatedRoomData = await roomAPI.getRoom(room.id)
+        if (!isMountedRef.current) return // Check again after async operation
+
+        setRoom(updatedRoomData)
+        setParticipants(updatedRoomData.participants || [])
+        console.log(`[GameRoom] Refreshed room data after join: ${updatedRoomData.currentParticipants} participants, prize pool: $${updatedRoomData.prizePool}`)
+      } catch (error) {
+        console.error('[GameRoom] Failed to fetch updated room data after join:', error)
+        // Continue anyway - WebSocket events will eventually update the data
+      }
 
       // Resume audio context for browser autoplay policies
       // DON'T force-enable audio - respect user's preference (they may have it off)
@@ -733,8 +814,15 @@ const GameRoom = () => {
       // Socket events will provide authoritative balance if different
 
     } catch (error: any) {
-      // Rollback optimistic update on failure
+      if (!isMountedRef.current) return // Component unmounted during error (BUG-008)
+
+      // Rollback optimistic updates on failure
       rollbackBalance()
+      // Rollback optimistic participant update
+      if (user) {
+        setParticipants(prev => prev.filter(p => p.userId !== user.id))
+      }
+
       showToast({
         type: 'error',
         subtype: 'system_alert',
@@ -742,22 +830,41 @@ const GameRoom = () => {
         message: error.response?.data?.error || 'Failed to join room',
         priority: 2
       })
+    } finally {
+      if (isMountedRef.current) {
+        // Release operation lock only if still mounted
+        setIsJoining(false)
+      }
     }
   }
 
   const handleLeaveRoom = async () => {
     if (!room || !user) return
 
+    // Prevent concurrent operations (fixes BUG-006)
+    if (operationInProgress) {
+      console.warn('[GameRoom] Operation already in progress, ignoring leave request')
+      return
+    }
+
     // Store original balance for rollback if needed
     const originalBalance = user.balance
     const refundAmount = room.entryFee
-    
+
+    // Set operation lock
+    setIsLeaving(true)
+
     try {
       // Optimistic update: Immediately add refund to displayed balance
       // Removed: console.log(`[GameRoom] Refunding entry fee: ${originalBalance} + ${refundAmount} = ${originalBalance + refundAmount}`)
       updateBalance(originalBalance + refundAmount, 'optimistic')
-      
+
+      // Optimistic participant removal (fixes BUG-019)
+      setParticipants(prev => prev.filter(p => p.userId !== user.id))
+
       await roomAPI.leaveRoom(room.id)
+      if (!isMountedRef.current) return // Component unmounted after API call (BUG-008)
+
       showToast({
         type: 'success',
         subtype: 'system_alert',
@@ -765,15 +872,39 @@ const GameRoom = () => {
         message: 'Left room successfully - entry fee refunded!',
         priority: 2
       })
-      
+
       // Balance is already updated optimistically
       // Socket events will provide authoritative balance if different
-      
+
+      // Notify state machine that user left
+      gameStateMachine.handleUserLeftRoom()
+
       navigate('/')
     } catch (error: any) {
-      // Rollback optimistic update on failure
+      if (!isMountedRef.current) return // Component unmounted during error (BUG-008)
+
+      // Rollback optimistic updates on failure
       // Removed: console.log('[GameRoom] Leave room failed, rolling back balance')
       rollbackBalance()
+
+      // Rollback optimistic participant removal - re-add user
+      if (user) {
+        setParticipants(prev => {
+          // Check if already back in list
+          if (prev.some(p => p.userId === user.id)) {
+            return prev
+          }
+          return [...prev, {
+            id: user.id,
+            userId: user.id,
+            username: user.username || user.email,
+            avatarUrl: undefined,
+            joinedAt: new Date().toISOString(),
+            status: 'active' as const
+          }]
+        })
+      }
+
       showToast({
         type: 'error',
         subtype: 'system_alert',
@@ -781,8 +912,13 @@ const GameRoom = () => {
         message: error.response?.data?.error || 'Failed to leave room',
         priority: 2
       })
+    } finally {
+      if (isMountedRef.current) {
+        // Release operation lock only if still mounted
+        setIsLeaving(false)
+        setShowLeaveModal(false)
+      }
     }
-    setShowLeaveModal(false)
   }
 
   if (loading) {
@@ -803,10 +939,10 @@ const GameRoom = () => {
     )
   }
 
-  // CRITICAL: Always prefer refs over state to ensure data persists through room resets
-  // Priority order: modalWinnerDataRef > backupModalDataRef > modalWinnerData
-  // This ensures modal data is NEVER lost during room status changes
-  const persistedModalData = modalWinnerDataRef.current || backupModalDataRef.current || modalWinnerData
+  // CRITICAL: Use WinnerResultsContext for persistent modal data (fixes BUG-005, BUG-012, BUG-017)
+  // Context ensures modal data persists through room resets independently
+  // Priority: winnerResults.currentResults (managed by context)
+  const persistedModalData = winnerResults.currentResults
 
   // Find user winner from persisted data ONLY - never from current winners state
   // This prevents the modal from losing winner info when room resets
@@ -1118,16 +1254,7 @@ const GameRoom = () => {
                         prizePool={room.prizePool}
                         seed={vrfData.seed}
                         proof={vrfData.proof}
-                        onComplete={() => {
-                          // Delay setting animating to false to allow exit animation to complete
-                          // This prevents overlap between WinnerReveal exit and Result Modal entrance
-                          setTimeout(() => {
-                            setAnimating(false)
-                            // Notify backend that animation is complete to trigger winner processing
-                            socketService.emit('animation-complete', roomId)
-                            // Modal will be shown by useEffect when animating becomes false and winners exist
-                          }, 600) // 600ms allows AnimatePresence exit animation to complete
-                        }}
+                        onComplete={handleWinnerAnimationComplete}
                         onClose={() => setAnimating(false)}
                       />
                     </div>
@@ -1170,16 +1297,7 @@ const GameRoom = () => {
                       prizePool={room.prizePool}
                       seed={vrfData.seed}
                       proof={vrfData.proof}
-                      onComplete={() => {
-                        // Delay setting animating to false to allow exit animation to complete
-                        // This prevents overlap between WinnerReveal exit and Result Modal entrance
-                        setTimeout(() => {
-                          setAnimating(false)
-                          // Notify backend that animation is complete to trigger winner processing
-                          socketService.emit('animation-complete', roomId)
-                          // Modal will be shown by useEffect when animating becomes false and winners exist
-                        }, 600) // 600ms allows AnimatePresence exit animation to complete
-                      }}
+                      onComplete={handleWinnerAnimationComplete}
                       onClose={() => setAnimating(false)}
                     />
                   </Card>
@@ -1241,203 +1359,153 @@ const GameRoom = () => {
           message="Congratulations!"
           prize={userWinner?.prize}
           duration={2500}
-          onComplete={() => {
-            // Auto-reset celebration trigger when animation completes
-            setShowCelebration(false)
-          }}
+          onComplete={handleCelebrationComplete}
         />
 
-        {/* Winner Announcement Modal */}
-        {/* CRITICAL: Always use ref as primary source to ensure persistence across re-renders */}
-        {(() => {
-          // ALWAYS prioritize refs over state to ensure data persists during room status changes
-          // Check all three sources for winner data to ensure maximum persistence
-          const activeModalData = modalWinnerDataRef.current || backupModalDataRef.current || modalWinnerData
+        {/* Winner Announcement Modal - Using WinnerResultsContext (fixes BUG-005, BUG-012, BUG-017) */}
+        {winnerResults.currentResults && (
+          <Modal
+            isOpen={winnerResults.isModalOpen}
+            onClose={() => {
+              setShowCelebration(false) // Stop celebration when closing modal
+              setAnimating(false) // Hide VRF animation modal (fixes BUG-025)
+              winnerResults.dismissResults() // Dismiss results from context
+            }}
+            title="Round Result"
+            size="lg"
+            className="text-center"
+          >
+            <div className="space-y-3">
+              {/* YOUR RESULT - Compact version */}
+              {user && winnerResults.currentResults.wasParticipant && (
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className={clsx(
+                    "rounded-lg p-3 text-center",
+                    winnerResults.currentResults.winners.some(w => w.userId === user.id)
+                      ? "bg-gradient-to-br from-green-500/20 to-green-600/20 border border-green-500"
+                      : "bg-gradient-to-br from-red-500/20 to-red-600/20 border border-red-500"
+                  )}
+                >
+                  {winnerResults.currentResults.winners.some(w => w.userId === user.id) ? (
+                    <div className="flex items-center justify-center gap-4">
+                      <div className="text-4xl">🏆</div>
+                      <div>
+                        <h2 className="text-xl font-bold text-green-400">YOU WON!</h2>
+                        <p className="text-lg font-bold text-white">
+                          +${winnerResults.currentResults.winners.find(w => w.userId === user.id)?.prize || 0}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-4">
+                      <div className="text-4xl">😔</div>
+                      <div>
+                        <h2 className="text-xl font-bold text-red-400">YOU LOST</h2>
+                        <p className="text-sm text-gray-300">Better luck next time!</p>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              )}
 
-          // Only show modal if we have winner data and the modal should be visible
-          if (!showWinnerModal) {
-            return null
-          }
+              {/* Join Room Button - Prominent position */}
+              <div className="flex justify-center">
+                <JoinRoomButton
+                  roomStatus={winnerResults.currentResults.roomStatus || 'waiting'}
+                  entryFee={winnerResults.currentResults.entryFee || room?.entryFee || 0}
+                  isWinner={!!winnerResults.currentResults.winners.find(w => w.userId === user?.id)}
+                  onJoin={async () => {
+                    // Close modal first
+                    setShowCelebration(false)
+                    setAnimating(false) // Hide VRF animation modal (fixes BUG-025 for Join button)
+                    winnerResults.dismissResults()
 
-          // If modal should be shown but data is missing, try to recover from backup sources
-          if (!activeModalData) {
-            console.warn('[GameRoom] Modal is open but no winner data found in any source!')
-            // Don't return null here - let the modal render with a fallback message
-          }
-
-          // FIX: Celebration is already triggered when game completes (lines 540, 553)
-          // No need to trigger again when modal opens - this prevents double-triggering
-
-          return (
-            <Modal
-              isOpen={showWinnerModal}
-              onClose={() => {
-                setShowWinnerModal(false)
-                setShowCelebration(false) // Stop celebration when closing modal
-
-                // Unlock modal data to allow new rounds
-                setModalDataLocked(false)
-
-                // Clear modal display data ONLY on user dismissal
-                setModalWinnerData(null)
-                modalWinnerDataRef.current = null
-                backupModalDataRef.current = null
-
-                // IMPORTANT: Do NOT clear currentRoundWinners here
-                // Keep it to prevent the modal from re-opening with the same winners
-                // It will be naturally replaced when new winners arrive
-                // setCurrentRoundWinners(null) // REMOVED - this was causing the modal to reopen
-              }}
-          title="Round Result"
-          size="lg"
-          className="text-center"
-        >
-          <div className="space-y-3">
-            {/* Handle case where data is missing */}
-            {!activeModalData ? (
-              <div className="text-center py-4">
-                <p className="text-gray-400 text-sm mb-2">Loading game results...</p>
-                <p className="text-xs text-gray-500">If this persists, please refresh the page.</p>
+                    // Then join room
+                    await handleJoinRoom()
+                  }}
+                  disabled={!user || (user && user.balance < (winnerResults.currentResults.entryFee || room?.entryFee || 0))}
+                />
               </div>
-            ) : (
-              <>
-            {/* YOUR RESULT - Compact version */}
-            {user && activeModalData && activeModalData.wasParticipant && (
-              <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.3 }}
-                className={clsx(
-                  "rounded-lg p-3 text-center",
-                  activeModalData.winners && activeModalData.winners.some(w => w.userId === user.id)
-                    ? "bg-gradient-to-br from-green-500/20 to-green-600/20 border border-green-500"
-                    : "bg-gradient-to-br from-red-500/20 to-red-600/20 border border-red-500"
-                )}
-              >
-                {activeModalData.winners && activeModalData.winners.some(w => w.userId === user.id) ? (
-                  <div className="flex items-center justify-center gap-4">
-                    <div className="text-4xl">🏆</div>
-                    <div>
-                      <h2 className="text-xl font-bold text-green-400">YOU WON!</h2>
-                      <p className="text-lg font-bold text-white">
-                        +${activeModalData.winners.find(w => w.userId === user.id)?.prize || 0}
-                      </p>
-                    </div>
+
+              {/* Balance warning if insufficient */}
+              {user && user.balance < (winnerResults.currentResults.entryFee || room?.entryFee || 0) && (
+                <p className="text-xs text-red-400 text-center">
+                  Insufficient balance. Need ${winnerResults.currentResults.entryFee || room?.entryFee || 0}
+                </p>
+              )}
+
+              {/* Game Summary - Compact grid */}
+              <div className="bg-secondary-bg/50 rounded-lg p-2">
+                <div className="grid grid-cols-2 gap-2 text-center">
+                  <div className="p-2">
+                    <span className="text-xs text-gray-400 block">Prize Pool</span>
+                    <span className="text-sm font-bold text-text-primary">
+                      ${winnerResults.currentResults.prizePool || 0}
+                    </span>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-4">
-                    <div className="text-4xl">😔</div>
-                    <div>
-                      <h2 className="text-xl font-bold text-red-400">YOU LOST</h2>
-                      <p className="text-sm text-gray-300">Better luck next time!</p>
-                    </div>
+                  <div className="p-2">
+                    <span className="text-xs text-gray-400 block">Distributed</span>
+                    <span className="text-sm font-bold text-green-400">
+                      ${((winnerResults.currentResults.prizePool || 0) * 0.9).toFixed(2)}
+                    </span>
                   </div>
-                )}
-              </motion.div>
-            )}
-
-            {/* Join Room Button - Prominent position */}
-            <div className="flex justify-center">
-              <JoinRoomButton
-                roomStatus={activeModalData?.roomStatus || 'waiting'}
-                entryFee={activeModalData?.entryFee || room?.entryFee || 0}
-                isWinner={!!userWinner}
-                onJoin={async () => {
-                  // Close modal first
-                  setShowWinnerModal(false)
-                  setShowCelebration(false)
-                  setModalDataLocked(false)
-                  setModalWinnerData(null)
-                  modalWinnerDataRef.current = null
-                  backupModalDataRef.current = null
-
-                  // Then join room
-                  await handleJoinRoom()
-                }}
-                disabled={!user || (user && user.balance < (activeModalData?.entryFee || room?.entryFee || 0))}
-              />
-            </div>
-
-
-            {/* Balance warning if insufficient */}
-            {user && user.balance < (activeModalData?.entryFee || room?.entryFee || 0) && (
-              <p className="text-xs text-red-400 text-center">
-                Insufficient balance. Need ${activeModalData?.entryFee || room?.entryFee || 0}
-              </p>
-            )}
-
-            {/* Game Summary - Compact grid */}
-            <div className="bg-secondary-bg/50 rounded-lg p-2">
-              <div className="grid grid-cols-2 gap-2 text-center">
-                <div className="p-2">
-                  <span className="text-xs text-gray-400 block">Prize Pool</span>
-                  <span className="text-sm font-bold text-text-primary">
-                    ${activeModalData?.prizePool || 0}
-                  </span>
-                </div>
-                <div className="p-2">
-                  <span className="text-xs text-gray-400 block">Distributed</span>
-                  <span className="text-sm font-bold text-green-400">
-                    ${((activeModalData?.prizePool || 0) * 0.9).toFixed(2)}
-                  </span>
-                </div>
-                <div className="p-2">
-                  <span className="text-xs text-gray-400 block">Platform Fee</span>
-                  <span className="text-sm text-yellow-400">
-                    ${((activeModalData?.prizePool || 0) * 0.1).toFixed(2)}
-                  </span>
-                </div>
-                <div className="p-2">
-                  <span className="text-xs text-gray-400 block">Winners</span>
-                  <span className="text-sm font-semibold text-text-primary">
-                    {activeModalData?.winners?.length || 0}
-                  </span>
+                  <div className="p-2">
+                    <span className="text-xs text-gray-400 block">Platform Fee</span>
+                    <span className="text-sm text-yellow-400">
+                      ${((winnerResults.currentResults.prizePool || 0) * 0.1).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="p-2">
+                    <span className="text-xs text-gray-400 block">Winners</span>
+                    <span className="text-sm font-semibold text-text-primary">
+                      {winnerResults.currentResults.winners.length || 0}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Winners List - Collapsed by default */}
-            <details className="bg-secondary-bg/50 rounded-lg">
-              <summary className="cursor-pointer p-2 text-xs text-gray-400 uppercase tracking-wider text-center hover:text-gray-300">
-                View All Winners ({activeModalData?.winners?.length || 0})
-              </summary>
-              <div className="p-2 space-y-1 max-h-32 overflow-y-auto">
-                {activeModalData?.winners && activeModalData.winners.length > 0 ? (
-                  activeModalData.winners.map((winner, index) => (
-                    <div
-                      key={winner.userId}
-                      className={clsx(
-                        "flex justify-between items-center p-2 rounded text-sm",
-                        winner.userId === user?.id
-                          ? "bg-green-500/10"
-                          : "bg-secondary-bg"
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400">#{index + 1}</span>
-                        <span className="text-text-primary">
-                          {winner.username}
-                          {winner.userId === user?.id && (
-                            <span className="text-green-400 ml-1 text-xs">(You)</span>
-                          )}
+              {/* Winners List - Collapsed by default */}
+              <details className="bg-secondary-bg/50 rounded-lg">
+                <summary className="cursor-pointer p-2 text-xs text-gray-400 uppercase tracking-wider text-center hover:text-gray-300">
+                  View All Winners ({winnerResults.currentResults.winners.length || 0})
+                </summary>
+                <div className="p-2 space-y-1 max-h-32 overflow-y-auto">
+                  {winnerResults.currentResults.winners.length > 0 ? (
+                    winnerResults.currentResults.winners.map((winner, index) => (
+                      <div
+                        key={winner.userId}
+                        className={clsx(
+                          "flex justify-between items-center p-2 rounded text-sm",
+                          winner.userId === user?.id
+                            ? "bg-green-500/10"
+                            : "bg-secondary-bg"
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-400">#{index + 1}</span>
+                          <span className="text-text-primary">
+                            {winner.username}
+                            {winner.userId === user?.id && (
+                              <span className="text-green-400 ml-1 text-xs">(You)</span>
+                            )}
+                          </span>
+                        </div>
+                        <span className="font-bold text-green-400">
+                          +${winner.prize}
                         </span>
                       </div>
-                      <span className="font-bold text-green-400">
-                        +${winner.prize}
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-center text-gray-400 py-2 text-xs">No winners data</p>
-                )}
-              </div>
-            </details>
-              </>
-            )}
-          </div>
-        </Modal>
-          )
-        })()}
+                    ))
+                  ) : (
+                    <p className="text-center text-gray-400 py-2 text-xs">No winners data</p>
+                  )}
+                </div>
+              </details>
+            </div>
+          </Modal>
+        )}
       </div>
     </>
   )

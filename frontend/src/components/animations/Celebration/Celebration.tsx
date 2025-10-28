@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import confetti, { type Shape } from 'canvas-confetti'
@@ -22,11 +22,19 @@ const Celebration = ({
 }: CelebrationProps) => {
   const [isActive, setIsActive] = useState(false)
 
+  // FIX: Use ref pattern to prevent stale closure (fixes frozen confetti bug)
+  const onCompleteRef = useRef(onComplete)
+
+  // Update ref when onComplete changes (separate effect)
+  useEffect(() => {
+    onCompleteRef.current = onComplete
+  }, [onComplete])
+
   useEffect(() => {
     // FIX: Immediately hide celebration when trigger becomes false
     if (!trigger && isActive) {
       setIsActive(false)
-      onComplete?.()
+      onCompleteRef.current?.()
       return
     }
 
@@ -52,11 +60,11 @@ const Celebration = ({
 
     const timeout = setTimeout(() => {
       setIsActive(false)
-      onComplete?.()
+      onCompleteRef.current?.()
     }, duration)
 
     return () => clearTimeout(timeout)
-  }, [trigger, type, duration, onComplete, isActive])
+  }, [trigger, type, duration, isActive])
 
   const triggerConfetti = () => {
     const count = 100 // Reduced from 200

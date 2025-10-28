@@ -2,6 +2,7 @@ import React from 'react';
 import type { Transaction } from '../../types';
 import { Card, Badge } from '@components/atoms';
 import { dateFormatters } from '../../utils/dateUtils';
+import { formatCurrency } from '../../utils/currencyUtils';
 
 interface TransactionHistoryProps {
   transactions: Transaction[];
@@ -52,7 +53,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                 }`}
               >
                 {transaction.amount >= 0 ? '+' : ''}
-                ${Math.abs(transaction.amount || 0).toLocaleString()}
+                {formatCurrency(Math.abs(transaction.amount || 0))}
               </div>
               <div className="text-xs text-gray-400 capitalize">
                 {transaction.type.replace('_', ' ')}
