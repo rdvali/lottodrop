@@ -10,6 +10,8 @@ export const ModalProvider = ({ children }: ModalProviderProps) => {
   const [depositModalOpen, setDepositModalOpen] = useState(false)
 
   const openAuthModal = () => {
+    // Close deposit modal when auth modal opens (e.g., session expired)
+    setDepositModalOpen(false)
     setAuthModalOpen(true)
   }
 
