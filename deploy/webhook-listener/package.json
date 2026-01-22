@@ -1,0 +1,14 @@
+{
+  "name": "lottodrop-webhook",
+  "version": "1.0.0",
+  "description": "GitHub webhook listener for LottoDrop auto-deployment",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "LottoDrop",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

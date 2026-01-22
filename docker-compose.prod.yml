@@ -57,9 +57,7 @@ services:
 
   # Backend API Service
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ghcr.io/rdvali/lottodrop-backend:latest
     container_name: lottodrop-backend
     restart: always
     depends_on:
@@ -114,14 +112,7 @@ services:
 
   # Frontend Application
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_URL: ${VITE_API_URL}
-        VITE_SOCKET_URL: ${VITE_SOCKET_URL}
-        VITE_APP_NAME: ${VITE_APP_NAME:-LottoDrop}
-        VITE_APP_VERSION: ${VITE_APP_VERSION:-2.0.0}
+    image: ghcr.io/rdvali/lottodrop-frontend:latest
     container_name: lottodrop-frontend
     restart: always
     depends_on:
@@ -145,12 +136,8 @@ services:
         max-file: "3"
 
   # Admin Panel
-  frontend-admin:
-    build:
-      context: ./frontend-admin
-      dockerfile: Dockerfile
-      args:
-        REACT_APP_API_URL: ${REACT_APP_API_URL}
+  admin:
+    image: ghcr.io/rdvali/lottodrop-admin:latest
     container_name: lottodrop-admin
     restart: always
     depends_on:

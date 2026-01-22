@@ -1,0 +1,36 @@
+[Unit]
+Description=LottoDrop GitHub Webhook Listener
+Documentation=https://github.com/rdvali/lottodrop
+After=network.target
+
+[Service]
+Type=simple
+User=deploy
+Group=deploy
+WorkingDirectory=/opt/lottodrop-webhook
+
+# Environment
+Environment=NODE_ENV=production
+Environment=WEBHOOK_PORT=9001
+Environment=DEPLOY_SCRIPT=/usr/local/bin/deploy-lottodrop.sh
+EnvironmentFile=-/etc/lottodrop/webhook.env
+
+# Run the webhook listener
+ExecStart=/usr/bin/node /opt/lottodrop-webhook/index.js
+
+# Restart policy
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=lottodrop-webhook
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log /var/www/lottodrop /tmp
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
