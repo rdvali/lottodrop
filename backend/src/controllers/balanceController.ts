@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
 import { TransactionType, TransactionStatus } from '../types';
+import { logAdminAction } from '../utils/auditLogger';
 
 export const getBalance = async (req: Request, res: Response) => {
   try {
@@ -35,22 +36,63 @@ export const getBalance = async (req: Request, res: Response) => {
 export const getTransactionHistory = async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
-    const { limit = 50, offset = 0, type } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      type,
+      status,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      startDate,
+      endDate
+    } = req.query;
 
-    let query = `
-      SELECT id, type, amount, currency, status, description, created_at
-      FROM transactions
-      WHERE user_id = $1
-    `;
+    // Convert query params to proper types
+    const pageNum = parseInt(page as string) || 1;
+    const limitNum = Math.min(parseInt(limit as string) || 10, 100); // Cap at 100 for performance
+    const offset = (pageNum - 1) * limitNum;
+
+    // Build WHERE clause
+    let whereClause = 'WHERE user_id = $1';
     const params: any[] = [userId];
 
-    if (type) {
-      query += ' AND type = $2';
+    if (type && type !== 'all') {
       params.push(type);
+      whereClause += ` AND type = $${params.length}`;
     }
 
-    query += ' ORDER BY created_at DESC LIMIT $' + (params.length + 1) + ' OFFSET $' + (params.length + 2);
-    params.push(limit, offset);
+    if (status && status !== 'all') {
+      params.push(status);
+      whereClause += ` AND status = $${params.length}`;
+    }
+
+    if (startDate) {
+      params.push(startDate);
+      whereClause += ` AND created_at >= $${params.length}`;
+    }
+
+    if (endDate) {
+      params.push(endDate);
+      whereClause += ` AND created_at <= $${params.length}`;
+    }
+
+    // Get total count
+    const countQuery = `SELECT COUNT(*) as total FROM transactions ${whereClause}`;
+    const countResult = await pool.query(countQuery, params);
+    const total = parseInt(countResult.rows[0].total);
+
+    // Build main query with sorting
+    const sortColumn = sortBy === 'createdAt' ? 'created_at' : sortBy as string;
+    const sortDirection = sortOrder === 'asc' ? 'ASC' : 'DESC';
+
+    const query = `
+      SELECT id, type, amount, currency, status, description, created_at
+      FROM transactions
+      ${whereClause}
+      ORDER BY ${sortColumn} ${sortDirection}
+      LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+    `;
+    params.push(limitNum, offset);
 
     const result = await pool.query(query, params);
 
@@ -65,12 +107,20 @@ export const getTransactionHistory = async (req: Request, res: Response) => {
       createdAt: row.created_at
     }));
 
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(total / limitNum);
+
     return res.json({
       success: true,
       data: transformedTransactions,
       // Keep legacy format for backward compatibility
       transactions: transformedTransactions,
-      total: result.rowCount
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages
+      }
     });
   } catch (error) {
     console.error('Get transaction history error:', error);
@@ -82,6 +132,20 @@ export const getTransactionHistory = async (req: Request, res: Response) => {
 export const adjustBalance = async (req: Request, res: Response) => {
   const { userId, amount, description } = req.body;
   const adminId = req.user!.userId;
+
+  // SECURITY FIX (HIGH-003): Validate UUID format to prevent injection
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!userId || !uuidRegex.test(userId)) {
+    return res.status(400).json({ error: 'Invalid user ID format' });
+  }
+
+  // SECURITY FIX (HIGH-003): Prevent admin from adjusting their own balance
+  if (userId === adminId) {
+    console.warn(`[SECURITY] Admin ${adminId} attempted to adjust their own balance`);
+    return res.status(403).json({
+      error: 'Cannot adjust your own balance. This action requires another administrator.'
+    });
+  }
 
   const client = await pool.connect();
 
@@ -129,6 +193,21 @@ export const adjustBalance = async (req: Request, res: Response) => {
     );
 
     await client.query('COMMIT');
+
+    // Log admin action to audit logs
+    await logAdminAction(
+      adminId,
+      'BALANCE_ADJUSTMENT',
+      userId,
+      req.ip,
+      {
+        previousBalance: currentBalance,
+        adjustmentAmount,
+        newBalance,
+        description: description || 'Admin balance adjustment',
+        transactionType: TransactionType.ADMIN_ADJUSTMENT
+      }
+    );
 
     return res.json({
       message: 'Balance adjusted successfully',

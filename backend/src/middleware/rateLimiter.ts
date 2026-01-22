@@ -172,10 +172,14 @@ class RateLimiter {
   }
 
   public auth() {
+    // SECURITY FIX (Week 3): Stricter rate limiting for authentication endpoints
     return this.createLimiter({
-      windowMs: 300000, // 5 minutes (reduced from 15)
-      max: 20, // Increased from 5 to 20 attempts
-      message: 'Too many authentication attempts. Please try again later.',
+      windowMs: 300000, // 5 minutes
+      max: 5, // SECURITY: Reduced from 20 to 5 attempts per 5 minutes
+      message: 'Too many authentication attempts. Please try again in 5 minutes.',
+      statusCode: 429,
+      skipSuccessfulRequests: true, // Only count failed login attempts
+      skipFailedRequests: false,
       keyGenerator: (req) => {
         const ip = req.ip || 'unknown';
         return REDIS_KEYS.RATE_LIMIT_API(ip, 'auth');

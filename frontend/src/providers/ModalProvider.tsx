@@ -7,6 +7,7 @@ interface ModalProviderProps {
 
 export const ModalProvider = ({ children }: ModalProviderProps) => {
   const [authModalOpen, setAuthModalOpen] = useState(false)
+  const [depositModalOpen, setDepositModalOpen] = useState(false)
 
   const openAuthModal = () => {
     setAuthModalOpen(true)
@@ -16,10 +17,21 @@ export const ModalProvider = ({ children }: ModalProviderProps) => {
     setAuthModalOpen(false)
   }
 
+  const openDepositModal = () => {
+    setDepositModalOpen(true)
+  }
+
+  const closeDepositModal = () => {
+    setDepositModalOpen(false)
+  }
+
   const value: ModalContextType = {
     authModalOpen,
     openAuthModal,
     closeAuthModal,
+    depositModalOpen,
+    openDepositModal,
+    closeDepositModal,
   }
 
   return (

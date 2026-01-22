@@ -9,7 +9,10 @@ import {
   deleteUser,
   getUserStats,
   depositToUser,
-  withdrawFromUser
+  withdrawFromUser,
+  getCryptoDeposits,
+  getCryptoDepositById,
+  getCryptoDepositStats
 } from '../controllers/adminController';
 import {
   getAllRounds,
@@ -30,8 +33,11 @@ import {
   getRevenueAnalytics,
   getUserAnalytics,
   getTopRooms,
-  exportAnalytics
+  exportAnalytics,
+  getUserFinancialAnalytics,
+  exportUserFinancialAnalytics
 } from '../controllers/analyticsController';
+import logRoutes from './logRoutes';
 
 const router = Router();
 
@@ -72,5 +78,17 @@ router.get('/analytics/revenue', getRevenueAnalytics);
 router.get('/analytics/users', getUserAnalytics);
 router.get('/analytics/top-rooms', getTopRooms);
 router.get('/analytics/export', exportAnalytics);
+
+// User financial analytics routes
+router.get('/analytics/users-financial', getUserFinancialAnalytics);
+router.get('/analytics/users-financial/export', exportUserFinancialAnalytics);
+
+// Log management routes
+router.use('/logs', logRoutes);
+
+// Crypto deposit management routes
+router.get('/deposits', getCryptoDeposits);
+router.get('/deposits/stats', getCryptoDepositStats);
+router.get('/deposits/:id', getCryptoDepositById);
 
 export default router;

@@ -367,25 +367,25 @@ export const joinRoom = async (req: Request, res: Response) => {
     // At this point, we know the user is not already a participant
     // (handled by the re-entry logic above)
 
-    // Check user balance
-    const userResult = await client.query(
-      'SELECT balance FROM users WHERE id = $1 FOR UPDATE',
-      [userId]
-    );
-
-    const userBalance = parseFloat(userResult.rows[0].balance);
+    // SECURITY FIX (CRIT-005): Atomic balance check and deduction
+    // Previous code had TOCTOU race condition: check and update were separate operations
+    // Multiple concurrent requests could pass balance check before any UPDATE executed
+    // New approach: Single atomic UPDATE with WHERE clause ensures database-level validation
     const betAmount = parseFloat(room.bet_amount);
 
-    if (userBalance < betAmount) {
+    const deductionResult = await client.query(
+      `UPDATE users
+       SET balance = balance - $1
+       WHERE id = $2 AND balance >= $1
+       RETURNING balance`,
+      [betAmount, userId]
+    );
+
+    // If no rows updated, insufficient balance (check and deduction failed atomically)
+    if (deductionResult.rows.length === 0) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Insufficient balance' });
     }
-
-    // Deduct bet from user balance
-    await client.query(
-      'UPDATE users SET balance = balance - $1 WHERE id = $2',
-      [betAmount, userId]
-    );
 
     // Add participant to round
     await client.query(

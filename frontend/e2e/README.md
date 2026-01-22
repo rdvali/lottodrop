@@ -15,6 +15,39 @@ End-to-end tests for LottoDrop gaming platform using Playwright. These tests val
 - ✅ Persist authentication after page reload
 - ✅ Show validation errors for invalid email
 
+### Cookie-Based Authentication Security Tests (`auth-cookie-security.spec.ts`) ⭐ NEW - Week 4
+Comprehensive security tests for HttpOnly cookie authentication with CSRF protection:
+
+#### HttpOnly Cookie Security
+- ✅ Verify HttpOnly flags on access/refresh tokens
+- ✅ Validate Secure and SameSite attributes
+- ✅ Confirm tokens are NOT accessible via JavaScript
+- ✅ Test XSS attack mitigation (tokens not in localStorage)
+
+#### CSRF Protection
+- ✅ Validate X-CSRF-Token header on state-changing requests
+- ✅ Test CSRF token refresh on 403 errors
+- ✅ Verify token lifecycle (init, refresh, clear on logout)
+- ✅ Test CSRF token auto-refresh before expiry
+
+#### WebSocket Authentication
+- ✅ Test cookie-based WebSocket handshake
+- ✅ Validate authentication without token in handshake
+- ✅ Verify WebSocket credentials are sent automatically
+
+#### Session Management
+- ✅ Test session persistence across page reloads
+- ✅ Validate cookie cleanup on logout
+- ✅ Test expired cookie handling
+- ✅ Verify multiple concurrent sessions work independently
+- ✅ Test logout prevents session restore
+
+#### Security Edge Cases
+- ✅ Test cookie manipulation detection
+- ✅ Validate security across page navigations
+- ✅ Test requests without cookies are rejected
+- ✅ Verify no tokens exposed to window object
+
 ### Game Flow Tests (`game-flow.spec.ts`)
 - ✅ Display list of available rooms
 - ✅ Successfully join a room
@@ -40,11 +73,53 @@ End-to-end tests for LottoDrop gaming platform using Playwright. These tests val
 - Game flow helpers (countdown, animation, winner modal)
 - Balance and player count utilities
 
+### Helpers (Week 4)
+
+**`helpers/security-utils.ts`** ⭐ NEW
+Security testing utilities for Week 4 authentication enhancements:
+
+```typescript
+import {
+  getAuthCookies,           // Extract auth cookies from context
+  verifyCookieSecurity,     // Validate HttpOnly, Secure, SameSite flags
+  attemptCookieAccessViaJS, // Test XSS protection (should fail)
+  captureCSRFTokenRequest,  // Monitor CSRF token fetch
+  captureRequestWithCSRF,   // Capture API request with CSRF header
+  expireCookie,             // Simulate expired cookie
+  tamperCookieValue,        // Test cookie manipulation detection
+  monitorWebSocketAuth,     // Validate WebSocket authentication
+  verifyNoTokensInStorage,  // Ensure no tokens in storage
+  monitorAuthenticatedRequests, // Count authenticated requests
+} from '../helpers/security-utils'
+```
+
+**Key Functions:**
+- `getAuthCookies()` - Extract all auth cookies from browser context
+- `verifyCookieSecurity()` - Validate cookie security attributes
+- `attemptCookieAccessViaJS()` - Test that tokens are not accessible to JavaScript
+- `captureCSRFTokenRequest()` - Monitor CSRF token endpoint calls
+- `expireCookie()` - Simulate expired cookie for testing
+- `tamperCookieValue()` - Test cookie manipulation detection
+- `monitorWebSocketAuth()` - Validate WebSocket authentication flow
+- `verifyNoTokensInStorage()` - Ensure no tokens in localStorage/sessionStorage
+
 ## Running Tests
 
 ### Run all E2E tests
 ```bash
 npm run test:e2e
+```
+
+### Run specific test suite
+```bash
+# Run only Week 4 security tests
+npm run test:e2e -- auth-cookie-security
+
+# Run only basic auth tests
+npm run test:e2e -- auth.spec
+
+# Run only game flow tests
+npm run test:e2e -- game-flow
 ```
 
 ### Run with UI mode (interactive)
@@ -55,16 +130,27 @@ npm run test:e2e:ui
 ### Run in headed mode (see browser)
 ```bash
 npm run test:e2e:headed
+
+# Run specific test in headed mode
+npm run test:e2e -- auth-cookie-security --headed
 ```
 
 ### Debug mode (step through tests)
 ```bash
 npm run test:e2e:debug
+
+# Debug specific test
+npm run test:e2e -- auth-cookie-security --debug
 ```
 
 ### View test report
 ```bash
 npm run test:e2e:report
+```
+
+### Run tests in CI mode
+```bash
+CI=true npm run test:e2e
 ```
 
 ## Test Configuration
@@ -255,6 +341,60 @@ These E2E tests verify fixes for:
 - **BUG-004**: Event sequencing is correct
 - **BUG-016**: Animation timeout failsafe works
 
+## Week 4 Security Enhancements ⭐
+
+### HttpOnly Cookie Authentication
+
+The new test suite (`auth-cookie-security.spec.ts`) validates the Week 4 security migration:
+
+**Before (Vulnerable)**:
+- JWT tokens stored in localStorage
+- Accessible to any JavaScript (XSS vulnerability)
+- No CSRF protection
+- WebSocket auth via handshake token
+
+**After (Secure)**:
+- JWT tokens in HttpOnly cookies (not accessible to JavaScript)
+- CSRF tokens for state-changing requests
+- SameSite=Strict for CSRF protection
+- WebSocket auth via cookies
+
+### Security Testing Checklist
+
+Before deploying to production, ensure all security tests pass:
+
+- [ ] HttpOnly cookies set correctly
+- [ ] No tokens in localStorage/sessionStorage
+- [ ] CSRF tokens attached to state-changing requests
+- [ ] WebSocket authentication uses cookies
+- [ ] Session persistence works across reloads
+- [ ] Logout clears all cookies
+- [ ] Expired cookies handled gracefully
+- [ ] Cookie manipulation detected
+- [ ] XSS attacks mitigated (tokens not accessible to JS)
+- [ ] Multiple concurrent sessions work independently
+
+### Running Security Tests
+
+```bash
+# Run all Week 4 security tests
+npm run test:e2e -- auth-cookie-security
+
+# Run with browser visible to inspect cookies
+npm run test:e2e -- auth-cookie-security --headed
+
+# Debug specific security test
+npm run test:e2e -- auth-cookie-security --headed --grep "HttpOnly"
+```
+
+### Inspecting Cookies During Tests
+
+When running in headed mode:
+1. Open browser DevTools (F12)
+2. Go to Application → Cookies
+3. Verify `accessToken` has HttpOnly flag checked
+4. Attempt `document.cookie` in console (should not show accessToken)
+
 ## Next Steps
 
 1. Add mobile browser testing (iOS Safari, Android Chrome)
@@ -262,6 +402,8 @@ These E2E tests verify fixes for:
 3. Add performance testing (Core Web Vitals)
 4. Add accessibility testing (axe-core integration)
 5. Add load testing (multiple concurrent users)
+6. Add penetration testing for auth vulnerabilities
+7. Add automated security scanning (OWASP ZAP integration)
 
 ## Resources
 
@@ -269,3 +411,5 @@ These E2E tests verify fixes for:
 - [Best Practices](https://playwright.dev/docs/best-practices)
 - [API Reference](https://playwright.dev/docs/api/class-playwright)
 - [Debugging Guide](https://playwright.dev/docs/debug)
+- [OWASP Cookie Security](https://owasp.org/www-community/controls/SecureCookieAttribute)
+- [CSRF Protection Best Practices](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)

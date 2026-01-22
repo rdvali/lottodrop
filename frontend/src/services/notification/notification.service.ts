@@ -4,11 +4,10 @@ import type {
   NotificationFilter,
   ApiResponse
 } from '../../types'
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || ''
+import { apiClient } from '../api/config'
 
 class NotificationService {
-  private baseUrl = `${API_BASE_URL}/notifications`
+  // SECURITY FIX (Week 4): Using apiClient which already includes base URL
 
   // Get user's notifications with filtering and pagination
   async getNotifications(filter: NotificationFilter = {}): Promise<ApiResponse<{
@@ -28,25 +27,10 @@ class NotificationService {
     if (filter.limit) params.append('limit', filter.limit.toString())
     if (filter.offset) params.append('offset', filter.offset.toString())
 
-    const token = localStorage.getItem('token')
-    if (!token) {
-      throw new Error('Authentication token not found')
-    }
-
+    // SECURITY FIX (Week 4): Authentication via HttpOnly cookies, no token needed
     try {
-      const response = await fetch(`${this.baseUrl}?${params}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      return await response.json()
+      const response = await apiClient.get(`/notifications?${params}`)
+      return response.data
     } catch (error) {
       console.error('Failed to fetch notifications:', error)
       throw error
@@ -55,25 +39,10 @@ class NotificationService {
 
   // Mark notification as read
   async markAsRead(notificationId: string): Promise<ApiResponse<void>> {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      throw new Error('Authentication token not found')
-    }
-
+    // SECURITY FIX (Week 4): Authentication via HttpOnly cookies, no token needed
     try {
-      const response = await fetch(`${this.baseUrl}/${notificationId}/read`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      return await response.json()
+      const response = await apiClient.patch(`/notifications/${notificationId}/read`)
+      return response.data
     } catch (error) {
       console.error('Failed to mark notification as read:', error)
       throw error
@@ -82,25 +51,10 @@ class NotificationService {
 
   // Mark all notifications as read
   async markAllAsRead(): Promise<ApiResponse<void>> {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      throw new Error('Authentication token not found')
-    }
-
+    // SECURITY FIX (Week 4): Authentication via HttpOnly cookies, no token needed
     try {
-      const response = await fetch(`${this.baseUrl}/read-all`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      return await response.json()
+      const response = await apiClient.patch(`/notifications/read-all`)
+      return response.data
     } catch (error) {
       console.error('Failed to mark all notifications as read:', error)
       throw error
@@ -109,25 +63,10 @@ class NotificationService {
 
   // Delete notification
   async deleteNotification(notificationId: string): Promise<ApiResponse<void>> {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      throw new Error('Authentication token not found')
-    }
-
+    // SECURITY FIX (Week 4): Authentication via HttpOnly cookies, no token needed
     try {
-      const response = await fetch(`${this.baseUrl}/${notificationId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      return await response.json()
+      const response = await apiClient.delete(`/notifications/${notificationId}`)
+      return response.data
     } catch (error) {
       console.error('Failed to delete notification:', error)
       throw error
@@ -136,25 +75,10 @@ class NotificationService {
 
   // Get user notification preferences
   async getPreferences(): Promise<ApiResponse<NotificationPreferences[]>> {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      throw new Error('Authentication token not found')
-    }
-
+    // SECURITY FIX (Week 4): Authentication via HttpOnly cookies, no token needed
     try {
-      const response = await fetch(`${this.baseUrl}/preferences`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      return await response.json()
+      const response = await apiClient.get(`/notifications/preferences`)
+      return response.data
     } catch (error) {
       console.error('Failed to fetch notification preferences:', error)
       throw error
@@ -163,26 +87,10 @@ class NotificationService {
 
   // Update notification preferences
   async updatePreferences(preferences: Partial<NotificationPreferences>): Promise<ApiResponse<NotificationPreferences>> {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      throw new Error('Authentication token not found')
-    }
-
+    // SECURITY FIX (Week 4): Authentication via HttpOnly cookies, no token needed
     try {
-      const response = await fetch(`${this.baseUrl}/preferences`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(preferences),
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      return await response.json()
+      const response = await apiClient.patch(`/notifications/preferences`, preferences)
+      return response.data
     } catch (error) {
       console.error('Failed to update notification preferences:', error)
       throw error
@@ -260,25 +168,10 @@ class NotificationService {
 
   // Test notification (for user preferences)
   async sendTestNotification(): Promise<ApiResponse<void>> {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      throw new Error('Authentication token not found')
-    }
-
+    // SECURITY FIX (Week 4): Authentication via HttpOnly cookies, no token needed
     try {
-      const response = await fetch(`${this.baseUrl}/test`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      return await response.json()
+      const response = await apiClient.post(`/notifications/test`)
+      return response.data
     } catch (error) {
       console.error('Failed to send test notification:', error)
       throw error

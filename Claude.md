@@ -1,63 +1,63 @@
 # Claude AI Assistant Configuration for LottoDrop
 
-## 🎰 Project Overview
+## Project Overview
 
 You are working on **LottoDrop**, a production-ready real-time lottery-style gaming platform deployed at **lottodrop.net**. Built with React 19/TypeScript frontend and Node.js/Express backend. This enterprise-grade application features real-time WebSocket communication, secure financial transactions, provably fair gaming mechanics, and comprehensive SEO optimization.
 
-**Current Status**: ✅ Production-Ready | All systems operational | Docker deployment active
+**Current Status**: Production-Ready | All systems operational | Docker deployment active
 
-## 🤖 Agent-Based Development System
+## Agent-Based Development System
 
 ### MANDATORY EXECUTION PROTOCOL
 
 You have access to 9 specialized AI agents. **YOU MUST USE THESE AGENTS** for all relevant tasks:
 
-1. **🎬 Casino Animation Specialist**
+1. **Casino Animation Specialist**
    - Domain: Animations, transitions, game effects, particle systems
    - Use for: Slot animations, winning celebrations, UI transitions, physics simulations
    - Expertise: 60fps optimization, WebGL/Canvas, Lottie, micro-interactions
 
-2. **🎨 Casino Visual Designer**
+2. **Casino Visual Designer**
    - Domain: UI design, visual assets, icons, logos, brand identity
    - Use for: Game icons, platform logos, visual themes, color schemes
    - Expertise: Vegas aesthetics, luxury themes, responsible gaming compliance
 
-3. **🎮 Elite Gaming UX Designer**
+3. **Elite Gaming UX Designer**
    - Domain: User experience, interaction design, HUDs, onboarding flows
    - Use for: Interface design, user journeys, accessibility, conversion optimization
    - Expertise: Gaming psychology, flow state optimization, WCAG compliance
 
-4. **📊 Elite PM Delivery Leader**
+4. **Elite PM Delivery Leader**
    - Domain: Project management, risk assessment, timeline management
    - Use for: Sprint planning, resource allocation, stakeholder management
    - Expertise: Agile/Scrum, risk mitigation, 98% on-time delivery rate
 
-5. **🎯 Elite Product Owner**
+5. **Elite Product Owner**
    - Domain: Product strategy, backlog management, requirements definition
    - Use for: Feature prioritization, user stories, MVP definition, roadmap planning
    - Expertise: RICE/WSJF frameworks, stakeholder alignment, OKRs
 
-6. **🏗️ Enterprise Solution Architect**
+6. **Enterprise Solution Architect**
    - Domain: System architecture, cloud strategy, scalability planning
    - Use for: Architecture decisions, integration patterns, performance optimization
    - Expertise: Microservices, AWS/Azure/GCP, distributed systems, security
 
-7. **💰 Gaming Finance Backend**
+7. **Gaming Finance Backend**
    - Domain: Payment systems, betting engines, financial calculations
    - Use for: Transaction processing, RNG implementation, odds calculation, fraud detection
    - Expertise: PCI DSS compliance, cryptographic security, GLI-19 regulations
 
-8. **🔍 Manual QA Tester**
+8. **Manual QA Tester**
    - Domain: Testing, bug detection, quality assurance
    - Use for: Test case creation, regression testing, API testing, security testing
    - Expertise: Exploratory testing, bug reporting, requirement validation
 
-9. **⚛️ React Frontend Expert**
+9. **React Frontend Expert**
    - Domain: React development, performance optimization, state management
    - Use for: Component architecture, React hooks, Redux/Zustand, TypeScript
    - Expertise: React 19, Next.js, testing strategies, accessibility
 
-## 📋 MANDATORY TASK EXECUTION WORKFLOW
+## MANDATORY TASK EXECUTION WORKFLOW
 
 ### For EVERY task, follow this workflow:
 
@@ -98,91 +98,166 @@ STEP 5: REPORT
 - [Agent Name]: [Specific contribution]
 
 **Verification Status:**
-- Requirements Met: ✓/✗
-- QA Testing: ✓/✗
-- Technical Review: ✓/✗
+- Requirements Met: Y/N
+- QA Testing: Y/N
+- Technical Review: Y/N
 
 **Confidence Level:** [High/Medium/Low]
 **Issues Found:** [None/List]
 **Next Steps:** [If applicable]
 ```
 
-## 🏗️ Technical Context
+## Technical Context
 
-### Current Stack (Updated October 2025)
-- **Frontend**: React 19.1.1, TypeScript 5.9.2, Vite 7.1.5, TailwindCSS
+### Current Stack (January 2026)
+- **Frontend**: React 19.1.1, TypeScript ~5.8.3, Vite 7.1.2, TailwindCSS 4.1.13
 - **Admin Portal**: React 19.1.1, TypeScript 4.9.5, Create React App 5.0.1
-- **Backend**: Node.js 18+, Express 5.1.0, Socket.IO 4.8.1
-- **Database**: PostgreSQL 15+ with pg 8.16.3 driver, Redis (ioredis 5.7.0)
-- **Authentication**: JWT (jsonwebtoken 9.0.2) + bcrypt 6.0.0
-- **Real-time**: WebSocket via Socket.IO with Redis adapter
+- **Backend**: Node.js 18+, Express 5.1.0, Socket.IO 4.8.1, TypeScript 5.9.2
+- **Database**: PostgreSQL 15+ with pg 8.16.3 driver, Redis 7 (ioredis 5.7.0)
+- **Authentication**: JWT (jsonwebtoken 9.0.2) + bcrypt 6.0.0 + HttpOnly Cookies
+- **Security**: CSRF protection with Redis-backed token validation, zxcvbn 4.4.2
+- **Real-time**: WebSocket via Socket.IO with Redis adapter + Cookie-based auth
+- **Testing**: Jest 30.2.0, Vitest 4.0.3, Playwright 1.56.1, Supertest 7.1.4
 - **Deployment**: Docker Compose with nginx:alpine, 5 containers
 - **Domain**: lottodrop.net (configured with proper SEO)
 
 ### Project Structure
 ```
 LottoDrop/
-├── frontend/          # React 19 + Vite application (Main Platform)
-│   ├── public/        # Static assets + robots.txt + PWA manifest
-│   │   └── drop-icon.svg  # LottoDrop purple water drop logo
+├── frontend/                   # React 19 + Vite application (Port 80/8080)
+│   ├── public/                 # Static assets + robots.txt + PWA manifest
+│   │   └── drop-icon.svg       # LottoDrop purple water drop logo
 │   ├── src/
-│   │   ├── components/  # Atomic design (atoms/molecules/organisms)
-│   │   ├── contexts/    # React contexts (Auth, Socket, Theme)
-│   │   ├── hooks/       # Custom hooks (useRoomActivity, useModal)
-│   │   ├── pages/       # Route components
-│   │   ├── services/    # API & Socket services
-│   │   └── types/       # TypeScript definitions
-│   ├── nginx-site.conf  # Production nginx config with security
-│   └── Dockerfile       # Multi-stage build
-├── frontend-admin/    # Admin dashboard (Port 81)
-│   ├── public/
-│   │   └── drop-icon.svg  # Shared purple logo
+│   │   ├── components/         # Atomic design (atoms/molecules/organisms)
+│   │   │   ├── atoms/          # Button, Input, Card, Avatar, Badge, Spinner
+│   │   │   ├── molecules/      # NotificationBell, RoundResultModal, PlayerCard
+│   │   │   ├── organisms/      # AuthModal, Header, Footer, Modal
+│   │   │   └── animations/     # Celebration, WinnerReveal, CountdownTimer
+│   │   ├── contexts/           # Auth, Notification, Modal, WinnerResults
+│   │   ├── hooks/              # 15+ custom hooks (useGameStateMachine, useModal)
+│   │   ├── pages/              # GameRoom, RoomList, Profile, Results, HowToPlay
+│   │   ├── services/           # API, Socket, Audio, Notification services
+│   │   ├── utils/              # 22+ utilities (csrfManager, logoutManager, etc)
+│   │   └── types/              # TypeScript definitions
+│   ├── e2e/                    # Playwright E2E tests
+│   │   ├── tests/              # Test specs including auth-cookie-security
+│   │   └── helpers/            # Security utilities for testing
+│   ├── nginx-site.conf         # Production nginx config with security headers
+│   └── Dockerfile              # Multi-stage build
+├── frontend-admin/             # Admin dashboard (Port 81/8081)
 │   ├── src/
-│   │   ├── components/  # Sidebar, FilterSection, Card
-│   │   ├── contexts/    # AuthContext
-│   │   ├── pages/       # Dashboard, Users, Rooms, Rounds, Transactions, Login
-│   │   ├── styles/      # design-system.css (purple theme)
-│   │   └── utils/       # API helpers
-│   └── Dockerfile       # Multi-stage build with nginx
-├── backend/           # Express 5 API + WebSocket
+│   │   ├── components/         # Sidebar, FilterSection
+│   │   ├── contexts/           # AuthContext
+│   │   ├── pages/              # Dashboard, Users, Rooms, Rounds, Transactions, Logs
+│   │   ├── styles/             # design-system.css (purple theme)
+│   │   └── services/           # API client
+│   └── Dockerfile              # Multi-stage build with nginx
+├── backend/                    # Express 5 API + WebSocket (Port 3001)
 │   ├── src/
-│   │   ├── controllers/ # Route handlers
-│   │   ├── services/    # Business logic
-│   │   ├── utils/       # Helpers & middleware
-│   │   └── types/       # TypeScript interfaces
-│   └── Dockerfile       # Node.js production image
-├── shared/           # Shared types/utilities
-├── database/         # SQL schemas and migrations
-└── docker-compose.yml # Multi-container orchestration
+│   │   ├── controllers/        # 13 controllers (auth, room, balance, admin, etc)
+│   │   ├── routes/             # 10 route files
+│   │   ├── middleware/         # auth, csrf, rateLimiter, idempotency
+│   │   ├── services/           # Redis services, RealTimeDataManager
+│   │   ├── socket/             # socketManager, WebSocket handling
+│   │   ├── utils/              # 15+ utilities (see below)
+│   │   └── types/              # TypeScript interfaces
+│   ├── __tests__/              # Unit and integration tests
+│   └── Dockerfile              # Node.js production image
+├── database/                   # SQL schemas and migrations
+└── docker-compose.yml          # Multi-container orchestration
+```
+
+### Backend Utilities (backend/src/utils/)
+```
+accountLockout.ts      # Failed login tracking & lockout
+auditLogger.ts         # Security audit logging
+authLogger.ts          # Auth event logging
+cookieManager.ts       # HttpOnly cookie management
+corsOrigin.ts          # CORS origin validation
+crypto.ts              # Cryptographic utilities
+csrfToken.ts           # CSRF token generation & validation
+errorSanitizer.ts      # Error message sanitization
+fieldWhitelist.ts      # Input field validation
+logger.ts              # Structured logging
+passwordValidator.ts   # Password strength validation (zxcvbn)
+refreshToken.ts        # Refresh token management
+seedAuditLogger.ts     # VRF seed logging
+socketAuth.ts          # Socket.IO authentication & re-auth
+winnerProcessingQueue.ts # Async winner processing
+```
+
+### Frontend Utilities (frontend/src/utils/)
+```
+accessibility.ts       # A11y utilities
+audioDurationAnalyzer.ts # Audio analysis
+authUtils.ts           # Auth helper functions
+avatarUtils.ts         # Avatar generation
+csrfManager.ts         # CSRF token lifecycle
+currencyUtils.ts       # Currency formatting
+dateUtils.ts           # Date formatting
+deviceDetection.ts     # Device info
+liveRegionUtils.ts     # ARIA live regions
+logger.ts              # Client-side logging
+loginErrorHandler.ts   # Login error parsing
+logoutManager.ts       # Manual vs auto logout tracking
+passwordValidator.ts   # Password validation
+performance.ts         # Performance monitoring
+performanceMonitor.ts  # Performance utilities
+rateLimiter.ts         # Client rate limiting
+responsive.ts          # Breakpoint detection
+security.ts            # Client security utils
+sentry.ts              # Error tracking setup
+serviceWorker.ts       # PWA service worker
 ```
 
 ### Key Features & Current Implementation
-1. **Real-time Updates**: WebSocket events with Redis pub/sub, 30-second polling intervals
-2. **Provably Fair**: VRF implementation with seed persistence and audit trail
-3. **Security Hardened**:
+
+1. **Real-time Updates**
+   - WebSocket events with Redis pub/sub
+   - 30-second polling intervals
+   - Idempotent event processing with UUIDs
+
+2. **Provably Fair Gaming**
+   - VRF implementation with seed persistence
+   - Complete audit trail
+   - Winner reveal animations
+
+3. **Security Hardened (Week 4 Enhanced)**
+   - HttpOnly Cookie Authentication (XSS-protected)
+   - CSRF Protection (Redis-backed, dual-mode)
+   - Cookie-based WebSocket Auth
+   - Session Management with auto re-auth prompts
+   - Account lockout after failed attempts
+   - Password strength validation (zxcvbn)
+   - Error message sanitization
    - nginx rate limiting (10 conn/IP, 100 total)
    - CORS configuration with origin validation
-   - XSS/CSRF protection headers
+   - CSP headers configured for development
    - SQL injection prevention via parameterized queries
    - Container security with non-root users
-4. **Performance Optimized**:
-   - Bundle splitting (largest: 241KB frontend, 110KB admin)
-   - 60fps animations with Framer Motion
+
+4. **Performance Optimized**
+   - Bundle splitting (frontend ~282KB, admin ~150KB)
+   - 60fps animations with Framer Motion 12.23.12
    - <100ms API response times
    - Aggressive caching strategy (1yr for assets)
-5. **SEO & Accessibility**:
+   - Code splitting with React.lazy()
+
+5. **SEO & Accessibility**
    - Complete robots.txt with gaming-specific rules
    - PWA manifest for mobile installation
-   - WCAG 2.1 AA compliance
+   - WCAG 2.1 AA compliance target
    - Meta tags for social sharing
-6. **Admin Portal**:
-   - Modern purple branding with CSS design system
-   - Comprehensive user management
+
+6. **Admin Portal**
+   - Modern purple branding (#9D4EDD)
+   - User management with balance adjustments
    - Real-time transaction monitoring
    - Game room and rounds management
-   - Advanced filtering and search capabilities
+   - System logs and audit trails
+   - Advanced filtering and search
 
-## 🎨 Design System (October 2025)
+## Design System (Purple Theme)
 
 ### Purple Brand Color Palette
 ```css
@@ -203,20 +278,12 @@ LottoDrop/
 --shadow-glow: 0 0 20px rgba(157, 78, 221, 0.3); /* Purple glow effect */
 ```
 
-### Admin Portal Styling Architecture
-- **CSS Variables**: Comprehensive design token system in `design-system.css`
-- **Consistent Theming**: All pages use purple gradients and CSS variables
-- **Responsive Design**: Mobile-first with breakpoints at 640px, 768px, 1024px
-- **Dark Theme**: Default dark mode optimized for extended use
-- **Accessibility**: High contrast support, focus states, keyboard navigation
-
 ### Logo Assets
 - **Primary Logo**: `drop-icon.svg` - Purple water drop with sparkle effect
-- **Gradient**: Linear gradient from #9D4EDD → #C77DFF → #7B2CBF
-- **Usage**: Shared across frontend and admin portal
+- **Gradient**: Linear gradient from #9D4EDD to #C77DFF to #7B2CBF
 - **Dimensions**: 512x512px with 96px border radius
 
-## 🎯 Agent Collaboration Patterns
+## Agent Collaboration Patterns
 
 ### Frontend Development
 ```
@@ -248,7 +315,7 @@ Support: Gaming Finance Backend + React Frontend Expert
 Validation: Elite Product Owner
 ```
 
-## 🚨 Critical Rules
+## Critical Rules
 
 1. **NEVER skip agent consultation** - These are domain experts
 2. **ALWAYS verify with QA** - Every change needs testing
@@ -259,153 +326,74 @@ Validation: Elite Product Owner
 7. **USE CSS VARIABLES** - Never hardcode colors in admin portal
 8. **RESPECT SPECIFICITY** - Use `!important` only when necessary for overrides
 
-## 🚀 Recent Updates
+## Docker Deployment
 
-### October 26, 2025 - Critical Animation & Modal Bug Fixes 🐛
-
-#### Game Experience Issues Resolved
-After extensive debugging and 4 fix attempts, resolved critical animation issues affecting game completion experience:
-
-1. **BUG-024: Frozen Confetti Particles Animation** ✅ FIXED
-   - **Issue**: Purple confetti particles rendered but remained frozen (no animation)
-   - **Root Cause**: Stale closure in Celebration component - `onComplete` callback in useEffect dependency array caused infinite re-execution loop, interrupting canvas-confetti particle physics
-   - **Solution**: Implemented **ref pattern** in both files:
-     - `Celebration.tsx`: Used `useRef` to store callback, removed from dependency array
-     - `GameRoom.tsx`: Created stable `handleCelebrationComplete` with `useCallback` and empty deps
-   - **Impact**: Confetti now animates smoothly for 2.5s with natural gravity physics
-   - **Files Modified**:
-     - `frontend/src/components/animations/Celebration/Celebration.tsx` (lines 1-67)
-     - `frontend/src/pages/GameRoom/GameRoom.tsx` (lines 104-109, 1341)
-
-2. **BUG-025: VRF Animation Modal Persisting After Results Dismissal** ✅ FIXED
-   - **Issue**: "Selecting Winner" VRF animation modal remained visible in background after closing Winner Results Modal
-   - **Root Cause**: Missing state cleanup - `animating` state not set to false when results modal closed
-   - **Solution**: Added `setAnimating(false)` to Winner Results Modal's onClose handler
-   - **Impact**: Clean modal dismissal, proper state reset for next round
-   - **Files Modified**:
-     - `frontend/src/pages/GameRoom/GameRoom.tsx` (line 1350)
-
-#### Technical Implementation Details
-
-**Ref Pattern for Stable Callbacks**:
-```typescript
-// Problem: New function created every render → useEffect restarts → animation interrupted
-onComplete={() => setShowCelebration(false)}  // ❌ Unstable
-
-// Solution: Stable callback with useCallback + ref pattern
-const onCompleteRef = useRef(onComplete)
-useEffect(() => { onCompleteRef.current = onComplete }, [onComplete])
-const handleComplete = useCallback(() => { /* logic */ }, [])  // ✅ Stable
+### Container Architecture
+```bash
+# 5 containers, all healthy:
+lottodrop-frontend    # Port 8080  - React app with nginx
+lottodrop-backend     # Port 3001  - Express API + WebSocket
+lottodrop-postgres    # Port 5432  - PostgreSQL 15
+lottodrop-redis       # Port 6379  - Redis 7 cache & pub/sub
+lottodrop-admin       # Port 8081  - Admin panel with nginx
 ```
 
-**Modal State Management**:
-```typescript
-// BEFORE: Only stopped celebration
-onClose={() => {
-  setShowCelebration(false)
-  winnerResults.dismissResults()
-}}
+### Deployment Commands
+```bash
+# Build and deploy all services
+docker-compose build
+docker-compose up -d
 
-// AFTER: Properly cleans up all modal states
-onClose={() => {
-  setShowCelebration(false)
-  setAnimating(false)  // ✅ Hides VRF animation modal
-  winnerResults.dismissResults()
-}}
+# Build specific service
+docker-compose build frontend
+docker-compose up -d frontend
+
+# View logs
+docker logs lottodrop-backend --tail 50
+
+# Check container health
+docker ps | grep lottodrop
+
+# Restart a service
+docker-compose restart backend
 ```
 
-#### Agent Collaboration
-- **Casino Animation Specialist**: Diagnosed canvas-confetti animation freezing, identified stale closure pattern
-- **React Frontend Expert**: Applied ref pattern and useCallback optimizations
-- **Manual QA Tester**: Verified TypeScript compilation and build integrity
+### Environment Variables
+Key environment variables (in .env files):
+- `DB_NAME`, `DB_USER`, `DB_PASSWORD` - PostgreSQL credentials
+- `REDIS_HOST`, `REDIS_PORT` - Redis connection
+- `JWT_SECRET`, `SESSION_SECRET` - Authentication secrets
+- `ALLOWED_ORIGINS` - CORS allowed origins
+- `NODE_ENV` - production/development
 
-#### Deployment Stats
-- Build Time: 3.08s (frontend)
-- Bundle Size: 282.43 kB (no increase)
-- Docker Deploy: Successful (container healthy)
-- HTTP Status: 200 OK
+## Testing Infrastructure
 
-#### Testing Verified
-- ✅ Confetti particles animate smoothly (100 purple particles, 2.5s duration)
-- ✅ VRF animation modal dismisses properly when results close
-- ✅ No stale modals persist in background
-- ✅ Clean state transitions between rounds
-- ✅ TypeScript compilation: 0 errors
-
-### October 2025 - Admin Portal Redesign 🎨
-
-#### Major UI/UX Improvements
-1. **Logo Replacement**
-   - Replaced lottery ball logo with purple water drop (`drop-icon.svg`)
-   - Consistent branding across login page and dashboard
-   - 36px × 36px in sidebar, 80px × 80px in login
-
-2. **Login Page Redesign**
-   - Purple gradient background with glass-morphism effect
-   - Fixed CSS specificity issues with input padding
-   - Optimized form spacing (1rem gap, 0.5rem button margin)
-   - Changed button text: "Access Admin Panel" → "Log In"
-   - Updated placeholder: admin@lottodrop.com → user@example.com
-   - Removed subtitle for cleaner design
-
-3. **Purple Theme Implementation**
-   - Updated `design-system.css` with comprehensive purple color system
-   - Changed primary color from teal (#14B8A6) to purple (#9D4EDD)
-   - Implemented gradient: `linear-gradient(135deg, #9D4EDD, #A855F7)`
-   - Updated all accent colors, borders, and shadows
-
-4. **Table Styling Consistency** ✅ COMPLETE
-   - **Users Page**: Converted hardcoded colors to CSS variables
-   - **Rooms Page**: Replaced all teal colors with purple
-   - **Rounds Page**: Fixed CSS specificity for round-id and prize-pool colors
-   - **Dashboard Page**: Updated stat cards and chart cards to purple theme
-   - **Transactions Page**: Already properly styled (used as reference)
-
-5. **CSS Architecture Improvements**
-   - Migrated from hardcoded colors to CSS variables throughout
-   - Fixed CSS specificity issues with `.table .cell` pattern
-   - Added `!important` flags strategically for color overrides
-   - Responsive design optimizations for mobile (320px-1024px)
-
-#### Technical Details
-```css
-/* Key CSS Fixes Applied */
-.rounds-table .round-id {
-  color: #9D4EDD !important;  /* Override td default color */
-}
-
-.login-form .form-input {
-  padding: 0 4.5rem !important;  /* Override design-system */
-}
-
-.nav-item-active {
-  background: rgba(157, 78, 221, 0.1);  /* Purple instead of blue */
-}
+### Backend Tests
+```bash
+npm test                    # All tests with coverage
+npm run test:unit          # Unit tests only
+npm run test:integration   # Integration tests only
+npm run test:security      # Security-focused tests
 ```
 
-#### Deployment Stats
-- Build Time: ~11-13 seconds per deployment
-- CSS Bundle Size: 18.99KB (gzipped)
-- Zero TypeScript errors (ESLint warnings only for unused API_URL)
-- All 5 Docker containers healthy and running
+### Frontend Tests
+```bash
+npm test                   # Vitest unit tests
+npm run test:e2e           # Playwright E2E tests
+npm run test:e2e:ui        # E2E with UI
+npm run test:coverage      # With coverage report
+```
 
-### September 2025 - Foundation
+### E2E Security Tests
+Located at `frontend/e2e/tests/auth-cookie-security.spec.ts`:
+- HttpOnly cookie verification
+- CSRF token validation
+- XSS attack prevention
+- Session persistence testing
+- WebSocket cookie authentication
+- Token rotation verification
 
-#### Fixed Issues
-- ✅ TypeScript errors in RoomList.tsx (removed unused state)
-- ✅ TypeScript errors in TournamentCard.tsx (Framer Motion ease typing)
-- ✅ TypeScript errors in useRoomActivity.ts (unused parameter)
-- ✅ robots.txt serving issue (nginx configuration fixed)
-- ✅ SEO optimization with proper meta tags and crawl directives
-
-#### Infrastructure Improvements
-- Enhanced nginx security configuration
-- Optimized Docker multi-stage builds
-- Improved caching strategies
-- Added health check endpoints
-- Configured proper CORS headers
-
-## 📊 Quality Standards
+## Quality Standards
 
 ### Code Quality
 - TypeScript strict mode
@@ -423,22 +411,107 @@ onClose={() => {
 - 60fps animations
 - Optimized Docker builds (<15s)
 
-### Security
+### Security Standards
+- HttpOnly Cookies for JWT tokens
+- CSRF Protection for state-changing requests
+- Token Rotation on refresh
+- Short-lived Access tokens (15 min)
+- 7-day Refresh tokens
+- Event-driven re-authentication
 - All inputs sanitized
 - SQL injection protected
-- XSS prevention
-- CORS properly configured
 - Secrets in environment variables
-- JWT authentication with secure cookies
 
-### Design Consistency
-- All admin pages use purple theme (#9D4EDD)
-- CSS variables for maintainability
-- Consistent spacing with rem units
-- Responsive breakpoints standardized
-- Accessible color contrasts (WCAG AA)
+## Recent Updates
 
-## 🎮 Gaming-Specific Requirements
+### October 29, 2025 - Week 4 Security Audit
+
+**HttpOnly Cookie Authentication**
+- Migrated from localStorage to HttpOnly cookies
+- Access tokens: 15-minute expiry
+- Refresh tokens: 7-day expiry with auto-rotation
+- SameSite=Strict and Secure flags
+
+**CSRF Protection**
+- Redis-backed token validation
+- Dual-mode: User-based and session-based
+- X-CSRF-Token header for state-changing requests
+- Auto-refresh before expiry (50 min)
+
+**Session Management**
+- Event-driven re-authentication prompts
+- Manual logout detection
+- WebSocket cookie-based auth
+
+**Password Validation**
+- zxcvbn integration for strength checking
+- Frontend and backend validation
+- User-friendly error messages
+
+**Login Error Handling**
+- Sanitized error messages
+- Account lockout notifications
+- Clear user feedback
+
+### October 26-27, 2025 - Bug Fixes
+
+**BUG-024: Frozen Confetti Animation** - FIXED
+- Root cause: Stale closure in useEffect
+- Solution: Ref pattern for stable callbacks
+
+**BUG-025: VRF Modal Persisting** - FIXED
+- Root cause: Missing state cleanup
+- Solution: Added setAnimating(false) to onClose
+
+**BUG-026: Room List State Sync** - FIXED
+- Root cause: Race conditions in state updates
+- Solution: Improved state management
+
+### October 2025 - Admin Portal Redesign
+
+- Purple branding (#9D4EDD) throughout
+- CSS variables in design-system.css
+- Responsive design (320px - 1024px)
+- Glass-morphism login page
+- Consistent table styling across all pages
+
+## Development Guidelines
+
+### When implementing features:
+1. Start with Elite Product Owner for requirements
+2. Design with Elite Gaming UX Designer
+3. Architect with Enterprise Solution Architect
+4. Implement with relevant technical agents
+5. Add animations with Casino Animation Specialist
+6. Test with Manual QA Tester
+7. Deploy with Elite PM Delivery Leader oversight
+
+### When fixing bugs:
+1. Reproduce with Manual QA Tester
+2. Analyze root cause with relevant technical agent
+3. Implement fix with proper CSS specificity
+4. Verify fix doesn't break other features
+5. Document in completion report
+
+### When styling admin pages:
+1. ALWAYS use CSS variables from design-system.css
+2. NEVER hardcode colors
+3. Use `.parent .child` pattern for specificity
+4. Apply `!important` only when overriding design-system
+5. Test on multiple screen sizes (320px, 768px, 1024px)
+6. Ensure purple branding (#9D4EDD) is consistent
+
+### Security Implementation Checklist
+- Use HttpOnly cookies for sensitive tokens (never localStorage)
+- Implement CSRF protection for state-changing requests
+- Validate SameSite=Strict and Secure flags on cookies
+- Use event-driven architecture for auth state changes
+- Differentiate manual logout from session expiry
+- Add comprehensive E2E security tests
+- Test XSS/CSRF attack vectors
+- Verify CSP headers don't block legitimate requests
+
+## Gaming-Specific Requirements
 
 ### Fairness
 - All RNG must be verifiable
@@ -460,134 +533,17 @@ onClose={() => {
 - Mobile responsive
 - Accessible controls
 
-## 📝 Development Guidelines
+## Project Documentation
 
-### When implementing features:
-1. Start with Elite Product Owner for requirements
-2. Design with Elite Gaming UX Designer
-3. Architect with Enterprise Solution Architect
-4. Implement with relevant technical agents
-5. Add animations with Casino Animation Specialist
-6. Test with Manual QA Tester
-7. Deploy with Elite PM Delivery Leader oversight
+Key documentation files:
+- `DEPLOYMENT_GUIDE.md` - Full deployment instructions
+- `TESTING_GUIDE.md` - Testing procedures
+- `DATABASE_STRUCTURE.md` - Schema documentation
+- `GAME_ROOM_AUDIT_REPORT.md` - Game room analysis
+- `WEEK4_SECURITY_SUMMARY.md` - Security implementation details
+- `frontend/AUDIO_ARCHITECTURE.md` - Audio system docs
 
-### When fixing bugs:
-1. Reproduce with Manual QA Tester
-2. Analyze root cause with relevant technical agent
-3. Implement fix with proper CSS specificity
-4. Verify fix doesn't break other features
-5. Document in completion report
-
-### When styling admin pages:
-1. ALWAYS use CSS variables from design-system.css
-2. NEVER hardcode colors (#1e293b, #334155, etc.)
-3. Use `.parent .child` pattern for specificity
-4. Apply `!important` only when overriding design-system
-5. Test on multiple screen sizes (320px, 768px, 1024px)
-6. Ensure purple branding (#9D4EDD) is consistent
-
-### When optimizing performance:
-1. Profile with React Frontend Expert or Gaming Finance Backend
-2. Identify bottlenecks with Enterprise Solution Architect
-3. Implement optimizations
-4. Measure improvements
-5. Verify no functionality regression
-
-## 🐳 Deployment & Infrastructure
-
-### Docker Container Architecture
-```bash
-# Current containers (all healthy):
-lottodrop-frontend    # Port 80  - React app with nginx
-lottodrop-backend     # Port 3001 - Express API + WebSocket
-lottodrop-postgres    # Port 5432 - PostgreSQL 15
-lottodrop-redis       # Port 6379 - Redis cache & pub/sub
-lottodrop-admin       # Port 81  - Admin panel with nginx
-```
-
-### Container Health Status (October 2025)
-```
-lottodrop-admin:    Up 27 hours   (healthy) - Recently updated
-lottodrop-frontend: Up 2 days     (healthy)
-lottodrop-backend:  Up 2 days     (healthy)
-lottodrop-postgres: Up 4 weeks    (healthy)
-lottodrop-redis:    Up 3 weeks    (healthy)
-```
-
-### Key Configuration Files
-- `docker-compose.yml` - Container orchestration
-- `docker-compose.override.yml` - Development overrides
-- `frontend/nginx-site.conf` - Production nginx with security headers
-- `frontend-admin/Dockerfile` - Multi-stage build (Node 18 + Nginx Alpine)
-- `frontend/public/robots.txt` - SEO crawler directives
-- `.env` files - Environment variables (never commit!)
-
-### Deployment Commands
-```bash
-# Build and deploy admin panel
-docker-compose build frontend-admin
-docker-compose up -d frontend-admin
-
-# Build and deploy main frontend
-docker-compose build frontend
-docker-compose up -d frontend
-
-# View logs
-docker logs lottodrop-admin --tail 50
-
-# Check container health
-docker ps | grep lottodrop
-
-# Access admin panel
-http://localhost:81
-```
-
-### Build Performance
-- Frontend Admin: 11-13 seconds
-- Frontend Main: 12-15 seconds
-- Backend: 8-10 seconds
-- Total deployment time: <2 minutes
-
-## 🔄 Continuous Improvement
-
-- Regularly review code with technical agents
-- Update documentation after significant changes
-- Maintain test coverage above 80%
-- Monitor performance metrics via Docker logs
-- Track user feedback and iterate
-- Run TypeScript checks before deployment
-- Verify CSS consistency across admin pages
-- Test responsive design on multiple devices
-
-## 📋 Common CSS Specificity Patterns
-
-### Problem: Generic Selector Overrides Specific Styling
-```css
-/* ❌ WRONG - Gets overridden */
-.cell { color: #9D4EDD; }
-.table td { color: #E2E8F0; }  /* This wins */
-
-/* ✅ CORRECT - Higher specificity */
-.table .cell { color: #9D4EDD !important; }
-```
-
-### Problem: Design System Variable Conflict
-```css
-/* ❌ WRONG - Design system wins */
-.form-input { padding: 0 4.5rem; }
-
-/* ✅ CORRECT - Parent scoping with !important */
-.login-form .form-input { padding: 0 4.5rem !important; }
-```
-
-### Best Practices
-1. Use `.parent .child` pattern for higher specificity
-2. Add `!important` when overriding design-system.css
-3. Always use CSS variables for colors
-4. Test in compiled CSS, not just source files
-5. Verify with `curl` or browser DevTools
-
-## 📋 Remember
+## Remember
 
 You are building a **production-grade gaming platform** that handles real money. Every decision impacts:
 - User trust
@@ -598,20 +554,11 @@ You are building a **production-grade gaming platform** that handles real money.
 
 **USE THE AGENTS** - They are your domain experts. Their collective expertise ensures success.
 
-### Admin Portal Checklist
-When working on admin portal:
-- ✅ Use CSS variables from design-system.css
-- ✅ Maintain purple branding consistency
-- ✅ Test CSS specificity (check compiled output)
-- ✅ Verify responsive design (mobile, tablet, desktop)
-- ✅ Deploy and verify in Docker container
-- ✅ Check all pages for visual consistency
-
 ---
 
-*Configuration Version: 1.3.0*
-*Last Updated: October 26, 2025*
+*Configuration Version: 1.5.0*
+*Last Updated: January 22, 2026*
 *Project: LottoDrop - Real-time Lottery Gaming Platform*
 *Production URL: https://lottodrop.net*
-*Docker Status: All 5 containers healthy and running*
-*Latest: Critical animation bugs fixed - confetti particles & VRF modal dismissal (Oct 26, 2025)*
+*Docker Status: 5 containers configured*
+*Latest: Project documentation refresh (Jan 2026)*

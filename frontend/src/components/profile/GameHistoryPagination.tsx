@@ -6,12 +6,14 @@ interface GameHistoryPaginationProps {
   pagination: PaginationData
   onPageChange: (page: number) => void
   loading?: boolean
+  itemName?: string // Optional custom name for items (default: "games")
 }
 
 export const GameHistoryPagination: React.FC<GameHistoryPaginationProps> = ({
   pagination,
   onPageChange,
-  loading = false
+  loading = false,
+  itemName = 'games'
 }) => {
   const { page, totalPages, total, limit } = pagination
   
@@ -65,7 +67,7 @@ export const GameHistoryPagination: React.FC<GameHistoryPaginationProps> = ({
   return (
     <div className={styles.paginationContainer}>
       <div className={styles.paginationInfo}>
-        Showing {startItem}-{endItem} of {total} games
+        Showing {startItem}-{endItem} of {total} {itemName}
       </div>
       
       <div className={styles.paginationControls}>

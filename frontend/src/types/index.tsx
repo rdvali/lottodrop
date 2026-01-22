@@ -60,6 +60,27 @@ export interface Transaction {
   createdAt: string
 }
 
+// Transaction filters
+export interface TransactionFilters {
+  page?: number
+  limit?: number
+  startDate?: string
+  endDate?: string
+  type?: 'all' | 'deposit' | 'withdrawal' | 'entry_fee' | 'winnings' | 'refund'
+  status?: 'all' | 'pending' | 'completed' | 'failed'
+  sortBy?: 'createdAt' | 'amount' | 'type'
+  sortOrder?: 'asc' | 'desc'
+}
+
+// Transaction response with pagination
+export interface TransactionResponse {
+  success: boolean
+  data: Transaction[]
+  transactions: Transaction[] // backward compatibility
+  pagination: PaginationData
+  error?: string
+}
+
 // Game history types
 export interface GameHistory {
   id: string
@@ -334,6 +355,33 @@ export interface ChangePasswordForm {
   currentPassword: string
   newPassword: string
   confirmPassword: string
+}
+
+// User activity log types
+export interface UserLog {
+  id: number
+  action: string // 'LOGIN' | 'LOGOUT' | 'PASSWORD_CHANGE' | 'REGISTER' | etc
+  timestamp: string
+  ip: string
+  device: string
+  status: 'SUCCESS' | 'FAILED'
+  metadata?: Record<string, any>
+}
+
+export interface UserLogFilters {
+  page?: number
+  limit?: number
+  startDate?: string
+  endDate?: string
+  action?: 'all' | string
+}
+
+export interface UserLogResponse {
+  success: boolean
+  data: UserLog[]
+  logs: UserLog[] // backward compatibility
+  pagination: PaginationData
+  error?: string
 }
 
 // Audio types - re-export from audio.types.ts

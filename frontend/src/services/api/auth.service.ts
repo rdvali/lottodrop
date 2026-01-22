@@ -1,11 +1,14 @@
 import { apiClient } from './config'
-import type { User, LoginForm, RegisterForm, ApiResponse } from '../../types'
+import type { User, LoginForm, RegisterForm, ApiResponse, UserLogFilters, UserLogResponse } from '../../types'
 import { apiRateLimiter } from '../../utils/rateLimiter'
 
 // Backend response interfaces
+// SECURITY FIX (Week 4): Backend now returns accessToken and refreshToken
 interface BackendAuthResponse {
   message: string
-  token: string
+  accessToken: string // Week 4: Changed from 'token' to 'accessToken'
+  refreshToken: string // Week 4: Added refresh token
+  expiresIn: number // Week 4: Token expiry in seconds
   user: {
     id: string
     firstName: string
@@ -36,12 +39,13 @@ export const authAPI = {
         '/auth/login',
         credentials
       )
-      if (!data.token || !data.user) {
+      // SECURITY FIX (Week 4): Check for accessToken instead of token
+      if (!data.accessToken || !data.user) {
         throw new Error('Login failed - invalid response')
       }
       return {
         user: transformUser(data.user),
-        token: data.token
+        token: data.accessToken // Week 4: Return accessToken (also stored in HttpOnly cookie)
       }
     })
   },
@@ -60,12 +64,13 @@ export const authAPI = {
         '/auth/register',
         backendData
       )
-      if (!data.token || !data.user) {
+      // SECURITY FIX (Week 4): Check for accessToken instead of token
+      if (!data.accessToken || !data.user) {
         throw new Error('Registration failed - invalid response')
       }
       return {
         user: transformUser(data.user),
-        token: data.token
+        token: data.accessToken // Week 4: Return accessToken (also stored in HttpOnly cookie)
       }
     })
   },
@@ -84,7 +89,7 @@ export const authAPI = {
   async changePassword(passwords: {
     currentPassword: string
     newPassword: string
-  }): Promise<void> {
+  }): Promise<{ message: string }> {
     return apiRateLimiter.execute(async () => {
       const { data } = await apiClient.post<ApiResponse<void>>(
         '/auth/change-password',
@@ -93,6 +98,7 @@ export const authAPI = {
       if (!data.success) {
         throw new Error(data.error || 'Failed to change password')
       }
+      return { message: data.message || 'Password changed successfully' }
     })
   },
 
@@ -102,7 +108,45 @@ export const authAPI = {
     } catch {
       // Ignore logout errors
     }
-    localStorage.removeItem('token')
+    // SECURITY FIX (Week 4): Token is now in HttpOnly cookie, cleared by server
+    // Only remove user data from localStorage (non-sensitive)
     localStorage.removeItem('user')
+  },
+
+  async getUserLogs(filters?: UserLogFilters): Promise<UserLogResponse> {
+    return apiRateLimiter.execute(async () => {
+      const params = new URLSearchParams()
+
+      if (filters) {
+        if (filters.page) params.append('page', filters.page.toString())
+        if (filters.limit) params.append('limit', filters.limit.toString())
+        if (filters.startDate) params.append('startDate', filters.startDate)
+        if (filters.endDate) params.append('endDate', filters.endDate)
+        if (filters.action && filters.action !== 'all') {
+          params.append('action', filters.action)
+        }
+      }
+
+      const queryString = params.toString()
+      const url = `/auth/me/logs${queryString ? `?${queryString}` : ''}`
+
+      const { data } = await apiClient.get<UserLogResponse>(url)
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to get user logs')
+      }
+
+      return {
+        success: data.success,
+        data: data.data || [],
+        logs: data.logs || data.data || [],
+        pagination: data.pagination || {
+          page: 1,
+          limit: 10,
+          total: 0,
+          totalPages: 0
+        }
+      }
+    })
   },
 }

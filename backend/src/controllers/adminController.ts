@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import pool from '../config/database';
+import { logAdminAction } from '../utils/auditLogger';
 
 // Get all users with pagination and filters
 export const getUsers = async (req: Request, res: Response) => {
@@ -334,6 +335,21 @@ export const createUser = async (req: Request, res: Response) => {
 
     const user = result.rows[0];
 
+    // Log admin action to audit logs
+    await logAdminAction(
+      req.user!.userId,
+      'USER_CREATED',
+      user.id,
+      req.ip,
+      {
+        email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        initialBalance: parseFloat(user.balance),
+        isAdmin: user.is_admin
+      }
+    );
+
     return res.status(201).json({
       message: 'User created successfully',
       user: {
@@ -419,6 +435,32 @@ export const updateUser = async (req: Request, res: Response) => {
     const result = await pool.query(query, values);
 
     const user = result.rows[0];
+    const oldUser = userCheck.rows[0];
+
+    // Determine what changed
+    const changedFields = [];
+    if (firstName !== undefined && firstName !== oldUser.first_name) changedFields.push('firstName');
+    if (lastName !== undefined && lastName !== oldUser.last_name) changedFields.push('lastName');
+    if (email !== undefined && email !== oldUser.email) changedFields.push('email');
+    if (balance !== undefined && balance !== oldUser.balance) changedFields.push('balance');
+    if (isAdmin !== undefined && isAdmin !== oldUser.is_admin) changedFields.push('isAdmin');
+    if (isActive !== undefined && isActive !== oldUser.is_active) changedFields.push('isActive');
+    if (password !== undefined && password !== '') changedFields.push('password');
+
+    // Log admin action to audit logs
+    await logAdminAction(
+      req.user!.userId,
+      'USER_UPDATED',
+      userId,
+      req.ip,
+      {
+        changedFields,
+        email: user.email,
+        isAdmin: user.is_admin,
+        isActive: user.is_active,
+        balanceChange: balance !== undefined ? parseFloat(balance) - parseFloat(oldUser.balance) : 0
+      }
+    );
 
     return res.json({
       message: 'User updated successfully',
@@ -495,18 +537,38 @@ export const deleteUser = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Cannot delete user with active games' });
     }
 
+    // Get user info before deletion
+    const userInfo = await pool.query(
+      'SELECT email, first_name, last_name FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (userInfo.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
     // Soft delete by deactivating
     const result = await pool.query(
-      `UPDATE users 
-       SET is_active = false, updated_at = NOW() 
-       WHERE id = $1 
+      `UPDATE users
+       SET is_active = false, updated_at = NOW()
+       WHERE id = $1
        RETURNING id`,
       [userId]
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+    // Log admin action to audit logs
+    await logAdminAction(
+      req.user!.userId,
+      'USER_DELETED',
+      userId,
+      req.ip,
+      {
+        email: userInfo.rows[0].email,
+        firstName: userInfo.rows[0].first_name,
+        lastName: userInfo.rows[0].last_name,
+        deletionType: 'soft_delete'
+      }
+    );
 
     return res.json({ message: 'User deleted successfully' });
   } catch (error) {
@@ -703,5 +765,300 @@ export const withdrawFromUser = async (req: Request & { user?: any }, res: Respo
     return res.status(500).json({ error: 'Failed to process withdrawal' });
   } finally {
     client.release();
+  }
+};
+
+// ============ Crypto Deposit Admin Endpoints ============
+
+/**
+ * GET /api/admin/deposits
+ * Get all crypto deposits with filters
+ */
+export const getCryptoDeposits = async (req: Request, res: Response) => {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      status,
+      network,
+      userId,
+      search,
+      startDate,
+      endDate,
+      minAmount,
+      maxAmount
+    } = req.query;
+
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
+    const offset = (pageNum - 1) * limitNum;
+
+    // Build query
+    let whereClause = 'WHERE 1=1';
+    const params: any[] = [];
+    let paramCount = 1;
+
+    if (status) {
+      params.push(status);
+      whereClause += ` AND cd.status = $${paramCount++}`;
+    }
+
+    if (network) {
+      params.push(network);
+      whereClause += ` AND cd.network = $${paramCount++}`;
+    }
+
+    if (userId) {
+      params.push(userId);
+      whereClause += ` AND cd.user_id = $${paramCount++}`;
+    }
+
+    if (search) {
+      params.push(`%${String(search).toLowerCase()}%`);
+      whereClause += ` AND (
+        LOWER(u.email) LIKE $${paramCount} OR
+        LOWER(u.first_name) LIKE $${paramCount} OR
+        LOWER(u.last_name) LIKE $${paramCount} OR
+        LOWER(cd.payment_id) LIKE $${paramCount} OR
+        LOWER(cd.tx_hash) LIKE $${paramCount}
+      )`;
+      paramCount++;
+    }
+
+    if (startDate) {
+      params.push(startDate);
+      whereClause += ` AND cd.created_at >= $${paramCount++}`;
+    }
+
+    if (endDate) {
+      params.push(endDate + ' 23:59:59');
+      whereClause += ` AND cd.created_at <= $${paramCount++}`;
+    }
+
+    if (minAmount) {
+      params.push(parseFloat(minAmount as string));
+      whereClause += ` AND cd.expected_amount >= $${paramCount++}`;
+    }
+
+    if (maxAmount) {
+      params.push(parseFloat(maxAmount as string));
+      whereClause += ` AND cd.expected_amount <= $${paramCount++}`;
+    }
+
+    // Get deposits with user info
+    const depositsResult = await pool.query(
+      `SELECT
+        cd.*,
+        u.email as user_email,
+        u.first_name,
+        u.last_name
+       FROM crypto_deposits cd
+       JOIN users u ON cd.user_id = u.id
+       ${whereClause}
+       ORDER BY cd.created_at DESC
+       LIMIT $${paramCount} OFFSET $${paramCount + 1}`,
+      [...params, limitNum, offset]
+    );
+
+    // Get total count
+    const countResult = await pool.query(
+      `SELECT COUNT(*) as total
+       FROM crypto_deposits cd
+       JOIN users u ON cd.user_id = u.id
+       ${whereClause}`,
+      params
+    );
+    const total = parseInt(countResult.rows[0].total);
+
+    const deposits = depositsResult.rows.map(row => ({
+      id: row.id,
+      userId: row.user_id,
+      userEmail: row.user_email,
+      userName: `${row.first_name} ${row.last_name}`,
+      paymentId: row.payment_id,
+      network: row.network,
+      currency: row.currency,
+      tokenStandard: row.token_standard,
+      depositAddress: row.deposit_address,
+      expectedAmount: parseFloat(row.expected_amount),
+      receivedAmount: parseFloat(row.received_amount || 0),
+      feeAmount: parseFloat(row.fee_amount || 0),
+      netAmount: parseFloat(row.net_amount || 0),
+      status: row.status,
+      txHash: row.tx_hash,
+      confirmations: row.confirmations,
+      expiresAt: row.expires_at,
+      confirmedAt: row.confirmed_at,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      errorMessage: row.error_message
+    }));
+
+    return res.json({
+      success: true,
+      data: deposits,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    });
+  } catch (error) {
+    console.error('Get crypto deposits error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * GET /api/admin/deposits/:id
+ * Get single deposit with full details including webhook history
+ */
+export const getCryptoDepositById = async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  // Validate UUID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(id)) {
+    return res.status(400).json({ error: 'Invalid deposit ID' });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT
+        cd.*,
+        u.email as user_email,
+        u.first_name,
+        u.last_name,
+        t.id as linked_transaction_id,
+        t.amount as transaction_amount,
+        t.status as transaction_status,
+        t.created_at as transaction_created_at
+       FROM crypto_deposits cd
+       JOIN users u ON cd.user_id = u.id
+       LEFT JOIN transactions t ON cd.transaction_id = t.id
+       WHERE cd.id = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Deposit not found' });
+    }
+
+    const row = result.rows[0];
+
+    return res.json({
+      success: true,
+      data: {
+        id: row.id,
+        userId: row.user_id,
+        userEmail: row.user_email,
+        userName: `${row.first_name} ${row.last_name}`,
+        paymentId: row.payment_id,
+        network: row.network,
+        currency: row.currency,
+        tokenStandard: row.token_standard,
+        depositAddress: row.deposit_address,
+        expectedAmount: parseFloat(row.expected_amount),
+        receivedAmount: parseFloat(row.received_amount || 0),
+        feeAmount: parseFloat(row.fee_amount || 0),
+        netAmount: parseFloat(row.net_amount || 0),
+        status: row.status,
+        txHash: row.tx_hash,
+        confirmations: row.confirmations,
+        expiresAt: row.expires_at,
+        confirmedAt: row.confirmed_at,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        addressMode: row.address_mode,
+        metadata: row.metadata,
+        webhookHistory: row.webhook_data || [],
+        errorMessage: row.error_message,
+        linkedTransaction: row.linked_transaction_id ? {
+          id: row.linked_transaction_id,
+          amount: parseFloat(row.transaction_amount),
+          status: row.transaction_status,
+          createdAt: row.transaction_created_at
+        } : null
+      }
+    });
+  } catch (error) {
+    console.error('Get crypto deposit error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * GET /api/admin/deposits/stats
+ * Get crypto deposit statistics
+ */
+export const getCryptoDepositStats = async (_req: Request, res: Response) => {
+  try {
+    const stats = await pool.query(`
+      SELECT
+        COUNT(*) as total,
+        COALESCE(SUM(expected_amount), 0) as total_expected_amount,
+        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+        COALESCE(SUM(CASE WHEN status = 'pending' THEN expected_amount ELSE 0 END), 0) as pending_amount,
+        COUNT(CASE WHEN status = 'confirmed' THEN 1 END) as confirmed,
+        COALESCE(SUM(CASE WHEN status = 'confirmed' THEN net_amount ELSE 0 END), 0) as confirmed_amount,
+        COUNT(CASE WHEN status = 'overpaid' THEN 1 END) as overpaid,
+        COALESCE(SUM(CASE WHEN status = 'overpaid' THEN net_amount ELSE 0 END), 0) as overpaid_amount,
+        COUNT(CASE WHEN status = 'underpaid' THEN 1 END) as underpaid,
+        COALESCE(SUM(CASE WHEN status = 'underpaid' THEN received_amount ELSE 0 END), 0) as underpaid_amount,
+        COUNT(CASE WHEN status = 'expired' THEN 1 END) as expired,
+        COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed,
+        COUNT(CASE WHEN status = 'canceled' THEN 1 END) as canceled,
+        COUNT(CASE WHEN created_at >= NOW() - INTERVAL '24 hours' THEN 1 END) as last_24h,
+        COUNT(CASE WHEN created_at >= NOW() - INTERVAL '7 days' THEN 1 END) as last_7d,
+        COUNT(CASE WHEN created_at >= NOW() - INTERVAL '30 days' THEN 1 END) as last_30d
+      FROM crypto_deposits
+    `);
+
+    const networkStats = await pool.query(`
+      SELECT
+        network,
+        COUNT(*) as count,
+        COALESCE(SUM(CASE WHEN status IN ('confirmed', 'overpaid') THEN net_amount ELSE 0 END), 0) as total_received
+      FROM crypto_deposits
+      GROUP BY network
+      ORDER BY total_received DESC
+    `);
+
+    const row = stats.rows[0];
+
+    return res.json({
+      success: true,
+      data: {
+        overview: {
+          total: parseInt(row.total),
+          totalExpectedAmount: parseFloat(row.total_expected_amount),
+          pending: parseInt(row.pending),
+          pendingAmount: parseFloat(row.pending_amount),
+          confirmed: parseInt(row.confirmed),
+          confirmedAmount: parseFloat(row.confirmed_amount),
+          overpaid: parseInt(row.overpaid),
+          overpaidAmount: parseFloat(row.overpaid_amount),
+          underpaid: parseInt(row.underpaid),
+          underpaidAmount: parseFloat(row.underpaid_amount),
+          expired: parseInt(row.expired),
+          failed: parseInt(row.failed),
+          canceled: parseInt(row.canceled)
+        },
+        period: {
+          last24h: parseInt(row.last_24h),
+          last7d: parseInt(row.last_7d),
+          last30d: parseInt(row.last_30d)
+        },
+        byNetwork: networkStats.rows.map(n => ({
+          network: n.network,
+          count: parseInt(n.count),
+          totalReceived: parseFloat(n.total_received)
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Get crypto deposit stats error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };

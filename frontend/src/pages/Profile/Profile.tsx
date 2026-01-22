@@ -5,10 +5,13 @@ import { useAuth } from '@contexts/AuthContext'
 import { authAPI, balanceAPI } from '@services/api'
 import type {
   Transaction,
+  TransactionFilters,
   GameHistory,
   GameHistoryFilters,
   PaginationData,
-  ChangePasswordForm
+  ChangePasswordForm,
+  UserLog,
+  UserLogFilters
 } from '../../types'
 import { GameHistoryPagination } from '../../components/profile/GameHistoryPagination'
 import { useGameHistoryCache } from '../../hooks/useGameHistoryCache'
@@ -16,8 +19,19 @@ import toast from 'react-hot-toast'
 import { dateFormatters } from '../../utils/dateUtils'
 import { formatCurrency } from '../../utils/currencyUtils'
 import { useBalanceVisibility } from '@contexts/BalanceVisibilityContext'
+import {
+  validatePassword,
+  validatePasswordMatch,
+  getPasswordErrorMessages,
+  PASSWORD_HELPER_TEXT,
+} from '../../utils/passwordValidator'
 
-type TabType = 'games' | 'transactions' | 'settings'
+type TabType = 'games' | 'transactions' | 'logs' | 'settings'
+
+// Helper function to normalize IPv4-mapped IPv6 addresses
+const normalizeIP = (ip: string): string => {
+  return ip?.startsWith('::ffff:') ? ip.replace('::ffff:', '') : ip
+}
 
 const Profile = () => {
   const navigate = useNavigate()
@@ -35,16 +49,52 @@ const Profile = () => {
     page: 1,
     limit: 10
   })
+  const [transactionFilters, setTransactionFilters] = useState<TransactionFilters>({
+    page: 1,
+    limit: 10
+  })
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [transactionPagination, setTransactionPagination] = useState<PaginationData>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0
+  })
   const [loading, setLoading] = useState(true)
   const [gamesLoading, setGamesLoading] = useState(false)
+  const [transactionsLoading, setTransactionsLoading] = useState(false)
   const [gamesError, setGamesError] = useState<string | null>(null)
+  const [transactionsError, setTransactionsError] = useState<string | null>(null)
+
+  // User logs state
+  const [userLogFilters, setUserLogFilters] = useState<UserLogFilters>({
+    page: 1,
+    limit: 10
+  })
+  const [userLogs, setUserLogs] = useState<UserLog[]>([])
+  const [userLogPagination, setUserLogPagination] = useState<PaginationData>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0
+  })
+  const [userLogsLoading, setUserLogsLoading] = useState(false)
+  const [userLogsError, setUserLogsError] = useState<string | null>(null)
+
   const [passwordForm, setPasswordForm] = useState<ChangePasswordForm>({
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   })
   const [changingPassword, setChangingPassword] = useState(false)
+  const [newPasswordTouched, setNewPasswordTouched] = useState(false)
+  const [confirmPasswordTouched, setConfirmPasswordTouched] = useState(false)
+  const [backendPasswordError, setBackendPasswordError] = useState<string | null>(null)
+
+  // Refs for focus management
+  const currentPasswordRef = useRef<HTMLInputElement>(null)
+  const newPasswordRef = useRef<HTMLInputElement>(null)
+  const confirmPasswordRef = useRef<HTMLInputElement>(null)
 
   // Use cached game history hook
   const {
@@ -78,17 +128,36 @@ const Profile = () => {
     }
   }, [filters, fetchCachedGameHistory, prefetchNextPage])
 
+  // Fetch transactions with pagination - memoized to prevent recreating
+  const fetchTransactions = useCallback(async () => {
+    setTransactionsLoading(true)
+    setTransactionsError(null)
+    try {
+      const response = await balanceAPI.getTransactions(transactionFilters)
+      setTransactions(response.data)
+      setTransactionPagination(response.pagination)
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load transactions'
+      setTransactionsError(errorMessage)
+      toast.error(errorMessage)
+      console.error('[Profile] Transactions fetch error:', error)
+    } finally {
+      setTransactionsLoading(false)
+    }
+  }, [transactionFilters])
+
   // Initial data load - only run once
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const [gameResponse, trans] = await Promise.all([
+        const [gameResponse, transResponse] = await Promise.all([
           balanceAPI.getGameHistory(filters),
-          balanceAPI.getTransactions(),
+          balanceAPI.getTransactions(transactionFilters),
         ])
         setGameHistory(gameResponse.data)
         setPagination(gameResponse.pagination)
-        setTransactions(trans)
+        setTransactions(transResponse.data)
+        setTransactionPagination(transResponse.pagination)
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to load profile data'
         setGamesError(errorMessage)
@@ -141,9 +210,90 @@ const Profile = () => {
     }
   }, [loading])
 
+  // Fetch transactions when filters change (with debouncing)
+  const transactionDebounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    // Skip if initial load hasn't completed
+    if (!initialLoadComplete.current || loading) {
+      return
+    }
+
+    // Clear existing timer
+    if (transactionDebounceTimer.current) {
+      clearTimeout(transactionDebounceTimer.current)
+    }
+
+    // Set new debounced call
+    transactionDebounceTimer.current = setTimeout(() => {
+      fetchTransactions()
+    }, 500) // 500ms debounce
+
+    // Cleanup
+    return () => {
+      if (transactionDebounceTimer.current) {
+        clearTimeout(transactionDebounceTimer.current)
+      }
+    }
+  }, [transactionFilters, fetchTransactions, loading])
+
   const handlePageChange = (page: number) => {
     setFilters(prev => ({ ...prev, page }))
   }
+
+  const handleTransactionPageChange = (page: number) => {
+    setTransactionFilters(prev => ({ ...prev, page }))
+  }
+
+  // Fetch user logs with pagination - memoized
+  const fetchUserLogs = useCallback(async () => {
+    setUserLogsLoading(true)
+    setUserLogsError(null)
+    try {
+      const response = await authAPI.getUserLogs(userLogFilters)
+      setUserLogs(response.data)
+      setUserLogPagination(response.pagination)
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load user logs'
+      setUserLogsError(errorMessage)
+      toast.error(errorMessage)
+      console.error('[Profile] User logs fetch error:', error)
+    } finally {
+      setUserLogsLoading(false)
+    }
+  }, [userLogFilters])
+
+  // Handler for user log page changes
+  const handleUserLogPageChange = (page: number) => {
+    setUserLogFilters(prev => ({ ...prev, page }))
+  }
+
+  // Fetch user logs when filters change (with debouncing)
+  const userLogDebounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    // Skip if initial load hasn't completed
+    if (!initialLoadComplete.current || loading) {
+      return
+    }
+
+    // Clear existing timer
+    if (userLogDebounceTimer.current) {
+      clearTimeout(userLogDebounceTimer.current)
+    }
+
+    // Set new debounced call
+    userLogDebounceTimer.current = setTimeout(() => {
+      fetchUserLogs()
+    }, 500) // 500ms debounce
+
+    // Cleanup
+    return () => {
+      if (userLogDebounceTimer.current) {
+        clearTimeout(userLogDebounceTimer.current)
+      }
+    }
+  }, [userLogFilters, fetchUserLogs, loading])
 
   const handleGameClick = (game: GameHistory) => {
     // Only navigate if the game is pending and has a roomId
@@ -155,32 +305,83 @@ const Profile = () => {
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast.error('Passwords do not match')
+    // Clear previous backend error
+    setBackendPasswordError(null)
+
+    // Mark all fields as touched for validation
+    setNewPasswordTouched(true)
+    setConfirmPasswordTouched(true)
+
+    // Validate all required fields
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setBackendPasswordError('Please fill in all fields')
+      // Focus on first empty field
+      if (!passwordForm.currentPassword && currentPasswordRef.current) {
+        currentPasswordRef.current.focus()
+      } else if (!passwordForm.newPassword && newPasswordRef.current) {
+        newPasswordRef.current.focus()
+      } else if (!passwordForm.confirmPassword && confirmPasswordRef.current) {
+        confirmPasswordRef.current.focus()
+      }
       return
     }
 
-    if (passwordForm.newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters')
+    // Validate password requirements (frontend)
+    const passwordValidation = validatePassword(passwordForm.newPassword)
+    if (!passwordValidation.valid) {
+      // Focus on password field
+      if (newPasswordRef.current) {
+        newPasswordRef.current.focus()
+      }
+      return
+    }
+
+    // Validate password match
+    const passwordsMatch = validatePasswordMatch(passwordForm.newPassword, passwordForm.confirmPassword)
+    if (!passwordsMatch) {
+      // Focus on confirm password field
+      if (confirmPasswordRef.current) {
+        confirmPasswordRef.current.focus()
+      }
       return
     }
 
     setChangingPassword(true)
     try {
-      await authAPI.changePassword({
+      const response = await authAPI.changePassword({
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword,
       })
-      toast.success('Password changed successfully')
+      // Display backend success message
+      toast.success(response.message || 'Password changed successfully')
       setPasswordForm({
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
       })
+      setNewPasswordTouched(false)
+      setConfirmPasswordTouched(false)
+      setBackendPasswordError(null)
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 
-        (error as { response?: { data?: { error?: string } } }).response?.data?.error || 'Failed to change password'
-      toast.error(errorMessage)
+      // Extract backend error from axios response
+      let errorMessage = 'Failed to change password'
+
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: { error?: string } } }
+        if (axiosError.response?.data?.error) {
+          errorMessage = axiosError.response.data.error
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message
+      }
+
+      // Display error inline
+      setBackendPasswordError(errorMessage)
+
+      // Focus on current password field (most common error is wrong current password)
+      if (currentPasswordRef.current) {
+        currentPasswordRef.current.focus()
+      }
     } finally {
       setChangingPassword(false)
     }
@@ -270,6 +471,16 @@ const Profile = () => {
           onClick={() => setActiveTab('transactions')}
         >
           Transactions
+        </button>
+        <button
+          className={`px-6 py-3 font-medium transition-colors ${
+            activeTab === 'logs'
+              ? 'text-primary border-b-2 border-primary'
+              : 'text-gray-400 hover:text-text-primary'
+          }`}
+          onClick={() => setActiveTab('logs')}
+        >
+          User Logs
         </button>
         <button
           className={`px-6 py-3 font-medium transition-colors ${
@@ -421,38 +632,214 @@ const Profile = () => {
 
           {/* Transactions Tab */}
           {activeTab === 'transactions' && (
-            <div className="space-y-4">
-              {transactions.length === 0 ? (
-                <Card className="text-center py-12">
-                  <p className="text-gray-400">No transactions yet</p>
-                </Card>
-              ) : (
-                transactions.map((transaction) => (
-                  <Card key={transaction.id} className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold text-text-primary">
-                        {transaction.description}
-                      </h3>
-                      <p className="text-sm text-gray-400">
-                        {dateFormatters.historyTimestamp(transaction.createdAt)}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <p
-                        className={`font-bold text-lg ${
-                          transaction.type === 'deposit' || transaction.type === 'winnings'
-                            ? 'text-success'
-                            : 'text-error'
-                        }`}
+            <div className="space-y-6">
+              {/* Transactions List */}
+              <div className="space-y-4">
+                {transactionsLoading && !transactions.length ? (
+                  <div className="flex justify-center py-12">
+                    <Spinner size="xl" />
+                  </div>
+                ) : transactionsError ? (
+                  <Card className="text-center py-12">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="w-16 h-16 rounded-full bg-error/10 flex items-center justify-center">
+                        <svg className="w-8 h-8 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-text-primary mb-2">Failed to Load Transactions</h3>
+                        <p className="text-gray-400 mb-4">{transactionsError}</p>
+                      </div>
+                      <Button
+                        variant="primary"
+                        onClick={() => fetchTransactions()}
                       >
-                        {transaction.type === 'deposit' || transaction.type === 'winnings' ? '+' : '-'}
-                        {formatCurrency(Math.abs(transaction.amount || 0))}
-                      </p>
-                      {getTransactionBadge(transaction.type)}
+                        Try Again
+                      </Button>
                     </div>
                   </Card>
-                ))
-              )}
+                ) : transactions.length === 0 ? (
+                  <Card className="text-center py-16">
+                    <div className="flex flex-col items-center gap-6">
+                      <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">
+                        <svg className="w-12 h-12 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                      </div>
+                      <div className="max-w-md">
+                        <h3 className="text-2xl font-bold text-text-primary mb-3">
+                          No Transactions Yet
+                        </h3>
+                        <p className="text-gray-400 mb-2">
+                          Your transaction history will appear here once you make your first deposit or play a game!
+                        </p>
+                        <p className="text-sm text-gray-500 mb-6">
+                          All deposits, withdrawals, entry fees, and winnings will be tracked here.
+                        </p>
+                      </div>
+                      <Button
+                        variant="primary"
+                        size="lg"
+                        onClick={() => navigate('/')}
+                        className="px-8"
+                      >
+                        Browse Active Rooms
+                      </Button>
+                    </div>
+                  </Card>
+                ) : (
+                  <>
+                    {transactions.map((transaction) => (
+                      <Card key={transaction.id} className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-semibold text-text-primary">
+                            {transaction.description}
+                          </h3>
+                          <p className="text-sm text-gray-400">
+                            {dateFormatters.historyTimestamp(transaction.createdAt)}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <p
+                            className={`font-bold text-lg ${
+                              transaction.type === 'deposit' || transaction.type === 'winnings'
+                                ? 'text-success'
+                                : 'text-error'
+                            }`}
+                          >
+                            {transaction.type === 'deposit' || transaction.type === 'winnings' ? '+' : '-'}
+                            {formatCurrency(Math.abs(transaction.amount || 0))}
+                          </p>
+                          {getTransactionBadge(transaction.type)}
+                        </div>
+                      </Card>
+                    ))}
+
+                    {/* Pagination */}
+                    <GameHistoryPagination
+                      pagination={transactionPagination}
+                      onPageChange={handleTransactionPageChange}
+                      loading={transactionsLoading}
+                      itemName="transactions"
+                    />
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* User Logs Tab */}
+          {activeTab === 'logs' && (
+            <div className="space-y-6">
+              {/* User Logs List */}
+              <div className="space-y-4">
+                {userLogsLoading && !userLogs.length ? (
+                  <div className="flex justify-center py-12">
+                    <Spinner size="xl" />
+                  </div>
+                ) : userLogsError ? (
+                  <Card className="text-center py-12">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="w-16 h-16 rounded-full bg-error/10 flex items-center justify-center">
+                        <svg className="w-8 h-8 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-text-primary font-medium mb-2">{userLogsError}</p>
+                        <button
+                          onClick={() => fetchUserLogs()}
+                          className="text-primary hover:text-primary-hover font-medium"
+                        >
+                          Try Again
+                        </button>
+                      </div>
+                    </div>
+                  </Card>
+                ) : userLogs.length === 0 ? (
+                  <Card className="text-center py-12">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="w-16 h-16 rounded-full bg-background-secondary flex items-center justify-center">
+                        <svg className="w-8 h-8 text-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-text-primary font-medium mb-1">No Activity Logs</p>
+                        <p className="text-text-secondary text-sm">Your account activity will appear here</p>
+                      </div>
+                    </div>
+                  </Card>
+                ) : (
+                  <>
+                    {userLogs.map((log) => (
+                      <Card key={log.id} className="hover:shadow-lg transition-shadow">
+                        <div className="flex justify-between items-start gap-4">
+                          {/* Left: Date & Time + Action */}
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <svg className="w-5 h-5 text-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <p className="text-sm text-text-secondary">
+                                {new Date(log.timestamp).toLocaleString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  second: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                            <p className="text-base font-medium text-text-primary">
+                              {log.action.replace(/_/g, ' ')}
+                            </p>
+                          </div>
+
+                          {/* Middle: IP & Device */}
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <svg className="w-5 h-5 text-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                              </svg>
+                              <p className="text-sm text-text-secondary">{log.device}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <svg className="w-5 h-5 text-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                              </svg>
+                              <p className="text-sm text-text-secondary">{normalizeIP(log.ip)}</p>
+                            </div>
+                          </div>
+
+                          {/* Right: Status Badge */}
+                          <div className="flex items-center">
+                            <span
+                              className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                log.status === 'SUCCESS'
+                                  ? 'bg-success/20 text-success'
+                                  : 'bg-error/20 text-error'
+                              }`}
+                            >
+                              {log.status}
+                            </span>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+
+                    {/* Pagination */}
+                    <GameHistoryPagination
+                      pagination={userLogPagination}
+                      onPageChange={handleUserLogPageChange}
+                      loading={userLogsLoading}
+                      itemName="logs"
+                    />
+                  </>
+                )}
+              </div>
             </div>
           )}
 
@@ -462,33 +849,73 @@ const Profile = () => {
               <Card>
                 <h2 className="text-xl font-semibold mb-6">Change Password</h2>
                 <form onSubmit={handlePasswordChange} className="space-y-4">
+                  {/* Backend error display */}
+                  {backendPasswordError && (
+                    <div
+                      className="p-3 bg-error/10 border border-error/30 rounded-lg text-error text-sm"
+                      role="alert"
+                      aria-live="assertive"
+                    >
+                      <p className="font-medium">{backendPasswordError}</p>
+                    </div>
+                  )}
+
                   <Input
+                    ref={currentPasswordRef}
                     type="password"
                     label="Current Password"
                     value={passwordForm.currentPassword}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setPasswordForm({ ...passwordForm, currentPassword: e.target.value })
-                    }
+                      // Clear error when user starts typing
+                      if (backendPasswordError) {
+                        setBackendPasswordError(null)
+                      }
+                    }}
                     required
                     fullWidth
                   />
                   <Input
+                    ref={newPasswordRef}
                     type="password"
                     label="New Password"
                     value={passwordForm.newPassword}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setPasswordForm({ ...passwordForm, newPassword: e.target.value })
+                      // Clear error when user starts typing
+                      if (backendPasswordError) {
+                        setBackendPasswordError(null)
+                      }
+                    }}
+                    onBlur={() => setNewPasswordTouched(true)}
+                    helperText={!newPasswordTouched ? PASSWORD_HELPER_TEXT : undefined}
+                    errorList={
+                      newPasswordTouched && !validatePassword(passwordForm.newPassword).valid
+                        ? getPasswordErrorMessages(validatePassword(passwordForm.newPassword).errors)
+                        : undefined
                     }
-                    helperText="Minimum 6 characters"
                     required
                     fullWidth
                   />
                   <Input
+                    ref={confirmPasswordRef}
                     type="password"
                     label="Confirm New Password"
                     value={passwordForm.confirmPassword}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
+                      // Clear error when user starts typing
+                      if (backendPasswordError) {
+                        setBackendPasswordError(null)
+                      }
+                    }}
+                    onBlur={() => setConfirmPasswordTouched(true)}
+                    error={
+                      confirmPasswordTouched &&
+                      passwordForm.confirmPassword &&
+                      !validatePasswordMatch(passwordForm.newPassword, passwordForm.confirmPassword)
+                        ? 'Passwords do not match'
+                        : undefined
                     }
                     required
                     fullWidth

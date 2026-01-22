@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, Spinner, Badge } from '@components/atoms'
 import { socketService } from '@services/socket'
+import { apiClient } from '@services/api/config'
 import toast from 'react-hot-toast'
 
 interface GameResult {
@@ -66,19 +67,14 @@ const Results = () => {
   const fetchResults = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/results`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        }
-      })
+      // SECURITY FIX (Week 4): Authentication via HttpOnly cookies, no token needed
+      const response = await apiClient.get('/results')
 
-      if (response.ok) {
-        const data = await response.json()
-        setResults(data.results || [])
-        // Set the first result as latest if we have results
-        if (data.results && data.results.length > 0) {
-          setLatestResult(data.results[0])
-        }
+      const data = response.data
+      setResults(data.results || [])
+      // Set the first result as latest if we have results
+      if (data.results && data.results.length > 0) {
+        setLatestResult(data.results[0])
       }
     } catch (error) {
       console.error('Failed to fetch results:', error)

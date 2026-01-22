@@ -3,6 +3,8 @@ import type { ReactNode } from 'react'
 import type { User, LoginForm, RegisterForm } from '../types'
 import { authAPI } from '@services/api'
 import { socketService } from '@services/socket'
+import { csrfManager } from '../utils/csrfManager'
+import { logoutManager } from '../utils/logoutManager'
 import toast from 'react-hot-toast'
 import { AuthContext } from '../utils/authUtils'
 
@@ -23,23 +25,27 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [token, setToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Initialize auth from localStorage
+  // SECURITY FIX (Week 4): Initialize auth from HttpOnly cookies
+  // Token is no longer stored in localStorage for XSS protection
   useEffect(() => {
     const initAuth = async () => {
-      const storedToken = localStorage.getItem('token')
-      
-      if (storedToken) {
-        try {
-          const profile = await authAPI.getProfile()
-          setUser(profile)
-          setToken(storedToken)
-          socketService.connect(storedToken)
-        } catch {
-          localStorage.removeItem('token')
-          localStorage.removeItem('user')
-        }
+      try {
+        // Try to get user profile - if cookie exists, this will succeed
+        const profile = await authAPI.getProfile()
+        setUser(profile)
+        setToken('cookie-auth') // Placeholder to indicate authenticated state
+
+        // SECURITY FIX (Week 4): Connect WebSocket with cookie-based authentication
+        socketService.connect()
+
+        // SECURITY FIX (Week 4): Initialize CSRF token for state-changing requests
+        await csrfManager.initialize()
+      } catch {
+        // No valid session - clear user data
+        localStorage.removeItem('user')
+        csrfManager.clear()
       }
-      
+
       setLoading(false)
     }
 
@@ -54,7 +60,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (data.userId === user.id) {
           // Removed: console.log(`[AuthContext] Received authoritative balance update: ${data.newBalance}`)
           setUser(prev => prev ? { ...prev, balance: data.newBalance } : null)
-          
+
           // Update localStorage to persist the new balance
           const storedUser = localStorage.getItem('user')
           if (storedUser) {
@@ -77,28 +83,65 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }, [user, token])
 
+  // SECURITY FIX (Week 4): Listen for session expiration events
+  // When session expires, trigger the regular auth modal to open
+  useEffect(() => {
+    const handleSessionExpired = (event: Event) => {
+      const customEvent = event as CustomEvent
+      console.log('[AuthContext] Session expired:', customEvent.detail)
+
+      // Clear auth state
+      setUser(null)
+      setToken(null)
+      socketService.disconnect()
+      csrfManager.clear()
+
+      // Dispatch event to open login modal
+      // The App component will listen for this and open AuthModal
+      window.dispatchEvent(new CustomEvent('auth:open-login-modal', {
+        detail: { reason: 'session-expired' }
+      }))
+
+      // Show friendly message
+      toast.error('Your session has expired. Please sign in again.')
+    }
+
+    // Listen for session expiration from API interceptor
+    window.addEventListener('auth:session-expired', handleSessionExpired)
+
+    return () => {
+      window.removeEventListener('auth:session-expired', handleSessionExpired)
+    }
+  }, [])
+
   const login = async (credentials: LoginForm) => {
     try {
-      const { user, token } = await authAPI.login(credentials)
-      
+      // SECURITY FIX (Week 4): Token is now in HttpOnly cookie
+      // Backend sets cookie automatically, no localStorage needed
+      const { user } = await authAPI.login(credentials)
+
       // Ensure balance is a number
       const normalizedUser = {
         ...user,
         balance: typeof user.balance === 'number' ? user.balance : Number(user.balance) || 0
       }
-      
+
       setUser(normalizedUser)
-      setToken(token)
-      
-      localStorage.setItem('token', token)
+      setToken('cookie-auth') // Placeholder to indicate authenticated state
+
+      // Keep user data in localStorage for UI convenience (non-sensitive)
       localStorage.setItem('user', JSON.stringify(normalizedUser))
-      
-      socketService.connect(token)
-      
+
+      // SECURITY FIX (Week 4): Connect WebSocket with cookie-based authentication
+      socketService.connect()
+
+      // SECURITY FIX (Week 4): Initialize CSRF token for state-changing requests
+      await csrfManager.initialize()
+
       toast.success('Welcome back!')
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error 
-        ? error.message 
+      const errorMessage = error instanceof Error
+        ? error.message
         : 'Login failed';
       toast.error(errorMessage);
       throw error;
@@ -107,26 +150,32 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const register = async (userData: RegisterForm) => {
     try {
-      const { user, token } = await authAPI.register(userData)
-      
+      // SECURITY FIX (Week 4): Token is now in HttpOnly cookie
+      // Backend sets cookie automatically, no localStorage needed
+      const { user } = await authAPI.register(userData)
+
       // Ensure balance is a number
       const normalizedUser = {
         ...user,
         balance: typeof user.balance === 'number' ? user.balance : Number(user.balance) || 0
       }
-      
+
       setUser(normalizedUser)
-      setToken(token)
-      
-      localStorage.setItem('token', token)
+      setToken('cookie-auth') // Placeholder to indicate authenticated state
+
+      // Keep user data in localStorage for UI convenience (non-sensitive)
       localStorage.setItem('user', JSON.stringify(normalizedUser))
-      
-      socketService.connect(token)
-      
+
+      // SECURITY FIX (Week 4): Connect WebSocket with cookie-based authentication
+      socketService.connect()
+
+      // SECURITY FIX (Week 4): Initialize CSRF token for state-changing requests
+      await csrfManager.initialize()
+
       toast.success('Account created successfully!')
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error 
-        ? error.message 
+      const errorMessage = error instanceof Error
+        ? error.message
         : 'Registration failed';
       toast.error(errorMessage);
       throw error;
@@ -134,10 +183,27 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }
 
   const logout = () => {
+    // SECURITY FIX (Week 4): Mark this as manual/intentional logout
+    // This prevents the SessionExpiredModal from appearing
+    logoutManager.markAsManualLogout()
+
+    // Call logout API
     authAPI.logout()
+
+    // Clear auth state
     setUser(null)
     setToken(null)
     socketService.disconnect()
+
+    // SECURITY FIX (Week 4): Clear CSRF token on logout
+    csrfManager.clear()
+
+    // Safety: Clear the manual logout flag after a short delay
+    // In case the API call fails or there's no 401 response
+    setTimeout(() => {
+      logoutManager.clear()
+    }, 3000) // 3 seconds should be enough for logout API to complete
+
     toast.success('Logged out successfully')
   }
 
@@ -180,14 +246,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (!prev || !('_previousBalance' in prev)) {
         return prev
       }
-      
+
       const userWithRollback = prev as UserWithRollback
       const previousBalance = userWithRollback._previousBalance
-      
+
       if (previousBalance === undefined) {
         return prev
       }
-      
+
       // Remove the rollback data and restore previous balance
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { _previousBalance: _, ...userWithoutRollback } = userWithRollback

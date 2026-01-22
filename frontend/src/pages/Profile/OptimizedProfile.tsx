@@ -94,11 +94,11 @@ const OptimizedProfile = () => {
   // Load transactions only when tab is accessed
   const loadTransactions = async () => {
     if (transactions.length > 0) return; // Already loaded
-    
+
     setTransactionsLoading(true);
     try {
-      const trans = await balanceAPI.getTransactions();
-      setTransactions(trans);
+      const response = await balanceAPI.getTransactions();
+      setTransactions(response.data || response.transactions || []);
     } catch {
       toast.error('Failed to load transactions');
     } finally {

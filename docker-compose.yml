@@ -82,6 +82,11 @@ services:
       # Admin
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@lottodrop.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin123!@#}
+      # Pulse2Pay Crypto Deposits
+      PULSE2PAY_API_KEY: ${PULSE2PAY_API_KEY:-}
+      PULSE2PAY_API_SECRET: ${PULSE2PAY_API_SECRET:-}
+      PULSE2PAY_API_URL: ${PULSE2PAY_API_URL:-https://api.pulse2pay.com/api/merchant/v1}
+      PULSE2PAY_WEBHOOK_SECRET: ${PULSE2PAY_WEBHOOK_SECRET:-}
     ports:
       - "${BACKEND_PORT:-3001}:3001"
     networks:

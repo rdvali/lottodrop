@@ -44,11 +44,12 @@ class SocketService {
   private socket: Socket | null = null
   private listeners: Map<string, Set<GenericCallback>> = new Map()
 
-  connect(token: string): void {
+  connect(): void {
     if (this.socket?.connected) return
 
+    // SECURITY FIX (Week 4): Cookie-based WebSocket authentication
     this.socket = io(SOCKET_URL, {
-      auth: { token },
+      withCredentials: true, // Send HttpOnly cookies with WebSocket handshake
       transports: ['websocket'],
       reconnection: true,
       reconnectionDelay: 1000,
@@ -99,6 +100,19 @@ class SocketService {
   // Generic emit method for custom events
   emit(eventName: string, data?: any): void {
     this.socket?.emit(eventName, data)
+  }
+
+  // Generic on/off methods for custom events
+  on(eventName: string, callback: (...args: any[]) => void): void {
+    this.socket?.on(eventName, callback)
+  }
+
+  off(eventName: string, callback?: (...args: any[]) => void): void {
+    if (callback) {
+      this.socket?.off(eventName, callback)
+    } else {
+      this.socket?.off(eventName)
+    }
   }
 
   // Event listeners

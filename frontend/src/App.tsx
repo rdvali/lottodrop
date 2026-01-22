@@ -3,8 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { HelmetProvider } from 'react-helmet-async'
 import { MainLayout } from '@components/templates'
 import { AuthModal, NotificationCenter, NotificationToastContainer, NotificationsRoot } from '@components/organisms'
+import { DepositModal } from '@components/organisms/DepositModal'
 import { AuthProvider, useAuth } from '@contexts/AuthContext'
-import { NotificationProvider, useNotifications } from '@contexts/NotificationContext'
+import { NotificationProvider } from '@contexts/NotificationContext'
 import { WinnerResultsProvider } from '@contexts/WinnerResultsContext'
 import { BalanceVisibilityProvider } from '@contexts/BalanceVisibilityContext'
 import { ModalProvider } from './providers'
@@ -60,8 +61,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const AppContent = () => {
   const location = useLocation()
   const { user, logout } = useAuth()
-  const { authModalOpen, openAuthModal, closeAuthModal } = useModal()
-  const { state: notificationState } = useNotifications()
+  const { authModalOpen, openAuthModal, closeAuthModal, depositModalOpen, closeDepositModal } = useModal()
   const {
     showBanner,
     enableAudio,
@@ -97,6 +97,21 @@ const AppContent = () => {
       closeAuthModal()
     }
   }, [user, authModalOpen, closeAuthModal])
+
+  // SECURITY FIX (Week 4): Listen for session expiration and open login modal
+  useEffect(() => {
+    const handleOpenLoginModal = (event: Event) => {
+      const customEvent = event as CustomEvent
+      console.log('[App] Opening login modal due to:', customEvent.detail?.reason)
+      openAuthModal()
+    }
+
+    window.addEventListener('auth:open-login-modal', handleOpenLoginModal)
+
+    return () => {
+      window.removeEventListener('auth:open-login-modal', handleOpenLoginModal)
+    }
+  }, [openAuthModal])
   
   // Setup global socket listeners
   useEffect(() => {
@@ -172,6 +187,11 @@ const AppContent = () => {
       <AuthModal
         isOpen={authModalOpen}
         onClose={closeAuthModal}
+      />
+
+      <DepositModal
+        isOpen={depositModalOpen}
+        onClose={closeDepositModal}
       />
 
       <NotificationCenter />

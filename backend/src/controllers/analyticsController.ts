@@ -438,3 +438,259 @@ export const exportAnalytics = async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+// Get user financial analytics
+export const getUserFinancialAnalytics = async (req: Request, res: Response) => {
+  try {
+    const {
+      page = 1,
+      limit = 50,
+      search = '',
+      dateFrom,
+      dateTo,
+      sortBy = 'totalDeposited',
+      sortOrder = 'desc'
+    } = req.query;
+
+    const offset = (Number(page) - 1) * Number(limit);
+
+    // Build WHERE clauses for filters
+    const whereClauses: string[] = ['1=1'];
+    const params: any[] = [];
+    let paramCount = 1;
+
+    // Search filter
+    if (search) {
+      whereClauses.push(`(
+        LOWER(u.first_name) LIKE $${paramCount} OR
+        LOWER(u.last_name) LIKE $${paramCount} OR
+        LOWER(u.email) LIKE $${paramCount}
+      )`);
+      params.push(`%${String(search).toLowerCase()}%`);
+      paramCount++;
+    }
+
+    // Date range filters (for transactions and games)
+    let dateFilter = '';
+    if (dateFrom) {
+      dateFilter += ` AND t.created_at >= $${paramCount}`;
+      params.push(dateFrom);
+      paramCount++;
+    }
+    if (dateTo) {
+      dateFilter += ` AND t.created_at <= $${paramCount}`;
+      params.push(`${dateTo} 23:59:59`);
+      paramCount++;
+    }
+
+    // Main query to get user financial data
+    const query = `
+      SELECT
+        u.id,
+        u.first_name,
+        u.last_name,
+        u.email,
+        u.balance as current_balance,
+        u.is_active,
+        u.created_at as registration_date,
+
+        -- Deposits
+        COALESCE(SUM(CASE WHEN t.type = 'DEPOSIT' AND t.status = 'SUCCESS' ${dateFilter} THEN t.amount ELSE 0 END), 0) as total_deposited,
+
+        -- Withdrawals
+        COALESCE(SUM(CASE WHEN t.type = 'WITHDRAWAL' AND t.status = 'SUCCESS' ${dateFilter} THEN ABS(t.amount) ELSE 0 END), 0) as total_withdrawn,
+
+        -- Bets and Winnings (from round_participants)
+        COALESCE(SUM(rp.bet_amount), 0) as total_bet,
+        COALESCE(SUM(CASE WHEN rp.is_winner = true THEN rp.won_amount ELSE 0 END), 0) as total_won,
+
+        -- Total Games
+        COUNT(DISTINCT rp.round_id) as total_games,
+
+        -- Last Activity
+        GREATEST(MAX(t.created_at), MAX(rp.joined_at)) as last_activity_date
+
+      FROM users u
+      LEFT JOIN transactions t ON t.user_id = u.id
+      LEFT JOIN round_participants rp ON rp.user_id = u.id
+      WHERE ${whereClauses.join(' AND ')}
+      GROUP BY u.id, u.first_name, u.last_name, u.email, u.balance, u.is_active, u.created_at
+    `;
+
+    // Add ordering
+    const validSortColumns: { [key: string]: string } = {
+      'user': 'u.last_name',
+      'totalDeposited': 'total_deposited',
+      'totalWithdrawn': 'total_withdrawn',
+      'totalBet': 'total_bet',
+      'totalWon': 'total_won',
+      'netProfit': '(total_won - total_bet)',
+      'currentBalance': 'u.balance',
+      'lastActivity': 'last_activity_date'
+    };
+
+    const sortColumn = validSortColumns[String(sortBy)] || 'total_deposited';
+    const order = sortOrder === 'asc' ? 'ASC' : 'DESC';
+
+    const finalQuery = `
+      WITH user_financials AS (${query})
+      SELECT * FROM user_financials
+      ORDER BY ${sortColumn} ${order} NULLS LAST
+      LIMIT $${paramCount} OFFSET $${paramCount + 1}
+    `;
+
+    params.push(limit, offset);
+
+    const result = await pool.query(finalQuery, params);
+
+    // Get total count for pagination
+    const countQuery = `
+      WITH user_financials AS (${query})
+      SELECT COUNT(*) as total FROM user_financials
+    `;
+
+    const countResult = await pool.query(countQuery, params.slice(0, -2)); // Exclude limit and offset
+
+    // Calculate derived fields
+    const users = result.rows.map(user => {
+      const totalBet = parseFloat(user.total_bet) || 0;
+      const totalWon = parseFloat(user.total_won) || 0;
+      const totalDeposited = parseFloat(user.total_deposited) || 0;
+      const totalWithdrawn = parseFloat(user.total_withdrawn) || 0;
+      const totalLost = totalBet - totalWon;
+
+      return {
+        id: user.id,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        email: user.email,
+        currentBalance: parseFloat(user.current_balance),
+        totalDeposited,
+        totalWithdrawn,
+        netDeposits: totalDeposited - totalWithdrawn,
+        totalBet,
+        totalWon,
+        totalLost: Math.max(0, totalLost),
+        netProfit: totalWon - totalBet,
+        totalGames: parseInt(user.total_games) || 0,
+        winRate: parseInt(user.total_games) > 0
+          ? ((totalWon / totalBet) * 100)
+          : null,
+        lastActivityDate: user.last_activity_date,
+        registrationDate: user.registration_date,
+        isActive: user.is_active
+      };
+    });
+
+    // Calculate aggregates for the filtered results
+    const aggregates = users.reduce((acc, user) => ({
+      totalUsersInView: acc.totalUsersInView + 1,
+      totalNetDeposits: acc.totalNetDeposits + user.netDeposits,
+      totalBetVolume: acc.totalBetVolume + user.totalBet,
+      totalGamesPlayed: acc.totalGamesPlayed + user.totalGames
+    }), {
+      totalUsersInView: 0,
+      totalNetDeposits: 0,
+      totalBetVolume: 0,
+      totalGamesPlayed: 0
+    });
+
+    return res.json({
+      users,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total: parseInt(countResult.rows[0].total),
+        totalPages: Math.ceil(parseInt(countResult.rows[0].total) / Number(limit))
+      },
+      aggregates
+    });
+  } catch (error) {
+    console.error('Get user financial analytics error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Export user financial analytics as CSV
+export const exportUserFinancialAnalytics = async (req: Request, res: Response) => {
+  try {
+    const { search = '', dateFrom, dateTo } = req.query;
+
+    // Build WHERE clauses
+    const whereClauses: string[] = ['1=1'];
+    const params: any[] = [];
+    let paramCount = 1;
+
+    if (search) {
+      whereClauses.push(`(
+        LOWER(u.first_name) LIKE $${paramCount} OR
+        LOWER(u.last_name) LIKE $${paramCount} OR
+        LOWER(u.email) LIKE $${paramCount}
+      )`);
+      params.push(`%${String(search).toLowerCase()}%`);
+      paramCount++;
+    }
+
+    let dateFilter = '';
+    if (dateFrom) {
+      dateFilter += ` AND t.created_at >= $${paramCount}`;
+      params.push(dateFrom);
+      paramCount++;
+    }
+    if (dateTo) {
+      dateFilter += ` AND t.created_at <= $${paramCount}`;
+      params.push(`${dateTo} 23:59:59`);
+      paramCount++;
+    }
+
+    const query = `
+      SELECT
+        u.id as "User ID",
+        CONCAT(u.first_name, ' ', u.last_name) as "User Name",
+        u.email as "Email",
+        u.balance as "Current Balance",
+        COALESCE(SUM(CASE WHEN t.type = 'DEPOSIT' AND t.status = 'SUCCESS' ${dateFilter} THEN t.amount ELSE 0 END), 0) as "Total Deposited",
+        COALESCE(SUM(CASE WHEN t.type = 'WITHDRAWAL' AND t.status = 'SUCCESS' ${dateFilter} THEN ABS(t.amount) ELSE 0 END), 0) as "Total Withdrawn",
+        COALESCE(SUM(rp.bet_amount), 0) as "Total Bet",
+        COALESCE(SUM(CASE WHEN rp.is_winner = true THEN rp.won_amount ELSE 0 END), 0) as "Total Won",
+        COUNT(DISTINCT rp.round_id) as "Total Games",
+        TO_CHAR(u.created_at, 'YYYY-MM-DD') as "Registration Date",
+        TO_CHAR(GREATEST(MAX(t.created_at), MAX(rp.joined_at)), 'YYYY-MM-DD HH24:MI:SS') as "Last Activity"
+      FROM users u
+      LEFT JOIN transactions t ON t.user_id = u.id
+      LEFT JOIN round_participants rp ON rp.user_id = u.id
+      WHERE ${whereClauses.join(' AND ')}
+      GROUP BY u.id, u.first_name, u.last_name, u.email, u.balance, u.created_at
+      ORDER BY "Total Deposited" DESC
+      LIMIT 10000
+    `;
+
+    const result = await pool.query(query, params);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'No data available for export' });
+    }
+
+    // Convert to CSV
+    const headers = Object.keys(result.rows[0]);
+    const csvHeader = headers.join(',');
+    const csvRows = result.rows.map(row =>
+      headers.map(header => {
+        const value = row[header];
+        const stringValue = value !== null ? String(value) : '';
+        return stringValue.includes(',') || stringValue.includes('"')
+          ? `"${stringValue.replace(/"/g, '""')}"`
+          : stringValue;
+      }).join(',')
+    );
+
+    const csv = [csvHeader, ...csvRows].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=user-financial-analytics-${new Date().toISOString().split('T')[0]}.csv`);
+    return res.send(csv);
+  } catch (error) {
+    console.error('Export user financial analytics error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};

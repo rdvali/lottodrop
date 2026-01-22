@@ -67,6 +67,12 @@ export const adminAPI = {
   // Settings
   getSettings: () => api.get('/admin/settings'),
   updateSettings: (data: any) => api.put('/admin/settings', data),
+
+  // Logs
+  getAuthLogs: (params?: any) => api.get('/admin/logs/auth', { params }),
+  getAuditLogs: (params?: any) => api.get('/admin/logs/audit', { params }),
+  getSecurityLogs: (params?: any) => api.get('/admin/logs/security', { params }),
+  getLogStats: () => api.get('/admin/logs/stats'),
 };
 
 export default api;

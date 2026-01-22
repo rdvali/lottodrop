@@ -9,6 +9,8 @@ import Users from './pages/Users';
 import Rooms from './pages/Rooms';
 import Rounds from './pages/Rounds';
 import Transactions from './pages/Transactions';
+import CryptoDeposits from './pages/CryptoDeposits';
+import Logs from './pages/Logs';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import './App.css';
@@ -69,6 +71,16 @@ function App() {
             <Route path="/transactions" element={
               <ProtectedRoute>
                 <Transactions />
+              </ProtectedRoute>
+            } />
+            <Route path="/crypto-deposits" element={
+              <ProtectedRoute>
+                <CryptoDeposits />
+              </ProtectedRoute>
+            } />
+            <Route path="/logs" element={
+              <ProtectedRoute>
+                <Logs />
               </ProtectedRoute>
             } />
             <Route path="/analytics" element={

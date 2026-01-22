@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import * as dotenv from 'dotenv';
 import { createServer } from 'http';
 import authRoutes from './routes/authRoutes';
@@ -9,56 +10,42 @@ import adminRoutes from './routes/adminRoutes';
 import healthRoutes from './routes/health';
 import resultsRoutes from './routes/resultsRoutes';
 import notificationRoutes from './routes/notificationRoutes';
+import cryptoDepositRoutes from './routes/cryptoDepositRoutes';
 import { SocketManager } from './socket/socketManager';
 import pool from './config/database';
 import { existsSync } from 'fs';
 import { initializeRedis } from './services/redis';
 import { apiLimit, authLimit } from './middleware/rateLimiter';
+import { httpCorsOriginValidator, logCorsConfiguration } from './utils/corsOrigin';
+import { createSanitizedErrorResponse, logSensitiveError, ErrorCodes } from './utils/errorSanitizer';
+import { initializeProductionLogging, logger } from './utils/logger';
 
 // Only load .env file if it exists (not needed in Docker where env vars are provided)
 if (existsSync('.env')) {
   dotenv.config();
 }
 
+// SECURITY FIX (Week 3): Initialize production-safe logging (suppresses console.log in production)
+initializeProductionLogging();
+
 const app = express();
 const httpServer = createServer(app);
 const socketManager = new SocketManager(httpServer);
 
-// Secure CORS Configuration
+// SECURITY FIX (Week 3): Secure CORS Configuration with shared validation logic
 const corsOptions = {
-  origin: function(origin: string | undefined, callback: Function) {
-    // Get allowed origins from environment variable
-    const allowedOrigins = process.env.ALLOWED_ORIGINS
-      ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-      : ['http://localhost', 'http://localhost:80', 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'];
-    
-    // Allow requests with no origin (like health checks, curl, server-to-server)
-    if (!origin) {
-      return callback(null, true);
-    }
-    
-    // Check if origin is in allowed list
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      return callback(null, true);
-    }
-    
-    // In production, strictly reject unknown origins
-    if (process.env.NODE_ENV === 'production') {
-      return callback(new Error(`Origin ${origin} not allowed by CORS`));
-    }
-    
-    // In development, warn but allow
-    console.warn(`⚠️  Origin ${origin} not in allowed list - allowed in development only`);
-    return callback(null, true);
-  },
+  origin: httpCorsOriginValidator,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
   maxAge: 86400 // Cache preflight requests for 24 hours
 };
 
 app.use(cors(corsOptions));
 app.use(express.json());
+
+// SECURITY FIX (Week 4): Enable cookie parsing for HttpOnly authentication
+app.use(cookieParser());
 
 // Apply rate limiting (more lenient in development/Docker)
 const isDevelopment = process.env.NODE_ENV !== 'production' || process.env.DOCKER_ENV === 'true';
@@ -78,18 +65,30 @@ app.use('/api', roomRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/results', resultsRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/crypto', cryptoDepositRoutes);
 
 // Health check routes
 app.use('/', healthRoutes);
 
-// Error handling middleware
-app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error('Error details:', err);
-  console.error('Error stack:', err.stack);
-  res.status(500).json({ 
-    error: 'Something went wrong!',
-    details: process.env.NODE_ENV === 'development' ? err.message : undefined 
+// SECURITY FIX (Week 3): Error handling middleware with message sanitization
+app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  // Log the full error for debugging
+  logSensitiveError(err, {
+    method: req.method,
+    path: req.path,
+    userId: (req as any).user?.userId,
+    ip: req.ip,
   });
+
+  // Create sanitized error response
+  const sanitized = createSanitizedErrorResponse(
+    err,
+    'An unexpected error occurred',
+    err.statusCode || err.status || 500,
+    err.code || ErrorCodes.INTERNAL_ERROR
+  );
+
+  res.status(sanitized.statusCode).json(sanitized);
 });
 
 const PORT = process.env.PORT || 3001;
@@ -99,11 +98,14 @@ const startServer = async () => {
   try {
     // Test database connection
     await pool.query('SELECT NOW()');
-    console.log('✅ Database connected successfully');
-    
+    logger.info('✅ Database connected successfully');
+
     // Initialize Redis services
     const redisServices = await initializeRedis();
-    console.log('✅ Redis services initialized');
+    logger.info('✅ Redis services initialized');
+
+    // SECURITY FIX (Week 3): Log CORS configuration for security audit
+    logCorsConfiguration();
     
     // Make Redis services available globally
     (global as any).redisServices = redisServices;
@@ -138,12 +140,12 @@ const startServer = async () => {
         [adminResult.rows[0].id]
       );
 
-        console.log(`Admin user created: ${adminEmail}`);
+        logger.info(`Admin user created: ${adminEmail}`);
       }
     }
 
     httpServer.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+      logger.info(`Server running on port ${PORT}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
@@ -151,7 +153,11 @@ const startServer = async () => {
   }
 };
 
-startServer();
+// Only start server if not in test mode
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
 
 // Export for use in other modules
 export { socketManager };
+export default app; // Export app for testing

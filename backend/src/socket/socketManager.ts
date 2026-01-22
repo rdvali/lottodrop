@@ -7,11 +7,20 @@ import { processRoundWinner } from '../controllers/roomController';
 import { seedAuditLogger } from '../utils/seedAuditLogger';
 import { winnerProcessingQueue } from '../utils/winnerProcessingQueue';
 import { NotificationManager } from '../services/notificationManager';
+import {
+  authenticateSocketConnection,
+  createReauthInterval,
+  clearReauthInterval
+} from '../utils/socketAuth';
+import { socketCorsOriginValidator } from '../utils/corsOrigin';
+import { COOKIE_NAMES } from '../utils/cookieManager';
 
 interface SocketWithAuth extends Socket {
   userId?: string;
   joinedRooms?: Set<string>;  // Track multiple rooms
   participantRooms?: Set<string>;  // Track rooms where user is an active participant
+  authToken?: string;  // SECURITY FIX (HIGH-004): Store token for re-authentication
+  reauthInterval?: NodeJS.Timeout;  // SECURITY FIX (HIGH-004): Track re-auth interval
 }
 
 export class SocketManager {
@@ -22,10 +31,12 @@ export class SocketManager {
   private notificationManager: NotificationManager;
 
   constructor(server: HttpServer) {
+    // SECURITY FIX (Week 3): WebSocket CORS aligned with HTTP CORS validation
     this.io = new SocketServer(server, {
       cors: {
-        origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-        credentials: true
+        origin: socketCorsOriginValidator,
+        credentials: true,
+        methods: ['GET', 'POST']
       }
     });
 
@@ -36,18 +47,41 @@ export class SocketManager {
   }
 
   private setupMiddleware() {
+    // SECURITY FIX (Week 4): WebSocket cookie-based authentication
     this.io.use(async (socket: SocketWithAuth, next) => {
       try {
-        const token = socket.handshake.auth.token;
-        if (!token) {
-          return next(new Error('Authentication error'));
+        // SECURITY FIX (Week 4): Extract token from HttpOnly cookie (preferred) or auth handshake (fallback)
+        let token: string | undefined;
+
+        // Priority 1: Check for cookie in handshake headers
+        const cookies = socket.handshake.headers.cookie;
+        if (cookies) {
+          const cookieMap = cookies.split(';').reduce((acc: Record<string, string>, cookie) => {
+            const [key, value] = cookie.trim().split('=');
+            acc[key] = value;
+            return acc;
+          }, {});
+          token = cookieMap[COOKIE_NAMES.ACCESS_TOKEN];
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as AuthPayload;
-        socket.userId = decoded.userId;
+        // Priority 2: Fallback to auth token (backward compatibility)
+        if (!token) {
+          token = socket.handshake.auth.token;
+        }
+
+        // Validate token and check blacklist
+        const payload = await authenticateSocketConnection(token);
+
+        // Store authentication data for re-authentication
+        socket.userId = payload.userId;
+        socket.authToken = token;
+
+        console.log(`[Socket] User ${payload.userId} authenticated (socket: ${socket.id})`);
         next();
       } catch (err) {
-        next(new Error('Authentication error'));
+        const error = err as Error;
+        console.warn(`[Socket] Authentication failed: ${error.message}`);
+        next(new Error(error.message));
       }
     });
   }
@@ -280,6 +314,24 @@ export class SocketManager {
     this.io.on('connection', async (socket: SocketWithAuth) => {
       console.log(`User ${socket.userId} connected`);
 
+      // SECURITY FIX (HIGH-004): Setup periodic re-authentication
+      if (socket.authToken && socket.userId) {
+        socket.reauthInterval = createReauthInterval(
+          socket.id,
+          () => socket.authToken,
+          (reason) => {
+            // Token became invalid, disconnect the socket
+            console.warn(`[Socket] Disconnecting user ${socket.userId} due to invalid token: ${reason}`);
+            socket.emit('auth-error', {
+              message: 'Your session has expired or been revoked. Please log in again.',
+              reason: reason,
+              requiresReauth: true
+            });
+            socket.disconnect(true);
+          }
+        );
+      }
+
       // Check for pending notifications when user connects
       if (socket.userId) {
         await this.notificationManager.checkPendingNotifications(socket.userId);
@@ -497,6 +549,13 @@ export class SocketManager {
 
       socket.on('disconnect', () => {
         console.log(`User ${socket.userId} disconnected`);
+
+        // SECURITY FIX (HIGH-004): Clean up re-authentication interval
+        if (socket.reauthInterval) {
+          clearReauthInterval(socket.reauthInterval);
+          console.log(`[Socket] Re-auth interval cleared for user ${socket.userId}`);
+        }
+
         // Notify all rooms where user was a participant
         if (socket.participantRooms && socket.participantRooms.size > 0) {
           // Get user info for complete data on disconnect
@@ -952,6 +1011,31 @@ export class SocketManager {
   public broadcastExceptRoom(roomId: string, event: string, data: any) {
     // Emit to all connected sockets except those in the specified room
     this.io.except(roomId).emit(event, data);
+  }
+
+  /**
+   * Emit event to a specific user across all their connected sockets
+   * Used for real-time notifications like deposit status updates
+   */
+  public async emitToUser(userId: string, event: string, data: any) {
+    try {
+      const sockets = await this.io.fetchSockets();
+      let emittedCount = 0;
+
+      for (const socket of sockets) {
+        const authSocket = socket as unknown as SocketWithAuth;
+        if (authSocket.userId === userId) {
+          socket.emit(event, data);
+          emittedCount++;
+        }
+      }
+
+      if (emittedCount > 0) {
+        console.log(`[SocketManager] Emitted ${event} to user ${userId} on ${emittedCount} socket(s)`);
+      }
+    } catch (error) {
+      console.error(`[SocketManager] Failed to emit ${event} to user ${userId}:`, error);
+    }
   }
 
   /**

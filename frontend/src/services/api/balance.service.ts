@@ -1,5 +1,5 @@
 import { apiClient } from './config'
-import type { Transaction, GameHistoryFilters, GameHistoryResponse, ApiResponse } from '../../types'
+import type { TransactionFilters, TransactionResponse, GameHistoryFilters, GameHistoryResponse, ApiResponse } from '../../types'
 import { balanceRateLimiter, gameHistoryRateLimiter } from '../../utils/rateLimiter'
 
 export const balanceAPI = {
@@ -13,13 +13,57 @@ export const balanceAPI = {
     })
   },
 
-  async getTransactions(): Promise<Transaction[]> {
+  async getTransactions(filters?: TransactionFilters): Promise<TransactionResponse> {
     return balanceRateLimiter.execute(async () => {
-      const { data } = await apiClient.get<ApiResponse<Transaction[]>>('/transactions')
-      if (!data.success || !data.data) {
+      const params = new URLSearchParams()
+
+      if (filters) {
+        // Add pagination params
+        if (filters.page) params.append('page', filters.page.toString())
+        if (filters.limit) params.append('limit', filters.limit.toString())
+
+        // Add date range
+        if (filters.startDate) params.append('startDate', filters.startDate)
+        if (filters.endDate) params.append('endDate', filters.endDate)
+
+        // Add type filter
+        if (filters.type && filters.type !== 'all') {
+          params.append('type', filters.type)
+        }
+
+        // Add status filter
+        if (filters.status && filters.status !== 'all') {
+          params.append('status', filters.status)
+        }
+
+        // Add sorting
+        if (filters.sortBy) params.append('sortBy', filters.sortBy)
+        if (filters.sortOrder) params.append('sortOrder', filters.sortOrder)
+      }
+
+      const queryString = params.toString()
+      const url = `/transactions${queryString ? `?${queryString}` : ''}`
+
+      const { data } = await apiClient.get<TransactionResponse>(url)
+
+      if (!data.success) {
         throw new Error(data.error || 'Failed to get transactions')
       }
-      return data.data
+
+      // Ensure backward compatibility
+      const response = {
+        success: data.success,
+        data: data.data || [],
+        transactions: data.transactions || data.data || [],
+        pagination: data.pagination || {
+          page: 1,
+          limit: 10,
+          total: 0,
+          totalPages: 0
+        }
+      }
+
+      return response
     })
   },
 

@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { 
-  createRoom, 
-  getRooms, 
+import {
+  createRoom,
+  getRooms,
   getRoomById,
-  getRoomByShareCode, 
+  getRoomByShareCode,
   joinRoom,
   unjoinRoom,
   updateRoom,
@@ -14,6 +14,7 @@ import {
   verifyRoundVRF
 } from '../controllers/roomController';
 import { authenticateToken, isAdmin } from '../middleware/auth';
+import { idempotencyMiddleware } from '../middleware/idempotency';
 
 const router = Router();
 
@@ -27,9 +28,9 @@ router.get('/rooms/:roomId', getRoomById);
 // VRF verification route (public for transparency)
 router.get('/rounds/:roundId/verify', verifyRoundVRF);
 
-// User routes
-router.post('/rooms/:roomId/join', authenticateToken, joinRoom);
-router.post('/rooms/:roomId/unjoin', authenticateToken, unjoinRoom);
+// User routes - SECURITY FIX (HIGH-007): Idempotency protection for financial operations
+router.post('/rooms/:roomId/join', authenticateToken, idempotencyMiddleware, joinRoom);
+router.post('/rooms/:roomId/unjoin', authenticateToken, idempotencyMiddleware, unjoinRoom);
 
 // Admin routes
 router.get('/admin/rooms', authenticateToken, isAdmin, getAllRooms);
