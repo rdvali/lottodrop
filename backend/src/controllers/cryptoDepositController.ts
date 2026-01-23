@@ -18,6 +18,7 @@ import {
   CryptoNetwork,
   TokenStandard,
   WebhookPayload,
+  WebhookEventType,
   PaymentStatus
 } from '../services/pulse2pay/pulse2payTypes';
 import { logger } from '../utils/logger';
@@ -325,40 +326,114 @@ export const getDepositById = async (req: Request, res: Response) => {
 // ============ Webhook Endpoint ============
 
 /**
+ * Transform flat Pulse2Pay webhook payload to internal format
+ * Pulse2Pay sends: { payment_id, status, amount, received_amount, tx_hash, ... }
+ * We expect: { id, type, data: { paymentId, status, ... } }
+ */
+function transformWebhookPayload(rawPayload: any): WebhookPayload {
+  // Map status to event type
+  const statusToEventType: Record<string, WebhookEventType> = {
+    'pending': WebhookEventType.PAYMENT_PENDING,
+    'confirmed': WebhookEventType.PAYMENT_CONFIRMED,
+    'underpaid': WebhookEventType.PAYMENT_UNDERPAID,
+    'overpaid': WebhookEventType.PAYMENT_OVERPAID,
+    'expired': WebhookEventType.PAYMENT_EXPIRED,
+    'failed': WebhookEventType.PAYMENT_FAILED,
+    'canceled': WebhookEventType.PAYMENT_CANCELED
+  };
+
+  const status = rawPayload.status?.toLowerCase() || 'pending';
+  const eventType = statusToEventType[status] || WebhookEventType.PAYMENT_PENDING;
+
+  return {
+    id: rawPayload.payment_id || rawPayload.paymentId || `webhook_${Date.now()}`,
+    type: eventType,
+    createdAt: rawPayload.created_at || new Date().toISOString(),
+    data: {
+      paymentId: rawPayload.payment_id || rawPayload.paymentId,
+      merchantId: rawPayload.merchant_id || rawPayload.merchantId || '',
+      status: status as PaymentStatus,
+      amount: String(rawPayload.amount || '0'),
+      currency: rawPayload.currency || 'USDT',
+      network: rawPayload.network as CryptoNetwork,
+      tokenStandard: rawPayload.token_standard || rawPayload.tokenStandard || TokenStandard.TRC20,
+      depositAddress: rawPayload.deposit_address || rawPayload.depositAddress || rawPayload.generated_address || '',
+      receivedAmount: String(rawPayload.received_amount || rawPayload.receivedAmount || '0'),
+      feeAmount: String(rawPayload.fee_amount || rawPayload.feeAmount || '0'),
+      netAmount: String(rawPayload.net_amount || rawPayload.netAmount || rawPayload.received_amount || '0'),
+      txHash: rawPayload.tx_hash || rawPayload.txHash,
+      confirmations: rawPayload.confirmations,
+      confirmedAt: rawPayload.confirmed_at || rawPayload.confirmedAt,
+      merchantUserId: rawPayload.merchant_user_id || rawPayload.merchantUserId,
+      metadata: rawPayload.metadata
+    }
+  };
+}
+
+/**
  * POST /api/crypto/webhook
  * Pulse2Pay webhook receiver
- * No JWT auth - uses HMAC signature verification
+ * No JWT auth - uses HMAC signature verification (optional)
  */
 export const handleWebhook = async (req: Request, res: Response) => {
   const signature = req.headers['x-pulse2pay-signature'] as string;
   const timestamp = req.headers['x-pulse2pay-timestamp'] as string;
+  const webhookSecret = process.env.PULSE2PAY_WEBHOOK_SECRET;
 
-  if (!signature || !timestamp) {
-    logger.warn('Webhook missing signature or timestamp headers');
-    return res.status(401).json({ error: 'Missing authentication headers' });
+  // Log incoming webhook for debugging
+  logger.info('Webhook received', {
+    headers: {
+      hasSignature: !!signature,
+      hasTimestamp: !!timestamp,
+      contentType: req.headers['content-type']
+    },
+    bodyPreview: JSON.stringify(req.body).substring(0, 200)
+  });
+
+  // Only verify signature if webhook secret is configured
+  if (webhookSecret) {
+    if (!signature || !timestamp) {
+      logger.warn('Webhook missing signature or timestamp headers');
+      return res.status(401).json({ error: 'Missing authentication headers' });
+    }
+
+    // Get raw body for signature verification
+    const rawBody = JSON.stringify(req.body);
+
+    // Verify signature
+    if (!verifyWebhookSignature(rawBody, signature, timestamp)) {
+      logger.warn('Webhook signature verification failed');
+      return res.status(401).json({ error: 'Invalid signature' });
+    }
+  } else {
+    logger.warn('Webhook secret not configured - skipping signature verification');
   }
 
-  // Get raw body for signature verification
-  const rawBody = JSON.stringify(req.body);
+  // Transform the flat Pulse2Pay payload to our internal format
+  let payload: WebhookPayload;
 
-  // Verify signature
-  if (!verifyWebhookSignature(rawBody, signature, timestamp)) {
-    logger.warn('Webhook signature verification failed');
-    return res.status(401).json({ error: 'Invalid signature' });
-  }
-
-  const payload = req.body as WebhookPayload;
-
-  // Validate payload structure
-  if (!payload.id || !payload.type || !payload.data || !payload.data.paymentId) {
-    logger.warn('Webhook invalid payload structure', { payload });
+  // Check if payload is already in our expected format
+  if (req.body.type && req.body.data && req.body.data.paymentId) {
+    payload = req.body as WebhookPayload;
+  } else if (req.body.payment_id || req.body.paymentId) {
+    // Flat Pulse2Pay format - transform it
+    payload = transformWebhookPayload(req.body);
+  } else {
+    logger.warn('Webhook invalid payload structure', { payload: req.body });
     return res.status(400).json({ error: 'Invalid payload structure' });
   }
 
-  logger.info('Webhook received', {
+  // Validate transformed payload
+  if (!payload.data.paymentId) {
+    logger.warn('Webhook missing paymentId', { payload });
+    return res.status(400).json({ error: 'Missing payment ID' });
+  }
+
+  logger.info('Webhook payload transformed', {
     eventId: payload.id,
     eventType: payload.type,
-    paymentId: payload.data.paymentId
+    paymentId: payload.data.paymentId,
+    status: payload.data.status
   });
 
   try {
