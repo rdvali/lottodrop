@@ -1,2 +1,7 @@
-export { default as NetworkIcon, extractNetworkFromDescription } from './NetworkIcon'
-export type { CryptoNetworkType } from './NetworkIcon'
+export {
+  default as NetworkIcon,
+  CryptoTransactionIcon,
+  extractNetworkFromDescription,
+  extractCurrencyFromDescription
+} from './NetworkIcon'
+export type { CryptoNetworkType, CryptoCurrencyType } from './NetworkIcon'

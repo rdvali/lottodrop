@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Button, Input, Badge, Spinner, NetworkIcon, extractNetworkFromDescription } from '@components/atoms'
+import { Card, Button, Input, Badge, Spinner, CryptoTransactionIcon, extractNetworkFromDescription, extractCurrencyFromDescription } from '@components/atoms'
 import { useAuth } from '@contexts/AuthContext'
 import { authAPI, balanceAPI } from '@services/api'
 import type {
@@ -691,16 +691,20 @@ const Profile = () => {
                 ) : (
                   <>
                     {transactions.map((transaction) => {
-                      // Extract network from description for crypto deposits
+                      // Extract network and currency from description for crypto deposits
                       const isCryptoDeposit = transaction.description?.toLowerCase().includes('crypto deposit')
                       const network = isCryptoDeposit ? extractNetworkFromDescription(transaction.description || '') : null
+                      const currency = isCryptoDeposit ? extractCurrencyFromDescription(transaction.description || '') : null
 
                       return (
                         <Card key={transaction.id} className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            {/* Network Icon for crypto deposits */}
-                            {network && (
-                              <NetworkIcon network={network} size="md" />
+                            {/* Combined Currency + Network Icon for crypto deposits */}
+                            {isCryptoDeposit && network && currency && (
+                              <CryptoTransactionIcon
+                                currency={currency}
+                                network={network}
+                              />
                             )}
                             <div>
                               <h3 className="font-semibold text-text-primary">
