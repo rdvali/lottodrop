@@ -1,4 +1,5 @@
 name: Deploy LottoDrop
+# Initial deployment: 2026-01-23
 
 on:
   push:
