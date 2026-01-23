@@ -22,9 +22,9 @@ RUN npm ci --legacy-peer-deps && \
 # Copy source code
 COPY . .
 
-# Set build arguments
-ARG VITE_API_URL=http://backend:3001/api
-ARG VITE_SOCKET_URL=http://backend:3001
+# Set build arguments (use relative URLs for nginx proxy)
+ARG VITE_API_URL=/api
+ARG VITE_SOCKET_URL=
 ARG VITE_SENTRY_DSN
 ARG VITE_APP_VERSION
 ARG VITE_APP_NAME=LottoDrop
