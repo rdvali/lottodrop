@@ -199,6 +199,43 @@ class RateLimiter {
     });
   }
 
+  /**
+   * Webhook rate limiter - stricter limits for external webhook endpoints
+   * Prevents DoS attacks and brute force attempts on webhook endpoints
+   * Rate limits by IP AND payment_id to prevent flooding
+   */
+  public webhook() {
+    return this.createLimiter({
+      windowMs: 60000, // 1 minute
+      max: 30, // 30 requests per minute (0.5/sec) - much stricter than API
+      message: 'Too many webhook requests. Rate limit exceeded.',
+      statusCode: 429,
+      keyGenerator: (req) => {
+        const ip = req.ip || req.socket.remoteAddress || 'unknown';
+        // Include payment_id in key to rate limit per payment
+        const paymentId = req.body?.payment_id || req.body?.paymentId || 'unknown';
+        return REDIS_KEYS.RATE_LIMIT_API(ip, `webhook:${paymentId}`);
+      },
+    });
+  }
+
+  /**
+   * Webhook IP rate limiter - global rate limit per IP for webhook endpoints
+   * Separate from payment-specific rate limiting
+   */
+  public webhookGlobal() {
+    return this.createLimiter({
+      windowMs: 60000, // 1 minute
+      max: 60, // 60 requests per minute per IP across all payments
+      message: 'Too many webhook requests from this IP.',
+      statusCode: 429,
+      keyGenerator: (req) => {
+        const ip = req.ip || req.socket.remoteAddress || 'unknown';
+        return REDIS_KEYS.RATE_LIMIT_API(ip, 'webhook:global');
+      },
+    });
+  }
+
   // Socket.IO rate limiting
   public createSocketLimiter(options: {
     windowMs?: number;
@@ -319,5 +356,7 @@ export const relaxedLimit = rateLimiter.relaxed.bind(rateLimiter);
 export const apiLimit = rateLimiter.api.bind(rateLimiter);
 export const authLimit = rateLimiter.auth.bind(rateLimiter);
 export const transactionLimit = rateLimiter.transaction.bind(rateLimiter);
+export const webhookLimit = rateLimiter.webhook.bind(rateLimiter);
+export const webhookGlobalLimit = rateLimiter.webhookGlobal.bind(rateLimiter);
 
 export default rateLimiter;

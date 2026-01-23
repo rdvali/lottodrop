@@ -18,6 +18,8 @@ const TIMESTAMP_TOLERANCE_MS = 5 * 60 * 1000; // 5 minutes
 /**
  * Verify webhook signature from Pulse2Pay
  * Format: HMAC-SHA256(secret, timestamp + "." + payload)
+ *
+ * SECURITY: This function MUST return false if secret is not configured in production
  */
 export function verifyWebhookSignature(
   payload: string,
@@ -25,8 +27,13 @@ export function verifyWebhookSignature(
   timestamp: string
 ): boolean {
   if (!WEBHOOK_SECRET) {
-    logger.warn('[Webhook] Webhook secret not configured, skipping signature verification');
-    return true; // Allow in development without secret
+    const isProduction = process.env.NODE_ENV === 'production';
+    if (isProduction) {
+      logger.error('[Webhook] CRITICAL: Webhook secret not configured in production - rejecting');
+      return false;
+    }
+    logger.warn('[Webhook] DEV MODE: Webhook secret not configured, allowing request');
+    return true;
   }
 
   // Verify timestamp is within tolerance
@@ -190,6 +197,40 @@ async function handleConfirmed(
   const receivedAmount = parseFloat(data.receivedAmount || '0');
   const feeAmount = parseFloat(data.feeAmount || '0');
   const netAmount = parseFloat(data.netAmount || receivedAmount.toString());
+  const expectedAmount = parseFloat(deposit.expected_amount);
+
+  // SECURITY: Validate received amount against expected
+  // Allow small tolerance (1%) for network fees, but flag underpayments
+  const underpaymentThreshold = 0.99; // Must receive at least 99% of expected
+  const suspiciousOverpaymentThreshold = 1.5; // Flag payments > 150% of expected
+
+  if (receivedAmount < expectedAmount * underpaymentThreshold) {
+    logger.warn('[Webhook] Amount validation failed - significant underpayment in confirmed status', {
+      paymentId: data.paymentId,
+      expected: expectedAmount,
+      received: receivedAmount,
+      percentReceived: ((receivedAmount / expectedAmount) * 100).toFixed(2) + '%'
+    });
+    // Redirect to underpaid handler instead of crediting
+    return handleUnderpaid(client, deposit, data, webhookHistory);
+  }
+
+  // Flag suspicious overpayments for review (but still credit)
+  if (receivedAmount > expectedAmount * suspiciousOverpaymentThreshold) {
+    logger.warn('[Webhook] Suspicious overpayment detected - flagging for review', {
+      paymentId: data.paymentId,
+      expected: expectedAmount,
+      received: receivedAmount,
+      overpaymentPercent: (((receivedAmount - expectedAmount) / expectedAmount) * 100).toFixed(2) + '%'
+    });
+    // Add flag to webhook history for audit
+    webhookHistory.push({
+      flag: 'SUSPICIOUS_OVERPAYMENT',
+      expected: expectedAmount,
+      received: receivedAmount,
+      flaggedAt: new Date().toISOString()
+    });
+  }
 
   // Update deposit status
   await client.query(

@@ -12,6 +12,8 @@ import {
 import { authenticateToken } from '../middleware/auth';
 import { validateCsrf } from '../middleware/csrf';
 import { idempotencyMiddleware } from '../middleware/idempotency';
+import { webhookLimit, webhookGlobalLimit } from '../middleware/rateLimiter';
+import { webhookIPWhitelist, webhookHeadersValidation } from '../middleware/webhookSecurity';
 
 const router = Router();
 
@@ -39,7 +41,22 @@ router.get('/deposits/:id', authenticateToken, getDepositById);
 // ============ Webhook Endpoint (no JWT auth, uses HMAC) ============
 
 // POST /api/crypto/webhook - Pulse2Pay webhook receiver
-// No JWT authentication - uses HMAC signature verification instead
-router.post('/webhook', handleWebhook);
+// Security layers (in order):
+// 1. IP Whitelist (blocks unauthorized IPs in production)
+// 2. Global Rate Limit (60 req/min per IP across all payments)
+// 3. Payment-specific Rate Limit (30 req/min per IP per payment_id)
+// 4. Header Validation (ensures proper Content-Type and body)
+// 5. HMAC Signature Verification (in controller - mandatory in production)
+// 6. Webhook Deduplication (in controller - prevents replay attacks)
+// 7. Payment Existence Validation (in controller - blocks unknown payment_ids)
+// 8. Amount Validation (in service - prevents crediting wrong amounts)
+router.post(
+  '/webhook',
+  webhookIPWhitelist,
+  webhookGlobalLimit(),
+  webhookLimit(),
+  webhookHeadersValidation,
+  handleWebhook
+);
 
 export default router;

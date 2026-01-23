@@ -80,6 +80,7 @@ export const REDIS_KEY_TTL = {
   USER_CACHE: 600, // 10 minutes
   LOTTERY_POOL: 600, // 10 minutes
   RATE_LIMIT: 60, // 1 minute
+  WEBHOOK_DEDUP: 86400, // 24 hours - prevent replay attacks
 } as const;
 
 export const REDIS_KEYS = {
@@ -129,4 +130,7 @@ export const REDIS_KEYS = {
   CACHE_HOT_NUMBERS: () => `${getRedisKeyPrefix()}cache:hotnumbers`,
   CACHE_JACKPOT: () => `${getRedisKeyPrefix()}cache:jackpot`,
   CACHE_STATISTICS: () => `${getRedisKeyPrefix()}cache:statistics`,
+
+  // Webhook Security
+  WEBHOOK_DEDUP: (webhookId: string) => `${getRedisKeyPrefix()}webhook:dedup:${webhookId}`,
 } as const;

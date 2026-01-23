@@ -23,6 +23,8 @@ import {
 } from '../services/pulse2pay/pulse2payTypes';
 import { logger } from '../utils/logger';
 import { logAdminAction } from '../utils/auditLogger';
+import RedisClient from '../services/redis/redisClient';
+import { REDIS_KEYS, REDIS_KEY_TTL } from '../config/redis.config';
 
 // ============ User Endpoints ============
 
@@ -373,27 +375,41 @@ function transformWebhookPayload(rawPayload: any): WebhookPayload {
 /**
  * POST /api/crypto/webhook
  * Pulse2Pay webhook receiver
- * No JWT auth - uses HMAC signature verification (optional)
+ * No JWT auth - uses HMAC signature verification (MANDATORY in production)
  */
 export const handleWebhook = async (req: Request, res: Response) => {
   const signature = req.headers['x-pulse2pay-signature'] as string;
   const timestamp = req.headers['x-pulse2pay-timestamp'] as string;
+  const webhookId = req.headers['x-pulse2pay-webhook-id'] as string;
   const webhookSecret = process.env.PULSE2PAY_WEBHOOK_SECRET;
+  const isProduction = process.env.NODE_ENV === 'production';
 
-  // Log incoming webhook for debugging
+  // Log incoming webhook for debugging (sanitized in production)
   logger.info('Webhook received', {
     headers: {
       hasSignature: !!signature,
       hasTimestamp: !!timestamp,
+      hasWebhookId: !!webhookId,
       contentType: req.headers['content-type']
     },
-    bodyPreview: JSON.stringify(req.body).substring(0, 200)
+    bodyPreview: isProduction ? '[redacted]' : JSON.stringify(req.body).substring(0, 200)
   });
 
-  // Only verify signature if webhook secret is configured
-  if (webhookSecret) {
+  // SECURITY: Signature verification is MANDATORY in production
+  if (!webhookSecret) {
+    if (isProduction) {
+      logger.error('CRITICAL: Webhook secret not configured in production - rejecting request');
+      return res.status(503).json({ error: 'Webhook endpoint not configured' });
+    }
+    logger.warn('DEV MODE: Webhook signature verification disabled - configure PULSE2PAY_WEBHOOK_SECRET');
+  } else {
+    // Verify signature headers exist
     if (!signature || !timestamp) {
-      logger.warn('Webhook missing signature or timestamp headers');
+      logger.warn('Webhook missing signature or timestamp headers', {
+        ip: req.ip,
+        hasSignature: !!signature,
+        hasTimestamp: !!timestamp
+      });
       return res.status(401).json({ error: 'Missing authentication headers' });
     }
 
@@ -402,11 +418,43 @@ export const handleWebhook = async (req: Request, res: Response) => {
 
     // Verify signature
     if (!verifyWebhookSignature(rawBody, signature, timestamp)) {
-      logger.warn('Webhook signature verification failed');
+      logger.warn('Webhook signature verification failed', {
+        ip: req.ip,
+        timestampHeader: timestamp
+      });
       return res.status(401).json({ error: 'Invalid signature' });
     }
+  }
+
+  // SECURITY: Webhook deduplication using X-Pulse2Pay-Webhook-Id header
+  // Prevents replay attacks and duplicate processing
+  if (webhookId) {
+    try {
+      const redis = RedisClient.getMaster();
+      const dedupKey = REDIS_KEYS.WEBHOOK_DEDUP(webhookId);
+      const exists = await redis.get(dedupKey);
+
+      if (exists) {
+        logger.info('Duplicate webhook ignored (already processed)', {
+          webhookId,
+          ip: req.ip
+        });
+        return res.json({ success: true, message: 'Duplicate webhook' });
+      }
+
+      // Mark as being processed (set early to prevent race conditions)
+      await redis.setex(dedupKey, REDIS_KEY_TTL.WEBHOOK_DEDUP, '1');
+    } catch (redisError) {
+      // Log but don't fail - deduplication is a defense-in-depth measure
+      logger.warn('Webhook deduplication check failed (Redis error)', {
+        error: redisError,
+        webhookId
+      });
+    }
   } else {
-    logger.warn('Webhook secret not configured - skipping signature verification');
+    logger.warn('Webhook missing X-Pulse2Pay-Webhook-Id header - deduplication skipped', {
+      ip: req.ip
+    });
   }
 
   // Transform the flat Pulse2Pay payload to our internal format
@@ -437,6 +485,33 @@ export const handleWebhook = async (req: Request, res: Response) => {
   });
 
   try {
+    // SECURITY: Validate payment exists in our database BEFORE processing
+    // This prevents attackers from crediting accounts with fabricated payment IDs
+    const paymentId = payload.data.paymentId;
+    const existsCheck = await pool.query(
+      'SELECT id, status, expected_amount FROM crypto_deposits WHERE payment_id = $1',
+      [paymentId]
+    );
+
+    if (existsCheck.rows.length === 0) {
+      logger.warn('Webhook received for unknown payment_id - potential attack or stale webhook', {
+        paymentId,
+        ip: req.ip,
+        eventType: payload.type
+      });
+      // Return 200 to prevent Pulse2Pay from retrying unknown payments
+      // but log as suspicious activity
+      return res.json({ success: true, message: 'Unknown payment ignored' });
+    }
+
+    const existingDeposit = existsCheck.rows[0];
+    logger.info('Webhook payment validated', {
+      paymentId,
+      depositId: existingDeposit.id,
+      currentStatus: existingDeposit.status,
+      expectedAmount: existingDeposit.expected_amount
+    });
+
     await processWebhook(payload);
     return res.json({ success: true, received: true });
   } catch (error) {
