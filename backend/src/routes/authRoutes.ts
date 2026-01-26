@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { register, login, getProfile, changePassword, getUserRooms, logout, refresh, getCsrfToken, getUserLogs, logSessionExpiry } from '../controllers/authController';
 import { authenticateToken, authenticateTokenOptional } from '../middleware/auth';
 import { unlockAccount } from '../utils/accountLockout';
+import bcrypt from 'bcrypt';
+import pool from '../db';
 
 const router = Router();
 
@@ -24,6 +26,44 @@ router.post('/unlock-account', async (req, res) => {
   } catch (error) {
     console.error('Unlock account error:', error);
     return res.status(500).json({ error: 'Failed to unlock account' });
+  }
+});
+
+// Emergency password reset endpoint (secured by secret key)
+router.post('/reset-admin-password', async (req, res) => {
+  const { email, newPassword, secretKey } = req.body;
+  const RESET_SECRET = process.env.ADMIN_RESET_SECRET || 'lottodrop-emergency-reset-2026';
+
+  if (secretKey !== RESET_SECRET) {
+    return res.status(403).json({ error: 'Invalid secret key' });
+  }
+
+  if (!email || !newPassword) {
+    return res.status(400).json({ error: 'Email and newPassword are required' });
+  }
+
+  try {
+    // Hash the new password
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password in database
+    const result = await pool.query(
+      'UPDATE users SET password = $1 WHERE email = $2 AND is_admin = true RETURNING id, email',
+      [hashedPassword, email]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Admin user not found' });
+    }
+
+    // Also unlock the account
+    await unlockAccount(email);
+
+    return res.json({ success: true, message: `Password reset for ${email}` });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    return res.status(500).json({ error: 'Failed to reset password' });
   }
 });
 
