@@ -3,7 +3,7 @@ import { register, login, getProfile, changePassword, getUserRooms, logout, refr
 import { authenticateToken, authenticateTokenOptional } from '../middleware/auth';
 import { unlockAccount } from '../utils/accountLockout';
 import bcrypt from 'bcrypt';
-import pool from '../db';
+import pool from '../config/database';
 
 const router = Router();
 
