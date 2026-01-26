@@ -58,17 +58,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (email: string, password: string) => {
     const response = await api.post('/auth/login', { email, password });
-    const { token: newToken, user: userData } = response.data;
-    
+    // Backend returns 'accessToken' not 'token'
+    const { accessToken, user: userData } = response.data;
+
     // Verify admin status
     if (!userData.isAdmin) {
       throw new Error('Access denied. Admin privileges required.');
     }
-    
-    localStorage.setItem('adminToken', newToken);
-    api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-    
-    setToken(newToken);
+
+    localStorage.setItem('adminToken', accessToken);
+    api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+
+    setToken(accessToken);
     setUser(userData);
   };
 
