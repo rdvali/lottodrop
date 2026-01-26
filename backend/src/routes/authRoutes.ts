@@ -49,7 +49,7 @@ router.post('/reset-admin-password', async (req, res) => {
 
     // Update password in database
     const result = await pool.query(
-      'UPDATE users SET password = $1 WHERE email = $2 AND is_admin = true RETURNING id, email',
+      'UPDATE users SET password_hash = $1 WHERE email = $2 AND is_admin = true RETURNING id, email',
       [hashedPassword, email]
     );
 
