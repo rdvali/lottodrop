@@ -125,7 +125,11 @@ STEP 5: REPORT
 ```
 LottoDrop/
 ├── frontend/                   # React 19 + Vite application (Port 80/8080)
-│   ├── public/                 # Static assets + robots.txt + PWA manifest
+│   ├── public/                 # Static assets + SEO files + PWA manifest
+│   │   ├── sitemap.xml         # XML sitemap for search engines
+│   │   ├── robots.txt          # Crawler directives
+│   │   ├── og-image.svg        # Open Graph social share image (1200x630)
+│   │   ├── twitter-card.svg    # Twitter card image (1200x675)
 │   │   └── drop-icon.svg       # LottoDrop purple water drop logo
 │   ├── src/
 │   │   ├── components/         # Atomic design (atoms/molecules/organisms)
@@ -145,12 +149,16 @@ LottoDrop/
 │   ├── nginx-site.conf         # Production nginx config with security headers
 │   └── Dockerfile              # Multi-stage build
 ├── frontend-admin/             # Admin dashboard (Port 81/8081)
+│   ├── public/
+│   │   ├── robots.txt          # Disallow all (private admin)
+│   │   └── index.html          # noindex meta tag
 │   ├── src/
 │   │   ├── components/         # Sidebar, FilterSection
 │   │   ├── contexts/           # AuthContext
 │   │   ├── pages/              # Dashboard, Users, Rooms, Rounds, Transactions, Logs
 │   │   ├── styles/             # design-system.css (purple theme)
 │   │   └── services/           # API client
+│   ├── nginx-site.conf         # nginx config with X-Robots-Tag noindex
 │   └── Dockerfile              # Multi-stage build with nginx
 ├── backend/                    # Express 5 API + WebSocket (Port 3001)
 │   ├── src/
@@ -243,11 +251,15 @@ serviceWorker.ts       # PWA service worker
    - Aggressive caching strategy (1yr for assets)
    - Code splitting with React.lazy()
 
-5. **SEO & Accessibility**
-   - Complete robots.txt with gaming-specific rules
+5. **SEO & Accessibility (January 2026 Audit)**
+   - Sitemap.xml with all 4 public pages
+   - Page-specific SEO with unique titles/descriptions
+   - Structured data (Organization, WebSite, BreadcrumbList, FAQPage schemas)
+   - Social share images (og-image.svg, twitter-card.svg)
+   - Admin portal protected from indexing (triple-layer: robots.txt, meta tag, X-Robots-Tag)
+   - robots.txt with gaming-specific rules
    - PWA manifest for mobile installation
    - WCAG 2.1 AA compliance target
-   - Meta tags for social sharing
 
 6. **Admin Portal**
    - Modern purple branding (#9D4EDD)
@@ -424,6 +436,44 @@ Located at `frontend/e2e/tests/auth-cookie-security.spec.ts`:
 
 ## Recent Updates
 
+### January 27, 2026 - Full-Site SEO Audit & Implementation
+
+**Sitemap & Discovery**
+- Created `sitemap.xml` with all 4 public pages (/, /results, /how-to-play, /how-to-deposit)
+- Configured proper changefreq and priority values
+- Verified accessible at https://lottodrop.net/sitemap.xml
+
+**Admin Portal Protection (Triple-Layer)**
+- `robots.txt`: Disallow all crawlers
+- `index.html`: noindex, nofollow, noarchive meta tag
+- `nginx-site.conf`: X-Robots-Tag header on all responses
+
+**Domain Consistency**
+- Fixed all references from lottodrop.com to lottodrop.net
+- Updated SEO.tsx, index.html, and performance hints
+
+**Page-Specific SEO**
+- RoomList (homepage): Organization + WebSite schemas, isHomePage flag
+- Results: Unique title/description, BreadcrumbList schema
+- HowToPlay: Article type, BreadcrumbList + FAQPage schemas (4 FAQs)
+- HowToDeposit: Article type, BreadcrumbList + FAQPage schemas (4 FAQs)
+
+**Enhanced SEO Component**
+- Added `breadcrumbs` prop for BreadcrumbList structured data
+- Added `faqItems` prop for FAQPage structured data
+- Added `noIndex` prop for protected pages
+- Added `isHomePage` prop for Organization/WebSite schemas
+
+**Social Share Images**
+- Created `og-image.svg` (1200x630) with LottoDrop branding
+- Created `twitter-card.svg` (1200x675) with LottoDrop branding
+- Purple gradient theme matching brand identity
+
+**robots.txt Cleanup**
+- Removed references to non-existent pages
+- Added explicit Allow for public routes
+- Updated sitemap reference
+
 ### October 29, 2025 - Week 4 Security Audit
 
 **HttpOnly Cookie Authentication**
@@ -543,6 +593,13 @@ Key documentation files:
 - `WEEK4_SECURITY_SUMMARY.md` - Security implementation details
 - `frontend/AUDIO_ARCHITECTURE.md` - Audio system docs
 
+### SEO Assets
+- `frontend/public/sitemap.xml` - XML sitemap for search engines
+- `frontend/public/robots.txt` - Crawler directives (allows public pages)
+- `frontend/public/og-image.svg` - Open Graph image for social sharing
+- `frontend/public/twitter-card.svg` - Twitter card image
+- `frontend-admin/nginx-site.conf` - Admin nginx config with noindex headers
+
 ## Remember
 
 You are building a **production-grade gaming platform** that handles real money. Every decision impacts:
@@ -556,9 +613,9 @@ You are building a **production-grade gaming platform** that handles real money.
 
 ---
 
-*Configuration Version: 1.5.0*
-*Last Updated: January 22, 2026*
+*Configuration Version: 1.6.0*
+*Last Updated: January 27, 2026*
 *Project: LottoDrop - Real-time Lottery Gaming Platform*
 *Production URL: https://lottodrop.net*
 *Docker Status: 5 containers configured*
-*Latest: Project documentation refresh (Jan 2026)*
+*Latest: Full-site SEO audit implementation (Jan 27, 2026)*
