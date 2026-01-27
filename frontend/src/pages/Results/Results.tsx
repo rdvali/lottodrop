@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, Spinner, Badge } from '@components/atoms'
+import { SEO } from '@components/SEO'
 import { socketService } from '@services/socket'
 import { apiClient } from '@services/api/config'
 import toast from 'react-hot-toast'
@@ -102,6 +103,18 @@ const Results = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* SEO Meta Tags */}
+      <SEO
+        title="Tournament Results"
+        description="View the latest lottery results and recent winners at LottoDrop. Verify provably fair outcomes for all game draws."
+        keywords="lottery results, recent winners, game history, provably fair results, lottery winners"
+        url="https://lottodrop.net/results"
+        breadcrumbs={[
+          { name: 'Home', url: 'https://lottodrop.net/' },
+          { name: 'Results', url: 'https://lottodrop.net/results' }
+        ]}
+      />
+
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-3xl sm:text-4xl font-bold gradient-text mb-2">

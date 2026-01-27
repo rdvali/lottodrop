@@ -6,6 +6,7 @@ import { socketService } from '@services/socket'
 import { TournamentCard, RoomJoinConfirmationModal, NotificationCenter } from '@components/organisms'
 import { Button, Badge, CardSkeleton } from '@components/atoms'
 import { ParticleBackground } from '@components/animations'
+import { SEO } from '@components/SEO'
 import { useAuth } from '@contexts/AuthContext'
 import { useBalanceVisibility } from '@contexts/BalanceVisibilityContext'
 import { useModal } from '@hooks/useModal'
@@ -288,12 +289,21 @@ const RoomList = () => {
 
   return (
     <>
+      {/* SEO Meta Tags */}
+      <SEO
+        title="LottoDrop - Real-Time Lottery Gaming Platform"
+        description="Join exciting real-time lottery games with instant payouts and provably fair results. Browse active rooms and win big at LottoDrop."
+        keywords="lottery, real-time gaming, instant payout, provably fair, online lottery, crypto gaming"
+        url="https://lottodrop.net/"
+        isHomePage={true}
+      />
+
       {/* Particle Background */}
-      <ParticleBackground 
-        particleCount={20} 
-        color="#9D4EDD" 
-        speed={0.2} 
-        opacity={0.1} 
+      <ParticleBackground
+        particleCount={20}
+        color="#9D4EDD"
+        speed={0.2}
+        opacity={0.1}
       />
       
       <div className="container mx-auto px-4 py-8 relative z-10">

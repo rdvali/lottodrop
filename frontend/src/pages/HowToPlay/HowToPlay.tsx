@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, Button } from '@components/atoms'
+import { SEO } from '@components/SEO'
 // Simple SVG icons to avoid external dependencies
 const ChevronDownIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -303,6 +304,25 @@ const HowToPlay = () => {
 
   return (
     <div className={styles.container}>
+      {/* SEO Meta Tags */}
+      <SEO
+        title="How to Play"
+        description="Learn how to play lottery games on LottoDrop. Step-by-step guide covering room joining, countdown mechanics, and provably fair winner selection."
+        keywords="how to play lottery, LottoDrop guide, lottery tutorial, gaming rules, provably fair"
+        url="https://lottodrop.net/how-to-play"
+        type="article"
+        breadcrumbs={[
+          { name: 'Home', url: 'https://lottodrop.net/' },
+          { name: 'How to Play', url: 'https://lottodrop.net/how-to-play' }
+        ]}
+        faqItems={[
+          { question: 'How do I join a lottery room?', answer: 'Browse available rooms, click "Join Room", and pay the entry fee. Your payment goes directly into the prize pool.' },
+          { question: 'How is the winner selected?', answer: 'We use Verifiable Random Functions (VRF) to generate truly random numbers that cannot be manipulated. Every draw is cryptographically verifiable.' },
+          { question: 'When do I receive my winnings?', answer: 'Winners receive their prizes instantly in their account balance - no waiting required. You can use winnings to join new rooms right away.' },
+          { question: 'What happens during the countdown?', answer: 'Once a room reaches its minimum players, a 30-second countdown starts. No new players can join after countdown reaches zero.' }
+        ]}
+      />
+
       {/* Hero Section */}
       <motion.div
         initial={{ opacity: 0, y: -30 }}

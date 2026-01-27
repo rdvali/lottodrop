@@ -1,0 +1,83 @@
+<svg width="1200" height="675" viewBox="0 0 1200 675" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark background -->
+  <rect width="1200" height="675" fill="#1A1A2E"/>
+
+  <!-- Subtle grid pattern -->
+  <defs>
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(157, 78, 221, 0.1)" stroke-width="1"/>
+    </pattern>
+    <linearGradient id="dropGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9D4EDD"/>
+      <stop offset="50%" stop-color="#C77DFF"/>
+      <stop offset="100%" stop-color="#7B2CBF"/>
+    </linearGradient>
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#9D4EDD"/>
+      <stop offset="100%" stop-color="#C77DFF"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="textGlow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="675" fill="url(#grid)"/>
+
+  <!-- Decorative circles -->
+  <circle cx="100" cy="100" r="200" fill="url(#dropGradient)" opacity="0.05"/>
+  <circle cx="1100" cy="575" r="250" fill="url(#dropGradient)" opacity="0.05"/>
+
+  <!-- Logo Container -->
+  <g transform="translate(600, 260)">
+    <!-- Drop shape -->
+    <path d="M0 -80C0 -80 -40 -40 -40 0C-40 22.1 -22.1 40 0 40C22.1 40 40 22.1 40 0C40 -40 0 -80 0 -80Z"
+          fill="url(#dropGradient)"
+          transform="scale(2)"
+          filter="url(#glow)"/>
+
+    <!-- Sparkle -->
+    <path d="M0 -20L6 -7L20 0L6 7L0 20L-6 7L-20 0L-6 -7L0 -20Z"
+          fill="white"
+          opacity="0.95"
+          transform="scale(2)"/>
+  </g>
+
+  <!-- LottoDrop text -->
+  <text x="600" y="440" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="72" font-weight="700" fill="url(#textGradient)" filter="url(#textGlow)">
+    LottoDrop
+  </text>
+
+  <!-- Tagline -->
+  <text x="600" y="500" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="28" fill="#FFFFFF" opacity="0.9">
+    Real-Time Lottery Gaming Platform
+  </text>
+
+  <!-- Features bar -->
+  <g transform="translate(600, 570)">
+    <text x="-250" y="0" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#9D4EDD">
+      Instant Payouts
+    </text>
+    <circle cx="-100" cy="-6" r="3" fill="#9D4EDD" opacity="0.5"/>
+    <text x="0" y="0" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#9D4EDD">
+      Provably Fair
+    </text>
+    <circle cx="100" cy="-6" r="3" fill="#9D4EDD" opacity="0.5"/>
+    <text x="250" y="0" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#9D4EDD">
+      Crypto Gaming
+    </text>
+  </g>
+
+  <!-- Border accent -->
+  <rect x="0" y="665" width="1200" height="10" fill="url(#dropGradient)"/>
+</svg>

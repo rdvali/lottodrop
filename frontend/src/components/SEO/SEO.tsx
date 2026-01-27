@@ -1,5 +1,15 @@
 import { Helmet } from 'react-helmet-async'
 
+interface BreadcrumbItem {
+  name: string
+  url: string
+}
+
+interface FAQItem {
+  question: string
+  answer: string
+}
+
 interface SEOProps {
   title?: string
   description?: string
@@ -12,13 +22,17 @@ interface SEOProps {
   modifiedTime?: string
   section?: string
   tags?: string[]
+  breadcrumbs?: BreadcrumbItem[]
+  faqItems?: FAQItem[]
+  noIndex?: boolean
+  isHomePage?: boolean
 }
 
 const DEFAULT_TITLE = 'LottoDrop - Real-Time Lottery Gaming Platform'
 const DEFAULT_DESCRIPTION = 'Join exciting lottery games with instant payouts and provably fair results. Experience the thrill of real-time gaming with LottoDrop.'
 const DEFAULT_KEYWORDS = 'lottery, gaming, real-time, crypto, blockchain, instant payout, provably fair, online gaming, lotto'
-const DEFAULT_IMAGE = '/og-image.png'
-const SITE_URL = import.meta.env.VITE_APP_URL || 'https://lottodrop.com'
+const DEFAULT_IMAGE = '/og-image.svg'
+const SITE_URL = import.meta.env.VITE_APP_URL || 'https://lottodrop.net'
 
 export const SEO = ({
   title = DEFAULT_TITLE,
@@ -31,12 +45,17 @@ export const SEO = ({
   publishedTime,
   modifiedTime,
   section,
-  tags = []
+  tags = [],
+  breadcrumbs,
+  faqItems,
+  noIndex = false,
+  isHomePage = false
 }: SEOProps) => {
   const fullTitle = title === DEFAULT_TITLE ? title : `${title} | LottoDrop`
   const fullImageUrl = image.startsWith('http') ? image : `${SITE_URL}${image}`
 
-  const structuredData = {
+  // WebApplication structured data (always included)
+  const webApplicationSchema = {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
     name: 'LottoDrop',
@@ -55,6 +74,54 @@ export const SEO = ({
       ratingCount: '2847'
     }
   }
+
+  // Organization schema (for homepage)
+  const organizationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'LottoDrop',
+    url: SITE_URL,
+    logo: `${SITE_URL}/drop-icon.svg`,
+    sameAs: [
+      'https://twitter.com/lottodrop'
+    ]
+  }
+
+  // WebSite schema (for homepage)
+  const websiteSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'LottoDrop',
+    url: SITE_URL
+  }
+
+  // BreadcrumbList schema (if breadcrumbs provided)
+  const breadcrumbSchema = breadcrumbs && breadcrumbs.length > 0 ? {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: breadcrumbs.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: item.name,
+      item: item.url
+    }))
+  } : null
+
+  // FAQPage schema (if FAQ items provided)
+  const faqSchema = faqItems && faqItems.length > 0 ? {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqItems.map(item => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.answer
+      }
+    }))
+  } : null
+
+  const robotsContent = noIndex ? 'noindex, nofollow' : 'index, follow'
 
   return (
     <Helmet>
@@ -97,9 +164,11 @@ export const SEO = ({
         </>
       )}
 
+      {/* Robots Meta Tags */}
+      <meta name="robots" content={robotsContent} />
+      <meta name="googlebot" content={robotsContent} />
+
       {/* Additional SEO Tags */}
-      <meta name="robots" content="index, follow" />
-      <meta name="googlebot" content="index, follow" />
       <meta name="format-detection" content="telephone=no" />
       <meta name="mobile-web-app-capable" content="yes" />
       <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -119,10 +188,38 @@ export const SEO = ({
         </>
       )}
 
-      {/* Structured Data */}
+      {/* Structured Data - WebApplication (always) */}
       <script type="application/ld+json">
-        {JSON.stringify(structuredData)}
+        {JSON.stringify(webApplicationSchema)}
       </script>
+
+      {/* Structured Data - Organization (homepage only) */}
+      {isHomePage && (
+        <script type="application/ld+json">
+          {JSON.stringify(organizationSchema)}
+        </script>
+      )}
+
+      {/* Structured Data - WebSite (homepage only) */}
+      {isHomePage && (
+        <script type="application/ld+json">
+          {JSON.stringify(websiteSchema)}
+        </script>
+      )}
+
+      {/* Structured Data - BreadcrumbList (if provided) */}
+      {breadcrumbSchema && (
+        <script type="application/ld+json">
+          {JSON.stringify(breadcrumbSchema)}
+        </script>
+      )}
+
+      {/* Structured Data - FAQPage (if provided) */}
+      {faqSchema && (
+        <script type="application/ld+json">
+          {JSON.stringify(faqSchema)}
+        </script>
+      )}
     </Helmet>
   )
 }

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, Button } from '@components/atoms'
+import { SEO } from '@components/SEO'
 import { useIsMobile } from '@hooks/useResponsive'
 import { useModal } from '@hooks/useModal'
 import { useNavigate } from 'react-router-dom'
@@ -231,6 +232,25 @@ const HowToDeposit = () => {
 
   return (
     <div className={styles.container}>
+      {/* SEO Meta Tags */}
+      <SEO
+        title="How to Deposit"
+        description="Fund your LottoDrop account with USDT cryptocurrency. Supports TRC20, ERC20, and Solana networks with instant balance updates."
+        keywords="crypto deposit, USDT deposit, TRC20, ERC20, Solana, blockchain deposit, gaming wallet"
+        url="https://lottodrop.net/how-to-deposit"
+        type="article"
+        breadcrumbs={[
+          { name: 'Home', url: 'https://lottodrop.net/' },
+          { name: 'How to Deposit', url: 'https://lottodrop.net/how-to-deposit' }
+        ]}
+        faqItems={[
+          { question: 'What cryptocurrency does LottoDrop accept?', answer: 'LottoDrop accepts USDT (Tether) stablecoin only. USDT is pegged to the US dollar, making it stable and predictable for gaming.' },
+          { question: 'Which networks are supported for deposits?', answer: 'We support TRC20 (TRON), ERC20 (Ethereum), and SPL (Solana) networks for USDT deposits.' },
+          { question: 'Which network has the lowest fees?', answer: 'TRC20 (TRON) and Solana SPL have the lowest fees (~$0.01-$1), while Ethereum ERC20 has higher fees ($5-20).' },
+          { question: 'How long do deposits take?', answer: 'Deposit times vary by network: Solana (<1 minute), TRC20 (1-3 minutes), ERC20 (3-5 minutes). Funds are credited instantly after confirmation.' }
+        ]}
+      />
+
       {/* Hero Section */}
       <motion.div
         initial={{ opacity: 0, y: -30 }}

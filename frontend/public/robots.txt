@@ -1,60 +1,28 @@
 # Robots.txt for LottoDrop - Real-time Lottery Gaming Platform
-# Updated: 2025-09-26
+# Updated: 2026-01-27
 
 User-agent: *
 
-# Allow crawling of main pages and static content
+# Allow public pages
 Allow: /
-Allow: /about
+Allow: /results
 Allow: /how-to-play
-Allow: /responsible-gaming
-Allow: /terms
-Allow: /privacy
-Allow: /contact
-Allow: /help
-Allow: /faq
+Allow: /how-to-deposit
 
-# Block crawling of user-specific and sensitive areas
+# Block protected/sensitive areas
 Disallow: /profile
-Disallow: /dashboard
-Disallow: /account
-Disallow: /wallet
-Disallow: /transactions
-Disallow: /admin
+Disallow: /room/
 Disallow: /api/
-Disallow: /auth/
+Disallow: /socket.io/
 Disallow: /login
 Disallow: /register
-Disallow: /reset-password
-Disallow: /verify-email
 
-# Block crawling of game sessions and real-time data
-Disallow: /game/session/
-Disallow: /game/history/
-Disallow: /socket.io/
-
-# Block development and temporary files
-Disallow: /dev/
-Disallow: /test/
-Disallow: /.well-known/
-Disallow: /temp/
-Disallow: /tmp/
-
-# Block sensitive static files
+# Block static files that shouldn't be indexed
 Disallow: /*.json$
 Disallow: /*.map$
-Disallow: /*.log$
-Disallow: /manifest.json
 
-# Special directives for responsible gaming compliance
-# Block indexing of promotional content for gambling addiction recovery sites
-User-agent: GambleAwareBot
-Allow: /responsible-gaming
-Allow: /help
-Disallow: /
-
-# Crawl delay to prevent server overload (especially important for gaming platforms)
+# Crawl delay to prevent server overload
 Crawl-delay: 1
 
-# Sitemap location (should be created for SEO optimization)
+# Sitemap location
 Sitemap: https://lottodrop.net/sitemap.xml
