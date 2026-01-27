@@ -460,15 +460,7 @@ const Transactions: React.FC = () => {
                       <span className="date-time">{formatDate(transaction.createdAt)}</span>
                     </td>
                     <td>
-                      <div className="user-info">
-                        <div className="user-avatar">
-                          {transaction.userName?.[0]?.toUpperCase() || 'U'}
-                        </div>
-                        <div className="user-details">
-                          <p className="user-name">{transaction.userName}</p>
-                          <p className="user-email">{transaction.userEmail}</p>
-                        </div>
-                      </div>
+                      <span className="user-email">{transaction.userEmail}</span>
                     </td>
                     <td>
                       <div className={`transaction-type ${getTypeColor(transaction.type)}`}>

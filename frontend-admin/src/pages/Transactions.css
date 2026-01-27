@@ -231,57 +231,10 @@
   white-space: nowrap;
 }
 
-/* User Info */
-.transactions-page .user-info {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  background: rgba(30, 41, 59, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  padding: 0.5rem 0.75rem;
-  max-width: 200px;
-}
-
-.transactions-page .user-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #9D4EDD, #A855F7);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 0.8rem;
-  flex-shrink: 0;
-}
-
-.transactions-page .user-details {
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
-}
-
-.transactions-page .user-name {
-  font-weight: 600;
-  color: #fff;
-  margin: 0 0 0.125rem 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 0.875rem;
-}
-
+/* User Email */
 .transactions-page .user-email {
-  font-size: 0.75rem;
-  color: #64748B;
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 120px;
-  display: block;
+  font-size: 0.875rem;
+  color: #94A3B8;
 }
 
 /* Transaction Type */

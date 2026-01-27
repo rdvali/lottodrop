@@ -395,10 +395,7 @@ const CryptoDeposits: React.FC = () => {
                     {formatDate(deposit.createdAt)}
                   </td>
                   <td className="user-cell">
-                    <div className="user-info">
-                      <span className="user-name">{deposit.userName}</span>
-                      <span className="user-email">{deposit.userEmail}</span>
-                    </div>
+                    <span className="user-email">{deposit.userEmail}</span>
                   </td>
                   <td>
                     <span className={`network-badge network-${deposit.network.toLowerCase()}`}>
