@@ -200,11 +200,22 @@
   text-align: center;
 }
 
+.crypto-deposits-page .network-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .crypto-deposits-page .network-icon {
-  width: 28px;
-  height: 28px;
-  display: inline-block;
-  vertical-align: middle;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.crypto-deposits-page .network-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #94A3B8;
 }
 
 /* Fallback text badge for unknown networks */

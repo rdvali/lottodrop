@@ -170,17 +170,32 @@ const SolanaIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
-// Map network to icon component
+// Map network to icon component with label
 const getNetworkIcon = (network: string) => {
   const networkLower = network.toLowerCase();
   if (networkLower === 'tron' || networkLower === 'trc20' || networkLower === 'trc-20') {
-    return <TronIcon className="network-icon" />;
+    return (
+      <div className="network-display">
+        <TronIcon className="network-icon" />
+        <span className="network-label">TRC20</span>
+      </div>
+    );
   }
   if (networkLower === 'ethereum' || networkLower === 'erc20' || networkLower === 'erc-20') {
-    return <EthereumIcon className="network-icon" />;
+    return (
+      <div className="network-display">
+        <EthereumIcon className="network-icon" />
+        <span className="network-label">ERC20</span>
+      </div>
+    );
   }
   if (networkLower === 'solana' || networkLower === 'spl') {
-    return <SolanaIcon className="network-icon" />;
+    return (
+      <div className="network-display">
+        <SolanaIcon className="network-icon" />
+        <span className="network-label">SPL</span>
+      </div>
+    );
   }
   // Fallback
   return <span className="network-badge">{network}</span>;
