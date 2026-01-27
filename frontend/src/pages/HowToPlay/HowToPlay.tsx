@@ -432,7 +432,7 @@ const HowToPlay = () => {
                     transition={{ duration: 0.3, ease: "easeInOut" }}
                     className={styles.sectionContent}
                   >
-                    {/* Screenshot Placeholder */}
+                    {/* Screenshot */}
                     {section.content.screenshot && (
                       <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
@@ -441,7 +441,20 @@ const HowToPlay = () => {
                         className={styles.screenshotContainer}
                       >
                         <div className={styles.screenshot}>
-                          <div className={styles.screenshotPlaceholder}>
+                          <img
+                            src={section.content.screenshot}
+                            alt={`Screenshot: ${section.title}`}
+                            className={styles.screenshotImage}
+                            onError={(e) => {
+                              const target = e.currentTarget;
+                              target.style.display = 'none';
+                              const placeholder = target.nextElementSibling as HTMLElement;
+                              if (placeholder) {
+                                placeholder.style.display = 'block';
+                              }
+                            }}
+                          />
+                          <div className={styles.screenshotPlaceholder} style={{ display: 'none' }}>
                             <div className={styles.screenshotIcon}>📱</div>
                             <p>Screenshot: {section.title}</p>
                             <small>Coming soon</small>
