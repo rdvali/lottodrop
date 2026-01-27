@@ -1,26 +1,29 @@
-/* CryptoDeposits.css - Using CSS variables from design-system.css */
+/* CryptoDeposits.css - Dark Theme (Matching Rounds.css) */
+@import '../styles/design-system.css';
 
 .crypto-deposits-page {
-  padding: var(--spacing-lg);
+  padding: var(--space-6);
   max-width: 1400px;
   margin: 0 auto;
+  background-color: var(--bg-primary);
+  min-height: 100vh;
 }
 
 /* Page Header */
 .crypto-deposits-page .page-header {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: 2rem;
 }
 
 .crypto-deposits-page .page-header h1 {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
-  margin: 0 0 var(--spacing-xs) 0;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 0.5rem 0;
 }
 
 .crypto-deposits-page .page-header .subtitle {
-  color: var(--text-muted);
-  font-size: var(--font-size-base);
+  color: #94A3B8;
+  font-size: 1rem;
   margin: 0;
 }
 
@@ -28,8 +31,8 @@
 .crypto-deposits-page .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
+  gap: 1rem;
+  margin-bottom: 2rem;
 }
 
 @media (max-width: 1024px) {
@@ -45,19 +48,25 @@
 }
 
 .crypto-deposits-page .stat-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--border-radius-lg);
-  padding: var(--spacing-lg);
+  background: #1E293B;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.25rem;
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: 1rem;
+  transition: all 0.3s ease;
+}
+
+.crypto-deposits-page .stat-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(157, 78, 221, 0.3);
 }
 
 .crypto-deposits-page .stat-icon {
   width: 48px;
   height: 48px;
-  border-radius: var(--border-radius-md);
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -65,23 +74,23 @@
 }
 
 .crypto-deposits-page .stat-icon.pending {
-  background: rgba(234, 179, 8, 0.1);
-  color: #eab308;
+  background: rgba(251, 191, 36, 0.15);
+  color: #FBBF24;
 }
 
 .crypto-deposits-page .stat-icon.success {
-  background: rgba(34, 197, 94, 0.1);
-  color: #22c55e;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10B981;
 }
 
 .crypto-deposits-page .stat-icon.warning {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+  color: #EF4444;
 }
 
 .crypto-deposits-page .stat-icon.total {
-  background: rgba(157, 78, 221, 0.1);
-  color: var(--purple-600);
+  background: rgba(157, 78, 221, 0.15);
+  color: #9D4EDD;
 }
 
 .crypto-deposits-page .stat-content {
@@ -90,37 +99,39 @@
 }
 
 .crypto-deposits-page .stat-value {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
   line-height: 1.2;
 }
 
 .crypto-deposits-page .stat-label {
-  color: var(--text-muted);
-  font-size: var(--font-size-sm);
+  color: #94A3B8;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
 .crypto-deposits-page .stat-amount {
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-  margin-top: var(--spacing-xs);
+  color: #64748B;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
 }
 
 /* Results Info */
 .crypto-deposits-page .results-info {
-  color: var(--text-muted);
-  font-size: var(--font-size-sm);
-  margin-bottom: var(--spacing-md);
+  color: #94A3B8;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
 }
 
 /* Table Container */
 .crypto-deposits-page .table-container {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--border-radius-lg);
+  background: #1E293B;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   overflow: hidden;
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: 2rem;
 }
 
 .crypto-deposits-page .data-table {
@@ -128,37 +139,44 @@
   border-collapse: collapse;
 }
 
+.crypto-deposits-page .data-table thead {
+  background: rgba(15, 23, 42, 0.5);
+}
+
 .crypto-deposits-page .data-table th {
-  background: var(--bg-tertiary);
-  padding: var(--spacing-md);
+  padding: 1rem;
   text-align: left;
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
+  color: #94A3B8;
+  font-weight: 600;
+  font-size: 0.9rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid var(--border-primary);
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .crypto-deposits-page .data-table td {
-  padding: var(--spacing-md);
-  border-bottom: 1px solid var(--border-primary);
-  color: var(--text-primary);
-  font-size: var(--font-size-sm);
+  padding: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  font-size: 0.95rem;
 }
 
 .crypto-deposits-page .data-table tr:last-child td {
   border-bottom: none;
 }
 
-.crypto-deposits-page .data-table tr:hover {
-  background: rgba(157, 78, 221, 0.05);
+.crypto-deposits-page .data-table tbody tr {
+  transition: background 0.2s ease;
+}
+
+.crypto-deposits-page .data-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
 }
 
 /* Table Cells */
 .crypto-deposits-page .date-cell {
   white-space: nowrap;
-  color: var(--text-muted);
+  color: #94A3B8;
 }
 
 .crypto-deposits-page .user-cell .user-info {
@@ -167,131 +185,134 @@
 }
 
 .crypto-deposits-page .user-cell .user-name {
-  font-weight: var(--font-weight-medium);
-  color: var(--text-primary);
+  font-weight: 600;
+  color: #fff;
 }
 
 .crypto-deposits-page .user-cell .user-email {
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
+  font-size: 0.8rem;
+  color: #64748B;
 }
 
 .crypto-deposits-page .amount-cell {
   font-family: 'Monaco', 'Menlo', monospace;
-  font-weight: var(--font-weight-medium);
+  font-weight: 600;
+  color: #9D4EDD;
 }
 
 .crypto-deposits-page .confirmations-cell {
   text-align: center;
+  color: #94A3B8;
 }
 
 /* Network Badges */
 .crypto-deposits-page .network-badge {
   display: inline-block;
-  padding: 0.25rem 0.5rem;
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
 .crypto-deposits-page .network-badge.network-tron {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+  color: #EF4444;
 }
 
 .crypto-deposits-page .network-badge.network-ethereum {
-  background: rgba(96, 165, 250, 0.1);
-  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.15);
+  color: #60A5FA;
 }
 
 .crypto-deposits-page .network-badge.network-solana {
-  background: rgba(168, 85, 247, 0.1);
-  color: #a855f7;
+  background: rgba(168, 85, 247, 0.15);
+  color: #A855F7;
 }
 
 /* Status Badges */
 .crypto-deposits-page .status-badge {
   display: inline-block;
   padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
   text-transform: capitalize;
 }
 
 .crypto-deposits-page .badge-success {
-  background: rgba(34, 197, 94, 0.1);
-  color: #22c55e;
+  background: rgba(16, 185, 129, 0.2);
+  color: #10B981;
 }
 
 .crypto-deposits-page .badge-warning {
-  background: rgba(234, 179, 8, 0.1);
-  color: #eab308;
+  background: rgba(251, 191, 36, 0.2);
+  color: #FBBF24;
 }
 
 .crypto-deposits-page .badge-danger {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  background: rgba(239, 68, 68, 0.2);
+  color: #EF4444;
 }
 
 .crypto-deposits-page .badge-info {
-  background: rgba(96, 165, 250, 0.1);
-  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.15);
+  color: #60A5FA;
 }
 
 .crypto-deposits-page .badge-secondary {
-  background: rgba(156, 163, 175, 0.1);
-  color: #9ca3af;
+  background: rgba(156, 163, 175, 0.15);
+  color: #9CA3AF;
 }
 
 /* Action Buttons */
 .crypto-deposits-page .actions-cell {
   display: flex;
-  gap: var(--spacing-xs);
+  gap: 0.5rem;
 }
 
 .crypto-deposits-page .action-btn {
   padding: 0.5rem;
-  border: none;
-  border-radius: var(--border-radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   background: transparent;
 }
 
 .crypto-deposits-page .action-btn.view {
-  color: var(--purple-600);
+  color: #9D4EDD;
 }
 
 .crypto-deposits-page .action-btn.view:hover {
-  background: rgba(157, 78, 221, 0.1);
+  background: rgba(157, 78, 221, 0.15);
+  border-color: rgba(157, 78, 221, 0.3);
 }
 
 .crypto-deposits-page .action-btn.copy {
-  color: var(--text-muted);
+  color: #94A3B8;
 }
 
 .crypto-deposits-page .action-btn.copy:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
 }
 
 /* Loading and Empty States */
 .crypto-deposits-page .loading-cell,
 .crypto-deposits-page .empty-cell {
   text-align: center;
-  padding: var(--spacing-2xl) !important;
-  color: var(--text-muted);
+  padding: 4rem 2rem !important;
+  color: #94A3B8;
 }
 
 .crypto-deposits-page .loading-spinner {
-  width: 24px;
-  height: 24px;
-  border: 2px solid var(--border-primary);
-  border-top-color: var(--purple-600);
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(157, 78, 221, 0.2);
+  border-top-color: #9D4EDD;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin: 0 auto var(--spacing-sm);
+  margin: 0 auto 1rem;
 }
 
 @keyframes spin {
@@ -301,25 +322,23 @@
 /* Pagination */
 .crypto-deposits-page .pagination {
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: var(--spacing-sm);
+  align-items: center;
+  gap: 1rem;
 }
 
 .crypto-deposits-page .pagination-btn {
   padding: 0.5rem 1rem;
-  border: 1px solid var(--border-primary);
-  border-radius: var(--border-radius-md);
-  background: var(--bg-secondary);
-  color: var(--text-primary);
+  background: #1E293B;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #E2E8F0;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .crypto-deposits-page .pagination-btn:hover:not(:disabled) {
-  background: var(--purple-600);
-  border-color: var(--purple-600);
-  color: white;
+  background: var(--bg-tertiary);
 }
 
 .crypto-deposits-page .pagination-btn:disabled {
@@ -328,122 +347,155 @@
 }
 
 .crypto-deposits-page .pagination-info {
-  color: var(--text-muted);
-  padding: 0 var(--spacing-md);
+  color: #94A3B8;
+  font-size: 0.875rem;
 }
 
 /* Modal */
 .crypto-deposits-page .modal-overlay {
   position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: var(--spacing-md);
+  padding: 1rem;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .crypto-deposits-page .modal-content {
-  background: var(--bg-secondary);
-  border-radius: var(--border-radius-xl);
-  border: 1px solid var(--border-primary);
-  max-width: 800px;
-  width: 100%;
-  max-height: 90vh;
+  background: rgba(30, 41, 59, 0.85) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  max-width: 700px;
+  width: 90%;
+  max-height: 85vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .crypto-deposits-page .modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-lg);
-  border-bottom: 1px solid var(--border-primary);
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .crypto-deposits-page .modal-header h2 {
   margin: 0;
-  font-size: var(--font-size-xl);
-  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
 }
 
 .crypto-deposits-page .modal-close {
-  padding: 0.5rem;
+  background: none;
   border: none;
-  background: transparent;
-  color: var(--text-muted);
+  color: #94A3B8;
   cursor: pointer;
-  border-radius: var(--border-radius-sm);
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
 }
 
 .crypto-deposits-page .modal-close:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .crypto-deposits-page .modal-body {
-  padding: var(--spacing-lg);
+  padding: 1.5rem;
   overflow-y: auto;
 }
 
 /* Detail Grid */
 .crypto-deposits-page .detail-grid {
   display: grid;
-  gap: var(--spacing-lg);
+  gap: 1.5rem;
 }
 
 .crypto-deposits-page .detail-section {
-  background: var(--bg-tertiary);
-  border-radius: var(--border-radius-md);
-  padding: var(--spacing-md);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 1.25rem;
 }
 
 .crypto-deposits-page .detail-section h3 {
-  margin: 0 0 var(--spacing-md) 0;
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-secondary);
-  padding-bottom: var(--spacing-sm);
-  border-bottom: 1px solid var(--border-primary);
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #9D4EDD;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(157, 78, 221, 0.2);
 }
 
 .crypto-deposits-page .detail-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-sm) 0;
+  padding: 0.5rem 0;
 }
 
 .crypto-deposits-page .detail-row .label {
-  color: var(--text-muted);
-  font-size: var(--font-size-sm);
+  color: #64748B;
+  font-size: 0.85rem;
 }
 
 .crypto-deposits-page .detail-row .value {
-  color: var(--text-primary);
-  font-weight: var(--font-weight-medium);
-  font-size: var(--font-size-sm);
+  color: #E2E8F0;
+  font-weight: 500;
+  font-size: 0.9rem;
 }
 
 .crypto-deposits-page .detail-row .value.highlight {
-  color: var(--purple-600);
-  font-size: var(--font-size-base);
+  color: #9D4EDD;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .crypto-deposits-page .detail-row .value.copyable {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
+  gap: 0.5rem;
   cursor: pointer;
   transition: color 0.2s ease;
 }
 
 .crypto-deposits-page .detail-row .value.copyable:hover {
-  color: var(--purple-600);
+  color: #9D4EDD;
 }
 
 .crypto-deposits-page .detail-row .copy-icon {
@@ -456,7 +508,7 @@
 
 .crypto-deposits-page .detail-row .value.address {
   font-family: 'Monaco', 'Menlo', monospace;
-  font-size: var(--font-size-xs);
+  font-size: 0.8rem;
 }
 
 /* Error Section */
@@ -466,31 +518,33 @@
 }
 
 .crypto-deposits-page .error-section h3 {
-  color: #ef4444;
+  color: #EF4444;
   border-bottom-color: rgba(239, 68, 68, 0.2);
 }
 
 .crypto-deposits-page .error-message {
-  color: #ef4444;
+  color: #EF4444;
   margin: 0;
-  font-size: var(--font-size-sm);
+  font-size: 0.9rem;
 }
 
 /* Webhook Section */
 .crypto-deposits-page .webhook-section {
-  background: var(--bg-primary);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .crypto-deposits-page .webhook-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: 1rem;
+  max-height: 250px;
+  overflow-y: auto;
 }
 
 .crypto-deposits-page .webhook-event {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--border-radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -498,27 +552,45 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--bg-tertiary);
+  padding: 0.75rem 1rem;
+  background: rgba(15, 23, 42, 0.5);
 }
 
 .crypto-deposits-page .webhook-type {
-  font-weight: var(--font-weight-semibold);
-  color: var(--purple-600);
-  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: #9D4EDD;
+  font-size: 0.85rem;
 }
 
 .crypto-deposits-page .webhook-time {
-  color: var(--text-muted);
-  font-size: var(--font-size-xs);
+  color: #64748B;
+  font-size: 0.8rem;
 }
 
 .crypto-deposits-page .webhook-data {
   margin: 0;
-  padding: var(--spacing-md);
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
+  padding: 1rem;
+  font-size: 0.8rem;
+  color: #94A3B8;
   overflow-x: auto;
   font-family: 'Monaco', 'Menlo', monospace;
-  background: var(--bg-primary);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .crypto-deposits-page {
+    padding: 1rem;
+  }
+
+  .crypto-deposits-page .modal-content {
+    width: 95%;
+    margin: 1rem;
+  }
+
+  .crypto-deposits-page .detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
 }
