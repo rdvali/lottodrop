@@ -97,7 +97,7 @@ const HowToPlay = () => {
             tip: 'Win or lose, you can immediately join another room.'
           }
         ],
-        screenshot: '/screenshots/quick-start-demo.png'
+        screenshot: '/screenshots/quick-start-demo-v2.png'
       }
     },
     {
@@ -132,7 +132,7 @@ const HowToPlay = () => {
             tip: 'Invite friends to fill rooms faster!'
           }
         ],
-        screenshot: '/screenshots/join-room-process.png'
+        screenshot: '/screenshots/join-room-process-v2.png'
       }
     },
     {
@@ -167,7 +167,7 @@ const HowToPlay = () => {
             tip: 'The countdown ensures the draw is fair and transparent.'
           }
         ],
-        screenshot: '/screenshots/countdown-timer.png'
+        screenshot: '/screenshots/countdown-timer-v2.png'
       }
     },
     {
@@ -202,7 +202,7 @@ const HowToPlay = () => {
             tip: 'This transparency is what makes our system provably fair.'
           }
         ],
-        screenshot: '/screenshots/winner-selection.png'
+        screenshot: '/screenshots/winner-selection-v2.png'
       }
     },
     {
@@ -237,7 +237,7 @@ const HowToPlay = () => {
             tip: 'Download your history anytime for your records.'
           }
         ],
-        screenshot: '/screenshots/prize-distribution.png'
+        screenshot: '/screenshots/prize-distribution-v2.png'
       }
     },
     {
@@ -271,8 +271,7 @@ const HowToPlay = () => {
             description: 'Follow our social channels for special events, bonus rooms, and platform updates.',
             tip: 'Special events often have guaranteed minimum prizes!'
           }
-        ],
-        screenshot: '/screenshots/tips-strategies.png'
+        ]
       }
     }
   ]
