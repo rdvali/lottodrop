@@ -100,6 +100,12 @@ const Header = ({ user, onLogin, onLogout }: HeaderProps) => {
             >
               How To Play
             </Link>
+            <Link
+              to="/how-to-deposit"
+              className="text-gray-300 hover:text-text-primary transition-colors"
+            >
+              How To Deposit
+            </Link>
           </nav>
           
           {/* User Section */}
@@ -238,6 +244,13 @@ const Header = ({ user, onLogin, onLogout }: HeaderProps) => {
               onClick={() => setMobileMenuOpen(false)}
             >
               How To Play
+            </Link>
+            <Link
+              to="/how-to-deposit"
+              className="block py-2 text-gray-300 hover:text-text-primary"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              How To Deposit
             </Link>
             {user && (
               <div className="mt-4 pt-4 border-t border-primary/10 space-y-3">
