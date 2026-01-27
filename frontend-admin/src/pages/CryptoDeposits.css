@@ -197,7 +197,7 @@
 
 /* Network Icons */
 .crypto-deposits-page .network-cell {
-  text-align: center;
+  text-align: left;
 }
 
 .crypto-deposits-page .network-display {
@@ -207,15 +207,16 @@
 }
 
 .crypto-deposits-page .network-icon {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
 }
 
 .crypto-deposits-page .network-label {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: #94A3B8;
+  color: #E2E8F0;
+  letter-spacing: 0.025em;
 }
 
 /* Fallback text badge for unknown networks */
