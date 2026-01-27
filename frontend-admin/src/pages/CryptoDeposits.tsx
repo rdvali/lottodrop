@@ -106,6 +106,86 @@ const CopyIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
+// Network Icons
+const TronIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} viewBox="0 0 32 32" fill="none">
+    <path
+      d="M16 32c8.837 0 16-7.163 16-16S24.837 0 16 0 0 7.163 0 16s7.163 16 16 16z"
+      fill="#EF0027"
+    />
+    <path
+      d="M21.932 9.913L7.5 7.257l7.595 19.112 10.583-12.894-3.746-3.562zm-.232 1.17l2.208 2.099-6.038 1.093 3.83-3.192zm-5.142 2.058l-6.886 5.94 3.796-9.545 3.09 3.605zm.987.439l6.436-1.165-8.25 10.055 1.814-8.89zm-7.615 4.512l8.878-3.319-1.78 8.727-7.098-5.408z"
+      fill="#fff"
+    />
+  </svg>
+);
+
+const EthereumIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} viewBox="0 0 32 32" fill="none">
+    <path
+      d="M16 32c8.837 0 16-7.163 16-16S24.837 0 16 0 0 7.163 0 16s7.163 16 16 16z"
+      fill="#627EEA"
+    />
+    <path d="M16.498 4v8.87l7.497 3.35L16.498 4z" fill="#fff" fillOpacity={0.602} />
+    <path d="M16.498 4L9 16.22l7.498-3.35V4z" fill="#fff" />
+    <path d="M16.498 21.968v6.027L24 17.616l-7.502 4.352z" fill="#fff" fillOpacity={0.602} />
+    <path d="M16.498 27.995v-6.028L9 17.616l7.498 10.379z" fill="#fff" />
+    <path d="M16.498 20.573l7.497-4.353-7.497-3.348v7.701z" fill="#fff" fillOpacity={0.2} />
+    <path d="M9 16.22l7.498 4.353v-7.701L9 16.22z" fill="#fff" fillOpacity={0.602} />
+  </svg>
+);
+
+const SolanaIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} viewBox="0 0 32 32" fill="none">
+    <path
+      d="M16 32c8.837 0 16-7.163 16-16S24.837 0 16 0 0 7.163 0 16s7.163 16 16 16z"
+      fill="#000"
+    />
+    <path
+      d="M9.925 19.687a.64.64 0 01.453-.188h14.86a.32.32 0 01.227.547l-2.89 2.89a.64.64 0 01-.454.188H7.262a.32.32 0 01-.227-.547l2.89-2.89z"
+      fill="url(#solana-gradient-1)"
+    />
+    <path
+      d="M9.925 9.188a.658.658 0 01.453-.188h14.86a.32.32 0 01.227.547l-2.89 2.89a.64.64 0 01-.454.188H7.262a.32.32 0 01-.227-.547l2.89-2.89z"
+      fill="url(#solana-gradient-2)"
+    />
+    <path
+      d="M22.121 14.406a.64.64 0 00-.454-.188H6.807a.32.32 0 00-.227.547l2.89 2.89a.64.64 0 00.454.188h14.859a.32.32 0 00.227-.547l-2.89-2.89z"
+      fill="url(#solana-gradient-3)"
+    />
+    <defs>
+      <linearGradient id="solana-gradient-1" x1="7.035" y1="23.124" x2="25.465" y2="19.499" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#00FFA3" />
+        <stop offset="1" stopColor="#DC1FFF" />
+      </linearGradient>
+      <linearGradient id="solana-gradient-2" x1="7.035" y1="12.624" x2="25.465" y2="9" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#00FFA3" />
+        <stop offset="1" stopColor="#DC1FFF" />
+      </linearGradient>
+      <linearGradient id="solana-gradient-3" x1="7.035" y1="17.843" x2="25.465" y2="14.218" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#00FFA3" />
+        <stop offset="1" stopColor="#DC1FFF" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
+// Map network to icon component
+const getNetworkIcon = (network: string) => {
+  const networkLower = network.toLowerCase();
+  if (networkLower === 'tron' || networkLower === 'trc20' || networkLower === 'trc-20') {
+    return <TronIcon className="network-icon" />;
+  }
+  if (networkLower === 'ethereum' || networkLower === 'erc20' || networkLower === 'erc-20') {
+    return <EthereumIcon className="network-icon" />;
+  }
+  if (networkLower === 'solana' || networkLower === 'spl') {
+    return <SolanaIcon className="network-icon" />;
+  }
+  // Fallback
+  return <span className="network-badge">{network}</span>;
+};
+
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
 const CryptoDeposits: React.FC = () => {
@@ -397,10 +477,8 @@ const CryptoDeposits: React.FC = () => {
                   <td className="user-cell">
                     <span className="user-email">{deposit.userEmail}</span>
                   </td>
-                  <td>
-                    <span className={`network-badge network-${deposit.network.toLowerCase()}`}>
-                      {deposit.tokenStandard}
-                    </span>
+                  <td className="network-cell">
+                    {getNetworkIcon(deposit.network)}
                   </td>
                   <td className="amount-cell">
                     {formatAmount(deposit.expectedAmount)}
