@@ -44,7 +44,7 @@ const SEOPageLoader: React.FC = () => (
  * Returns Route elements for all enabled SEO pages.
  * Must be used inside a <Routes> component.
  *
- * STATUS: ISOLATED - Not connected to main router.
+ * STATUS: Connected to App.tsx at Stage 5.1.
  */
 export const SEORoutes: React.FC = () => {
   // If master switch is off, return nothing
