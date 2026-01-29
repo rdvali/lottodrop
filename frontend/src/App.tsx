@@ -20,7 +20,6 @@ import { SEO } from '@components/SEO'
 import { performanceMonitor } from '@utils/performance'
 import { ErrorBoundary } from '@components/error/ErrorBoundary'
 import { GameRoomErrorFallback } from '@components/error/GameRoomErrorFallback'
-import { SEORoutes } from './seo-pages/routes/SEORoutes'
 
 // Lazy load pages for code splitting
 const RoomList = lazy(() => import('@pages/RoomList/RoomList'))
@@ -182,8 +181,6 @@ const AppContent = () => {
                 </ProtectedRoute>
               }
             />
-            {/* SEO Pages — Feature-flagged, defaults OFF */}
-            <SEORoutes />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
