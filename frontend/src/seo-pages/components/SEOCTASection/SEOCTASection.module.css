@@ -1,0 +1,118 @@
+/**
+ * SEO CTA Section Styles
+ */
+
+.section {
+  position: relative;
+  padding: 4rem 2rem;
+  border-radius: 1.5rem;
+  text-align: center;
+  overflow: hidden;
+}
+
+.default {
+  background: rgba(45, 45, 68, 0.5);
+  border: 1px solid rgba(157, 78, 221, 0.2);
+}
+
+.highlight {
+  background: linear-gradient(135deg, rgba(157, 78, 221, 0.2) 0%, rgba(123, 44, 191, 0.2) 100%);
+  border: 1px solid rgba(157, 78, 221, 0.3);
+}
+
+.content {
+  position: relative;
+  z-index: 2;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 1rem;
+}
+
+.description {
+  font-size: 1.0625rem;
+  color: #a0aec0;
+  margin: 0 0 2rem;
+  line-height: 1.6;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 2.5rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, #9d4edd 0%, #7b2cbf 100%);
+  border: none;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.primaryButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(157, 78, 221, 0.4);
+}
+
+.secondaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 2.5rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.5rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.secondaryButton:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.decoration {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(157, 78, 221, 0.1) 0%, transparent 70%);
+  filter: blur(40px);
+}
+
+@media (min-width: 768px) {
+  .section {
+    padding: 5rem 3rem;
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+}

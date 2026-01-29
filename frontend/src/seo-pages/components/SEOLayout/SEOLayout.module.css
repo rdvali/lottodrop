@@ -1,0 +1,30 @@
+/**
+ * SEO Layout Styles
+ *
+ * Provides consistent styling for SEO pages.
+ * Uses CSS variables from the main theme for consistency.
+ */
+
+.seoLayout {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
+  color: #ffffff;
+}
+
+.mainContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+@media (min-width: 768px) {
+  .mainContent {
+    padding: 3rem 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .mainContent {
+    padding: 4rem 2rem;
+  }
+}
