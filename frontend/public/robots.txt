@@ -5,6 +5,7 @@ User-agent: *
 
 # Allow public pages
 Allow: /
+Allow: /crypto-lottery
 Allow: /results
 Allow: /how-to-play
 Allow: /how-to-deposit
